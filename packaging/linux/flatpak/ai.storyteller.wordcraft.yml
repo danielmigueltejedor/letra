@@ -106,6 +106,8 @@ modules:
       - install -Dm644 NOTICE /app/share/doc/wordcraft/NOTICE
       - install -Dm755 target/release/wordcraft-cli /app/bin/wordcraft-cli
       - install -Dm644 packaging/linux/ai.storyteller.wordcraft.desktop /app/share/applications/ai.storyteller.wordcraft.desktop
+      # Flatpak only exports icons named after the app ID, so the sandbox keeps the Craft icon name.
+      - sed -i "s/^Icon=.*/Icon=ai.storyteller.wordcraft/" /app/share/applications/ai.storyteller.wordcraft.desktop
       - install -Dm644 packaging/linux/ai.storyteller.wordcraft.mime.xml /app/share/mime/packages/ai.storyteller.wordcraft.xml
       - mkdir -p /app/share/icons && cp -R assets/app-icon/hicolor /app/share/icons/
       - >-
