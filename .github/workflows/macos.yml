@@ -47,7 +47,7 @@ jobs:
       - name: Check out craft-fonts
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: storytold/craft-fonts
+          repository: getnodalia/foundation # kept at vendor/craft-fonts/main
           # Same commit as release.yml.
           ref: b076417b5880bd4154bd22f00695b1d28c6bea83
           path: craft-fonts
@@ -56,7 +56,7 @@ jobs:
       - name: Check out craft-i18n
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: storytold/craft-i18n
+          repository: getnodalia/foundation # kept at vendor/craft-i18n/main
           # The commit craft-i18n.rev pins.
           ref: 1e515422afdda2f317af430c1f9d68a5f83935b4
           path: craft-i18n
