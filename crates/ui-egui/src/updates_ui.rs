@@ -50,6 +50,21 @@ impl Default for Runtime {
     }
 }
 
+impl Runtime {
+    /// Whether the shared update window is on screen (the interface audit leaves its text alone).
+    #[cfg(test)]
+    pub(crate) fn shared_window_open(&self) -> bool {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.updater.is_open()
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            false
+        }
+    }
+}
+
 impl WordApp {
     /// Whether the app looks for a newer release when it starts (off until the desktop app turns it on).
     #[cfg(not(target_arch = "wasm32"))]
