@@ -2,11 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please report security problems privately through GitHub:
-**[Report a vulnerability](https://github.com/storytold/wordcraft/security/advisories/new)**
-(Security tab › Advisories › Report a vulnerability).
-
-Don't open a public issue or pull request for a vulnerability until a fix is released.
+Security reports for Letra belong to the **Nodalia maintainers**. If private vulnerability reporting is enabled, open [getnodalia/letra](https://github.com/getnodalia/letra) and select **Security → Advisories → Report a vulnerability**. Otherwise, ask the repository maintainers for a private transfer method using only a minimal, non-exploitable public summary. Do not disclose working exploits, sensitive logs, credentials, or malicious test files publicly.
 
 Useful to include:
 - the Letra version or commit, and the platform (macOS, Windows, Linux, BSD, web);
