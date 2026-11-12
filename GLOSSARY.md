@@ -1,4 +1,4 @@
-# WordCraft
+# Letra
 
 A clean-room, Rust-native word processor. These are the words its interface, docs and code use for
 the same things.
@@ -6,7 +6,7 @@ the same things.
 ## Languages and proofing
 
 **Interface language**:
-The language of WordCraft's own menus, buttons and messages.
+The language of Letra's own menus, buttons and messages.
 _Avoid_: Display language, UI locale
 
 **Proofing language**:
@@ -21,7 +21,7 @@ _Avoid_: Dictionary download, language data (that is the embedded data)
 
 **Language list**:
 The proofing languages offered in Set Proofing Language, Review › Language and the status bar's
-menu: the languages WordCraft names, plus those of every installed (and, in Set Proofing Language,
+menu: the languages Letra names, plus those of every installed (and, in Set Proofing Language,
 every available) Language pack, each once.
 _Avoid_: Language menu (that is only one of the places it is shown)
 

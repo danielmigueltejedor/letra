@@ -1,6 +1,6 @@
 # Local document recovery
 
-Desktop WordCraft periodically keeps a local copy of unsaved work, including new drafts.
+Desktop Letra periodically keeps a local copy of unsaved work, including new drafts.
 File › Recover lists available copies. The page opens at startup when copies are found,
 unless a document was explicitly created or opened before the startup scan completed.
 In particular, a window launched for New/Open keeps the requested document visible;

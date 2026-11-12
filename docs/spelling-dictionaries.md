@@ -1,10 +1,10 @@
 # Installing languages and spelling dictionaries
 
-> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-11-03 · **Change:** trivial (Language packs are installed from Your languages and Add a language…; the Dictionaries folder is in Options › Language); previously trivial (Language packs: the missing-pack bar works on a fresh install and counts the caret's language); previously trivial (Language packs: language-packs-2 is published and pinned: 75 packs, adding Danish, German (Germany, Austria, Switzerland), Esperanto, Estonian, Persian, Croatian, Hungarian, Norwegian (Bokmål, Nynorsk), Dutch and Swedish (Sweden, Finland); Mongolian and Thai aren't packs yet); previously trivial (Language packs: the first set, language-packs-1, is published and pinned: 61 languages, and which aren't packs yet); previously minor (Language packs: install a language's spelling and hyphenation from File › Options › Language, or from the bar a document in that language shows; they are searched after the dictionaries folder and before the system's dictionaries; previously trivial: the Flatpak's own dictionaries folder; previously trivial: WordCraft's own dictionaries folder is searched on macOS and Linux too, as on Windows, so a dictionary dropped there works without a setting; previously minor: ISO 8859-9 Turkish dictionaries are read, #3692; previously minor: Spanish: `es_ES`, `es_MX`, `es_419` and `es_UY` with their fallbacks, #3360, #3553; previously trivial: every Hunspell language shows (no dictionary), not only Polish and Portuguese, and Indonesian is listed, #3150; previously trivial: ISO 8859-1 dictionaries are read, #2824)
+> **Last reviewed:** 2026-10-16 · **Last updated:** 2026-11-03 · **Change:** trivial (Language packs are installed from Your languages and Add a language…; the Dictionaries folder is in Options › Language); previously trivial (Language packs: the missing-pack bar works on a fresh install and counts the caret's language); previously trivial (Language packs: language-packs-2 is published and pinned: 75 packs, adding Danish, German (Germany, Austria, Switzerland), Esperanto, Estonian, Persian, Croatian, Hungarian, Norwegian (Bokmål, Nynorsk), Dutch and Swedish (Sweden, Finland); Mongolian and Thai aren't packs yet); previously trivial (Language packs: the first set, language-packs-1, is published and pinned: 61 languages, and which aren't packs yet); previously minor (Language packs: install a language's spelling and hyphenation from File › Options › Language, or from the bar a document in that language shows; they are searched after the dictionaries folder and before the system's dictionaries; previously trivial: the Flatpak's own dictionaries folder; previously trivial: Letra's own dictionaries folder is searched on macOS and Linux too, as on Windows, so a dictionary dropped there works without a setting; previously minor: ISO 8859-9 Turkish dictionaries are read, #3692; previously minor: Spanish: `es_ES`, `es_MX`, `es_419` and `es_UY` with their fallbacks, #3360, #3553; previously trivial: every Hunspell language shows (no dictionary), not only Polish and Portuguese, and Indonesian is listed, #3150; previously trivial: ISO 8859-1 dictionaries are read, #2824)
 
 English spelling works out of the box. Polish, Russian, Portuguese, Czech, Italian, Croatian,
 Turkish, Indonesian and Spanish spelling use a standard **Hunspell** dictionary (an `.aff` and a `.dic` file) that
-WordCraft reads at runtime. These dictionaries are not bundled: they are large, and several are
+Letra reads at runtime. These dictionaries are not bundled: they are large, and several are
 GPL or LGPL licensed. Without one, the language isn't checked. The status bar then shows the
 language with **(no dictionary)**, for example *Português (Brasil) (no dictionary)*.
 
@@ -13,7 +13,7 @@ size limit, a parse error), the language isn't checked either, and the status ba
 **(dictionary unreadable)** instead. Its tooltip gives the `.dic` file and the reason, and
 **File › Options › Language** (Dictionary files) lists the same reason next to the file.
 
-Install a dictionary once, restart WordCraft, and the language is checked as you type.
+Install a dictionary once, restart Letra, and the language is checked as you type.
 
 ## Language packs
 
@@ -23,7 +23,7 @@ built in; every other language is a pack.
 
 > The current set of Language packs (language-packs-2) has 75 languages, among them Dutch,
 > German, Danish, Swedish, Norwegian, Hungarian, Estonian, Croatian, Persian and Esperanto.
-> Mongolian isn't a pack yet (its suggestions are too slow), nor is Thai (WordCraft can't yet
+> Mongolian isn't a pack yet (its suggestions are too slow), nor is Thai (Letra can't yet
 > split Thai text, which has no spaces, into words). Basque,
 > Ukrainian and Uyghur aren't packs: their data's licence doesn't allow it, or isn't clear.
 
@@ -36,32 +36,32 @@ built in; every other language is a pack.
   search, see each pack's size, licence and a link to where it comes from, and click **Install**.
 - When a document has text in a language whose pack isn't installed, a bar under the ribbon says
   *Dutch proofing isn't installed.* with an **Install** button showing the download size. ✕ hides
-  it for that document. Once WordCraft has the list of packs, the bar shows only for a language
+  it for that document. Once Letra has the list of packs, the bar shows only for a language
   that has a pack. Before the list has been fetched (a fresh install, or the list of an older
-  WordCraft), it can't know, so it shows for a language that has no dictionary, with **Install**
+  Letra), it can't know, so it shows for a language that has no dictionary, with **Install**
   alone: clicking it gets the list, then the pack if there is one (if not, the bar goes). With
-  downloading on, WordCraft fetches a missing or out-of-date list by itself once. Choosing a
+  downloading on, Letra fetches a missing or out-of-date list by itself once. Choosing a
   language with nothing selected counts too.
-- Installing needs **downloading** on: the same single setting as WordCraft's font downloads
+- Installing needs **downloading** on: the same single setting as Letra's font downloads
   (the font store). Clicking Add a language…, Install or Refresh turns it on; nothing is
-  downloaded before. Each pack is checked against the sha256 in WordCraft's pinned list before it
+  downloaded before. Each pack is checked against the sha256 in Letra's pinned list before it
   is used.
 - Text in that language is checked and hyphenated as soon as the pack is installed: no restart.
 - **Help › About › Language data** shows the full licence text of the built-in English data and
   of every installed pack.
-- Packs live in the font store's folder, under `language-packs/<language>/`, so every Craft app
+- Packs live in the font store's folder, under `language-packs/<language>/`, so every Nodalia app
   uses the same ones.
 - Agents and scripts use the commands `proof.packs`, `proof.installPack {"locale": "nl"}` and
   `proof.removePack {"locale": "nl"}` (see [MCP](mcp.md#language-packs)). They install only while
   downloading is on; only you can turn it on, with your own click in the app.
 - The web version has no Language packs; it proofs English.
 
-A dictionary you install yourself (below) still wins: WordCraft looks in the dictionaries folder,
+A dictionary you install yourself (below) still wins: Letra looks in the dictionaries folder,
 then the installed pack, then the system's dictionaries.
 
 ## Which files each language needs
 
-WordCraft looks for the first of these file names (each name means a `<name>.aff` and
+Letra looks for the first of these file names (each name means a `<name>.aff` and
 `<name>.dic` pair in the same folder):
 
 | Language | File names | Common source |
@@ -92,7 +92,7 @@ The files may be UTF-8 or the encoding named on the `.aff`'s `SET` line (ISO 885
 ISO 8859-9, KOI8-R and Windows-1251 are read as well; the original VERO `pt_BR` is ISO 8859-1, older
 Turkish `tr_TR` dictionaries ISO 8859-9).
 
-## Where WordCraft looks
+## Where Letra looks
 
 The first folder holding a matching pair wins:
 
@@ -100,15 +100,15 @@ The first folder holding a matching pair wins:
    way on every system, and it works for an app started from the Start menu, Finder or the Dock.
    Your languages marks each language it supplies *Your own dictionary*, and the **Dictionary
    files** list under it shows the file each language found.
-2. The folder in the `WORDCRAFT_DICTIONARIES` environment variable, and WordCraft's own
+2. The folder in the `WORDCRAFT_DICTIONARIES` environment variable, and Letra's own
    `dictionaries` folder (the first row of each system below).
 3. An installed [Language pack](#language-packs) for the language.
 4. The system's usual places:
 
 | System | Folders |
 |---|---|
-| Windows | `%LOCALAPPDATA%\WordCraft\dictionaries`, `%LOCALAPPDATA%\hunspell`, `%APPDATA%\WordCraft\dictionaries`, `%APPDATA%\hunspell`, LibreOffice's `share\extensions\dict-*` under `Program Files` (on any drive) |
-| macOS | `~/Library/Application Support/WordCraft/dictionaries`, `~/Library/Spelling`, `/Library/Spelling`, `/opt/homebrew/share/hunspell`, `/usr/local/share/hunspell`, `/Applications/LibreOffice.app/Contents/Resources/extensions/dict-*` |
+| Windows | `%LOCALAPPDATA%\Letra\dictionaries`, `%LOCALAPPDATA%\hunspell`, `%APPDATA%\Letra\dictionaries`, `%APPDATA%\hunspell`, LibreOffice's `share\extensions\dict-*` under `Program Files` (on any drive) |
+| macOS | `~/Library/Application Support/Letra/dictionaries`, `~/Library/Spelling`, `/Library/Spelling`, `/opt/homebrew/share/hunspell`, `/usr/local/share/hunspell`, `/Applications/LibreOffice.app/Contents/Resources/extensions/dict-*` |
 | Linux and BSD | `$XDG_DATA_HOME/wordcraft/dictionaries` (default `~/.local/share/wordcraft/dictionaries`), `~/.local/share/hunspell`, `/usr/share/hunspell`, `/usr/share/myspell`, `/usr/share/myspell/dicts`, `/usr/local/share/hunspell`, `/usr/local/share/myspell`, LibreOffice's `share/extensions/dict-*` under `/usr/lib/libreoffice` or `/opt/libreoffice` |
 
 The Flatpak runs in a sandbox: its `$XDG_DATA_HOME` is
@@ -127,15 +127,15 @@ VERO, the Brazilian Portuguese dictionary LibreOffice ships, is available from t
 
 ### If LibreOffice is installed
 
-Nothing to do: WordCraft finds LibreOffice's `dict-pt-BR` extension on its own. Restart
-WordCraft after installing LibreOffice.
+Nothing to do: Letra finds LibreOffice's `dict-pt-BR` extension on its own. Restart
+Letra after installing LibreOffice.
 
 ### Windows
 
 In PowerShell:
 
 ```powershell
-$d = "$env:LOCALAPPDATA\WordCraft\dictionaries"
+$d = "$env:LOCALAPPDATA\Letra\dictionaries"
 New-Item -ItemType Directory -Force $d | Out-Null
 $base = "https://raw.githubusercontent.com/LibreOffice/dictionaries/master/pt_BR"
 Invoke-WebRequest "$base/pt_BR.aff" -OutFile "$d\pt_BR.aff" -UseBasicParsing
@@ -174,7 +174,7 @@ from the LibreOffice repository (for example `it_IT/it_IT.aff`; the Spanish ones
 
 ## Checking that it works
 
-- Restart WordCraft. The status bar no longer says **(no dictionary)**, and a misspelled word
+- Restart Letra. The status bar no longer says **(no dictionary)**, and a misspelled word
   such as `impramir` is underlined, with `imprimir` among its suggestions.
 - **File › Options › Language** (Dictionary files) lists the file each language found.
 - From the command line:
@@ -184,7 +184,7 @@ from the LibreOffice repository (for example `it_IT/it_IT.aff`; the Spanish ones
   ```
 
   The `review.issues` line lists `impramir` as a spelling issue with its suggestions.
-- The log file (`%APPDATA%\WordCraft\logs\wordcraft.log` on Windows) says
+- The log file (`%APPDATA%\Letra\logs\wordcraft.log` on Windows) says
   `Portuguese spelling: no Hunspell pt_BR dictionary installed` when none was found.
 
 Never commit dictionary files to this repository: they stay on the user's system.
@@ -201,7 +201,7 @@ Never commit dictionary files to this repository: they stay on the user's system
 | 2026-11-01 | minor | Language packs (CP4.3): installing a language from File › Options › Language or the missing-pack bar, the download consent, About › Language data, the commands; an installed pack is searched after the dictionaries folders and before the system's |
 | 2026-10-22 | minor | Spanish (#3360, #3553): the file names for Spain, Mexico, Latin America and Uruguay and their fallbacks |
 | 2026-10-22 | trivial | Italian, Croatian, Turkish, Russian, Czech and Indonesian without a dictionary now show **(no dictionary)** (or **(dictionary unreadable)**) too, as this page already said; before, only Polish and Portuguese did. Indonesian is listed with its file names (#3150) |
-| 2026-11-01 | trivial | WordCraft's own `dictionaries` folder under the user's application data is searched on macOS (`~/Library/Application Support/WordCraft/dictionaries`) and Linux/BSD (`$XDG_DATA_HOME/wordcraft/dictionaries`) too, before the system folders, as it was on Windows (craft-proof; ported from storytold/craft-libs#31 by brzuchal) |
+| 2026-11-01 | trivial | Letra's own `dictionaries` folder under the user's application data is searched on macOS (`~/Library/Application Support/Letra/dictionaries`) and Linux/BSD (`$XDG_DATA_HOME/wordcraft/dictionaries`) too, before the system folders, as it was on Windows (craft-proof; ported from storytold/craft-libs#31 by brzuchal) |
 | 2026-10-23 | trivial | ISO 8859-9 (`SET ISO8859-9`) dictionaries are read, so an older Turkish `tr_TR` loads without converting it to UTF-8; the Turkish dictionary is read through the same size-capped reader and `SET` decoding as the others (#3692) |
 | 2026-10-18 | trivial | ISO 8859-1 (`SET ISO8859-1`) dictionaries are read, so the original VERO `pt_BR` works without converting it to UTF-8 (#2824) |
 | 2026-10-18 | minor | An installed dictionary that can't be read shows **(dictionary unreadable)** in the status bar, with the file and reason in its tooltip and in File › Options › Proofing (#2830) |

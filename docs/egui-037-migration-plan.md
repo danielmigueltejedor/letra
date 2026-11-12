@@ -1,4 +1,4 @@
-# WordCraft: egui 0.37 migration plan
+# Letra: egui 0.37 migration plan
 
 **Status:** current-main reconciliation through `b4da59f0c38b506c36629b1d812ad7c0519fc238` passed all eight mandatory CI stages on 2026-10-25: 4,270 passing test executions, zero failures and 4 ignored (`egui037-wordcraft-main-refresh-ci-20261025-0603`). This includes main's encrypted-DOCX integrity requirement and selected-paragraph-mark highlight behavior. The dependency pins and lockfile are unchanged. A fresh review verified that the merge preserves the IME documentation and upstream fixes. Earlier counts and source snapshots below are historical.
 
@@ -14,7 +14,7 @@ phonetic labels and preserved notice/packaging source repair.
 Native GUI/IME/capture/save-reopen traces, package notice verification, paired performance,
 platform/installer execution and app publication remain separate gates. This records local
 work, not publication or complete platform acceptance. Historical notes below remain history.
-**Scope:** the WordCraft checkout at
+**Scope:** the Letra checkout at
 `/home/codex/work/CraftApps/egui037-migration-20261022/wordcraft-implementation`.
 **Baseline source:** `3a4770ef8ce037d2650c93e2d5764536549357c7` ("Merge pull request #3286 from
 matstrange/fix/protection-inspect-tracking"), workspace version 0.10.0, edition 2024,
@@ -49,12 +49,12 @@ Earlier baseline and research revisions below remain historical references.
 
 This plan follows the suite contract in
 `craft-libs/docs/egui-037-suite-rollout.md` and the planning contract. It records only
-WordCraft-specific source, behavior and evidence. The shared rollout plan remains the authority
+Letra-specific source, behavior and evidence. The shared rollout plan remains the authority
 for suite-wide publication order and the shared performance protocol.
 
 ## 1. What is and is not changing
 
-WordCraft already uses the 0.36 `App::logic` / `App::ui` split and an existing root `Ui`.
+Letra already uses the 0.36 `App::logic` / `App::ui` split and an existing root `Ui`.
 `App::logic` is already called before every UI pass, including repeated passes; `App::ui`
 already receives the root `Ui`. The 0.37 migration must preserve that architecture rather than
 rewriting it. The real work is:
@@ -130,7 +130,7 @@ Relevant cfgs are all in the UI/app boundary, not in lower layers:
   `apps/wordcraft/src/clipboard.rs` use `wl-clipboard-rs` for the **regular** Wayland
   clipboard (formats/text/pictures); they do not read or write PRIMARY
   (`ClipboardType::Regular` only, `clipboard.rs:135-160`). Middle-click on the canvas is
-  WordCraft's autoscroll, not a PRIMARY paste (`autoscroll.rs:1-10`).
+  Letra's autoscroll, not a PRIMARY paste (`autoscroll.rs:1-10`).
 - `cfg(all(unix, not(target_os = "macos")))`: app `winit` X11; XWayland selection is in
   `main.rs:404-413`.
 - `cfg(target_os = "macos")`: `fmv-macos-events`, `objc2-app-kit`, `dispatch2`; termination
@@ -169,18 +169,18 @@ Required prerequisites, all in the approved revisions above:
   serial for the focused seat, with origin and epoch; only serving/reading is async, using the
   total-deadline (2 s), byte (16 MiB), worker (4 readers, 2 writers, queue 8) bounds. A live
   per-owner completion waker routes only to the still-current request; canceled/stale results
-  are discarded. WordCraft's application clipboard stays regular-only; built-in `TextEdit`
+  are discarded. Letra's application clipboard stays regular-only; built-in `TextEdit`
   PRIMARY is tested only where the feature graph enables it.
 - **E21b/P7b + winit W27 lifecycle:** the complete shared contract in `egui` plan §6 E21b and
   winit plan §5.2.3/§5.2.2, not a partial restatement. It includes the owner/context generation
   on both Available and Unavailable, distinct explicitly-sent empty Available payloads, cache
   clearing plus a committed disable/enable transition on owner/unavailable changes, the latest
   completed pass (including `None`) as authoritative, and current-epoch serial-mismatch
-  handling that applies incoming edits once while deferring outgoing state. WordCraft's two
+  handling that applies incoming edits once while deferring outgoing state. Letra's two
   canvas producers need real model adapters.
 - **P7c selected UI-regression fixes:** the fork owns the selected #8763 click-away selection
   fix and #8748 hidden-parent/child fix, with pointer and keyboard regressions. #8764 remains
-  only a proposal input. WordCraft has no child viewports, so #8748 is a dependency-series
+  only a proposal input. Letra has no child viewports, so #8748 is a dependency-series
   gate rather than app behavior, but no app workaround substitutes for P7c.
 
 The root `[patch.crates-io]` must contain every crate whose crates.io identity would otherwise
@@ -215,10 +215,10 @@ all with the intended `git+...#<sha>` source and no `path` source.
   on the earlier `49190884278f16c9a9f5823d7698a8ffb5deb062` main describe how that base was
   assembled; they are no longer the base to apply. Preserve intervening fixes and provenance,
   and re-run the actual gates; neither PR 199 nor historical checks qualify the resulting
-  tree. WordCraft pins the published CL-1 plus CL-2F revision in the same atomic dependency
+  tree. Letra pins the published CL-1 plus CL-2F revision in the same atomic dependency
   stage as the egui/winit pins (section 9), never after a 0.37-only first step.
 - **craft-libs #192 / print types** already landed on the path to PR 199: `craft-ui::printing::Printer`
-  gains `label`; `craft-print::Printer` gains `description`. WordCraft must adapt when it moves
+  gains `label`; `craft-print::Printer` gains `description`. Letra must adapt when it moves
   its `craft-ui`/`craft-print` pin:
   - `apps/wordcraft/src/print.rs:8` builds `printing::Printer` from
     `craft_print::printers()`; add `label: printer.description`.
@@ -226,7 +226,7 @@ all with the intended `git+...#<sha>` source and no `path` source.
     `label: String::new()` or `..Default::default()`.
   - `crates/ui-egui/src/printing.rs` continues to re-export the shared types and labels.
 - **craft-libs #198** is a language-support proposal/issue, not a merged dependency. Its
-  requirements that matter to WordCraft are already represented in fork patches E5/E12/E13/E16/E17/
+  requirements that matter to Letra are already represented in fork patches E5/E12/E13/E16/E17/
   E19/E21: logical text at OS/accessibility boundaries, no double bidi, IME replacement by bytes,
   and Latin shortcut keys on non-Latin layouts. Do not import the proposal's locale/formatting
   roadmap or any prohibited font asset into this migration.
@@ -235,21 +235,21 @@ all with the intended `git+...#<sha>` source and no `path` source.
 
 The fork is a superset of 0.37.0 plus the suite patches documented in its `PATCHES.md`. The
 completed P8 revision retains the whole series; do not delete unrelated patches to reduce the
-diff. WordCraft consumes only that published P8 revision, never the aiongg candidate or an
-intermediate stage. The WordCraft-relevant patches are:
+diff. Letra consumes only that published P8 revision, never the aiongg candidate or an
+intermediate stage. The Letra-relevant patches are:
 
-| Patch | Relevance to WordCraft | Decision |
+| Patch | Relevance to Letra | Decision |
 |---|---|---|
 | E1 eframe viewport hooks | No child viewports today | Retain; do not adopt. |
 | E2+E3 egui-wgpu surface fit/error scopes | Protects large windows and device setup | Retain; test large/high-DPI window and device-error paths. |
-| E4 egui-winit Wayland clipboard | WordCraft reads the regular clipboard through arboard/wl-clipboard-rs; E4 changes egui-winit's own path | Required fork prerequisite with the complete P2b/W15P contract (synchronous pointer-or-keyboard claim, bounded async transfer); test the app's regular clipboard separately and do not assume E4 replaces WordCraft's HTML/RTF/MathML path. Do not add app-level PRIMARY paste. |
-| E5/E12/E16 bidi shaping, direction, caret affinity | Replaces WordCraft's manual `bidi_display`/`visual_row` workarounds | Required. Remove double processing; use logical text and fork layout. |
+| E4 egui-winit Wayland clipboard | Letra reads the regular clipboard through arboard/wl-clipboard-rs; E4 changes egui-winit's own path | Required fork prerequisite with the complete P2b/W15P contract (synchronous pointer-or-keyboard claim, bounded async transfer); test the app's regular clipboard separately and do not assume E4 replaces Letra's HTML/RTF/MathML path. Do not add app-level PRIMARY paste. |
+| E5/E12/E16 bidi shaping, direction, caret affinity | Replaces Letra's manual `bidi_display`/`visual_row` workarounds | Required. Remove double processing; use logical text and fork layout. |
 | E6 IME focus request | Text fields and canvas IME | Retain; test preedit/focus. |
 | E7/E19 Latin keys on non-Latin layouts | App shortcuts use `Event::Key.key`; fork supplies Latin layout characters | Required for shortcut parity; test Russian/Arabic/Hebrew layouts. |
 | E8 TextEdit glyph overshoot | Dialogs and custom combo fields | Retain; visual test combining marks/Thai/Vietnamese. |
-| E9 RTL UI mirroring | WordCraft has no RTL interface catalog yet | Retain as capability; do not enable a half-mirrored UI without a locale. |
+| E9 RTL UI mirroring | Letra has no RTL interface catalog yet | Retain as capability; do not enable a half-mirrored UI without a locale. |
 | E10 web named keys/language | Browser shortcuts and hidden input | Required for web; test browser workflow. |
-| E11 vello single-threaded glyph rasterization | WordCraft's page renderer is separate; epaint UI glyphs still use it | Retain; no app change unless `vello_cpu` feature use is introduced. |
+| E11 vello single-threaded glyph rasterization | Letra's page renderer is separate; epaint UI glyphs still use it | Retain; no app change unless `vello_cpu` feature use is introduced. |
 | E13 grapheme editing | Fork TextEdit/caret behavior; app's document editing is engine-owned | Retain; ensure no duplicate grapheme handling; test emoji/combining. |
 | E14 fallback baseline | CJK/Indic UI fallbacks | Retain; test CJK/Indic interface text. |
 | E15 line breaker | egui UI text (ribbon, dialogs); document layout is app-owned | Retain; do not move document layout to epaint. |
@@ -257,12 +257,12 @@ intermediate stage. The WordCraft-relevant patches are:
 | E18 eframe UI language | Could replace app-side `Frame` language plumbing | Evaluate; not required. |
 | E20 widget text language | Dialog/ribbon text layout | Retain; test CJK/Thai line breaking. |
 | E21 `ImeEvent::DeleteSurroundingBytes` | Desktop macOS/Wayland IME replacement | Required. Add a byte-range path alongside the existing char-count web path. |
-| E21b/P7b outgoing IME surrounding text | Canvas/Wayland surrounding-text support; the candidate has incoming deletion only | Required fork prerequisite under the complete E21b/W27 contract (owner generation, empty-Available, serial/epoch rules). TextEdit producer and W27 adapter; both WordCraft canvas producers need real model/preedit/UTF-8 adapters. |
+| E21b/P7b outgoing IME surrounding text | Canvas/Wayland surrounding-text support; the candidate has incoming deletion only | Required fork prerequisite under the complete E21b/W27 contract (owner generation, empty-Available, serial/epoch rules). TextEdit producer and W27 adapter; both Letra canvas producers need real model/preedit/UTF-8 adapters. |
 
 Winit provenance: the final pin must be the completed, approved, published `storytold/winit`
 revision containing W1-W15 minus W5, plus W17-W27 including W20 as W5’s replacement including the W27 lifecycle revision, and the
 W15P PRIMARY path. The inspected `8b35388` `ai-lang` commit is an aiongg research input, not a production
-pin. WordCraft's existing issue references (#787, #721 and related IME/DPI fixes) depend on
+pin. Letra's existing issue references (#787, #721 and related IME/DPI fixes) depend on
 W1-W15; do not compare only against upstream 0.30.13 and conclude the patches are new. The patch
 table records the removal condition for each. No wordcraft vendor directory exists, so no vendor
 deletion is part of this plan.
@@ -317,7 +317,7 @@ Affected constructors and patterns:
   `:6094`).
 - Add `..` to patterns where the source is not used. For tests, use `Wheel` or `Trackpad` to
   match the behavior under test; for the control channel use `Unknown`.
-- Preserve `CanvasScroll` behavior: WordCraft disables egui's canvas wheel handling
+- Preserve `CanvasScroll` behavior: Letra disables egui's canvas wheel handling
   (`ScrollArea::scroll_source { mouse_wheel: false }`) and computes its own delta. Do not start
   feeding the same momentum twice. The app's `SYNTH_MOMENTUM` policy remains Linux/BSD-only;
   macOS/Windows/Web already send their own momentum. Use `source` only for diagnostics/future
@@ -382,9 +382,9 @@ changes the role to `Unknown` must fail the explicit role query.
   returns immediately when `pending_shots` is empty.
 - `crates/ui-egui/src/control.rs:312` `save_screenshot(&ColorImage, path)` encodes/writes.
 
-Required design. WordCraft is one of the eleven `craft-ui` capture consumers and adopts the
+Required design. Letra is one of the eleven `craft-ui` capture consumers and adopts the
 shared helper only after CL-2F freezes it; it does not take the provisional CL-2 revision used
-by the DesignCraft/GridCraft pilots. The callback contract is:
+by the Pliego/Celdas pilots. The callback contract is:
 
 - Keep request admission, paths, reply schema, settling delay and the 8 s deadline in
   `WordApp`. Each request record owns a strong completion slot and waker; the
@@ -430,10 +430,10 @@ by the DesignCraft/GridCraft pilots. The callback contract is:
 - `ui_shot` uses `Harness::render`, not the viewport callback; keep it as a separate headless
   path. Do not make `ui.render` depend on the native callback.
 - The suite has fourteen capture consumers. The eleven existing `craft-ui` consumers require
-  CL-1 and CL-2F; only the DesignCraft/GridCraft pilots use the reviewed CL-2 provisional
-  revision, and their adapters are reviewed before CL-2F freezes the API. DeckCraft, FigCraft
+  CL-1 and CL-2F; only the Pliego/Celdas pilots use the reviewed CL-2 provisional
+  revision, and their adapters are reviewed before CL-2F freezes the API. Lámina, FigCraft
   and ArtCraft Native keep contract-compatible local adapters; `ai-egui` has no capture path.
-  Do not add `craft-ui` solely for capture; if DeckCraft/FigCraft later adopt it, WordCraft's
+  Do not add `craft-ui` solely for capture; if Lámina/FigCraft later adopt it, Letra's
   adapter stays unchanged.
 
 Tests: four-request/128 MiB/256 MiB admission, two outstanding requests with distinct
@@ -466,7 +466,7 @@ domain ids. The replacement applies only to egui `Ui`.
 
 `Panel::left/right/top/bottom` in 0.37 take `impl AsIdSalt`, not `impl Into<Id>`; the panel id
 is now `parent_scope.with(IdSalt)`. Existing string literals in `chrome.rs`, `panes.rs`,
-`backstage.rs` and `ribbon.rs` compile, but their effective ids change. WordCraft does not persist
+`backstage.rs` and `ribbon.rs` compile, but their effective ids change. Letra does not persist
 panel sizes in `ui.json` or enable egui `persistence`, so the only consequence is fresh in-process
 panel state after upgrade. Verify:
 
@@ -486,7 +486,7 @@ panel state after upgrade. Verify:
 `egui_kittest`'s normal `[dependencies] egui` uses `default-features = false`; only kittest's
 own `[dev-dependencies]` enable `default_fonts`/`monochrome_emoji_fonts`, and a dependency's
 dev-dependencies do not propagate. Neither kittest's manifest nor its dev-dependency graph
-supplies fonts to WordCraft's test root. WordCraft's `theme::font_definitions_language` starts from
+supplies fonts to Letra's test root. Letra's `theme::font_definitions_language` starts from
 `FontDefinitions::default()`, inserts `Inter` at index 0, pushes `SourceSans` at the end, then
 appends CJK/system faces (`theme.rs:536-620`). With `default_fonts` the default proportional
 family is `["Ubuntu-Light", "egui-icons"]`; with `monochrome_emoji_fonts` it is
@@ -507,7 +507,7 @@ Concrete fix:
 - Make `wordcraft-ui-egui` test features explicit with `egui` dev-dependency features
   `default_fonts` and `monochrome_emoji_fonts`; these are egui features, not kittest features.
   Do not rely on kittest's private dev-dependencies: without this explicit declaration the
-  test root is font-empty apart from WordCraft's own assets. Do not enable
+  test root is font-empty apart from Letra's own assets. Do not enable
   `monochrome_emoji_fonts` in production just to make the test order match.
 - Add a font coverage test that asserts the exact prefix/position for the feature set under
   test: `Inter` at 0, `Ubuntu-Light` and `egui-icons` in the default fallback block,
@@ -530,7 +530,7 @@ inputs after `Harness::run`, so S1 cannot leave `cargo xtask ci` green without t
 ### 4.8 kittest 0.37 stricter defaults
 
 `egui_kittest` 0.37 fails tests when an input widget has no accessible name and panics on a glyph
-no installed font can draw. WordCraft has many custom-drawn controls and many `TextEdit`s whose
+no installed font can draw. Letra has many custom-drawn controls and many `TextEdit`s whose
 adjacent labels are not attached. The migration must not disable these checks globally.
 
 - First run the UI suite with defaults; enumerate `Harness::unnamed_widgets()`.
@@ -562,7 +562,7 @@ print settings schema unchanged.
 
 ### 4.10 Text: remove double bidi and handle byte IME replacement
 
-This is the highest-risk app-specific change. WordCraft manually reorders right-to-left text for
+This is the highest-risk app-specific change. Letra manually reorders right-to-left text for
 egui 0.36:
 
 - `crates/ui-egui/src/canvas.rs:2132-2185` `has_rtl`/`bidi_display`/`visual_row`, used by
@@ -621,7 +621,7 @@ IME byte replacement:
 never calls `WindowExtWayland::set_ime_surrounding_text`, and `egui::IMEOutput` has no logical
 text (`data/output.rs:100-114`). E21's incoming delete/commit is not full surrounding-text
 support. The complete contract is owned by `egui` plan §6 E21b and winit plan §5.2.3/§5.2.2;
-WordCraft depends on it and does not restate a weaker subset. It provides:
+Letra depends on it and does not restate a weaker subset. It provides:
 an owner/context generation present for both Available and Unavailable; a valid empty document
 as Available, explicitly sent as `set_surrounding_text("", 0, 0)` plus commit, distinct from
 Unavailable; a bounded transient payload (logical committed text, UTF-8 byte cursor/anchor,
@@ -632,7 +632,7 @@ including authoritative `None`, as the only published value; and current-epoch `
 mismatch applying incoming edits once while deferring outgoing state until a matching serial,
 with obsolete epochs invalidated.
 
-Both WordCraft canvas producers (`crates/ui-egui/src/canvas.rs:1556-1561` math/equation caret
+Both Letra canvas producers (`crates/ui-egui/src/canvas.rs:1556-1561` math/equation caret
 and `:1633-1638` text caret) need real model adapters, not `None`: derive the bounded logical
 paragraph/equation excerpt and byte cursor/anchor from `session.sel`/the equation editor,
 convert scalar/grapheme positions deliberately, exclude `ime_preedit`/`ime_preedit_range`,
@@ -668,7 +668,7 @@ grapheme/backspace rules remain the source of truth for document editing.
 
 ### 4.12 GPU, surface and texture behavior
 
-WordCraft uses wgpu 30 on native and WebGPU/WebGL2 on web; `graphics.rs` configures Windows
+Letra uses wgpu 30 on native and WebGPU/WebGL2 on web; `graphics.rs` configures Windows
 DX12/FXC and the Intel-Mac indirect-validation skip. wgpu and winit versions do not change, so
 those APIs should compile; revalidate anyway under the new eframe/egui-wgpu:
 
@@ -722,7 +722,7 @@ state and leaves events/time/layout from the previous UI pass. However a pending
 actions_requested.any(ActionRequested::wants_paint)`), so `ViewportInfo::visible()` is not a
 phase indicator. After a normally completed `run_ui`, `current_pass_index()` is zero
 (`end_pass` takes the output); do not use a stale nonzero index as evidence of hidden work.
-This is the exact contract the WordCraft code must be audited against.
+This is the exact contract the Letra code must be audited against.
 
 ### 5.2 `logic` is currently mostly idempotent; fix the exceptions
 
@@ -1010,7 +1010,7 @@ alone is not browser acceptance.
 
 ## 8. Performance protocol
 
-Use the shared protocol in `craft-libs/docs/egui-037-suite-rollout.md` and make WordCraft-specific
+Use the shared protocol in `craft-libs/docs/egui-037-suite-rollout.md` and make Letra-specific
 measurements. Floors: at least 10 warmups and 30 timed steady-operation iterations, at least 20
 fresh processes for startup, and at least 1,000 frames for any frame distribution with p99.
 Licensed pinned fixtures apply; an app may tighten floors, never loosen them.
@@ -1107,7 +1107,7 @@ S0/P0 baseline harness + instrumentation (no production behavior)
   shared 4-request/128 MiB/256 MiB admission, geometry/DPI/zoom epoch cancel/retry,
   `RequestPaintWhileHidden` for queued hidden requests, timeout/cancel/late-result tests, forced
   hidden pass, visual review and explicit role assertions. Adopt `craft_ui::capture` only after
-  CL-2F freezes the API in S1; S2 expands stress tests. WordCraft needs CL-1 and CL-2F, while only the DesignCraft/GridCraft
+  CL-2F freezes the API in S1; S2 expands stress tests. Letra needs CL-1 and CL-2F, while only the Pliego/Celdas
   pilots use the reviewed CL-2 provisional revision. If CL-2F is not available, wait; do not
   publish a provisional adapter.
 - **S3:** extend native grapheme/IME/bidi coverage and optional language policy on Context.
@@ -1141,7 +1141,7 @@ S3 alone may be reverted only because it contains later policy/tests, not requir
 1. **craft-libs PR 199 is open/conflicting at inspection.** Its head `b68de8c` and historical
    `ec8840a` tree must not be merged; port only the `8614e4a` API hunks and `1764bca` README
    changes onto current `4919088`, preserving intervening fixes. The reviewed and published
-   CL-1 `craft-ui`/`craft-print` revision is a prerequisite for the WordCraft pin and must land
+   CL-1 `craft-ui`/`craft-print` revision is a prerequisite for the Letra pin and must land
    in the same atomic dependency stage (section 9).
 2. **Fork publication/reachability.** Final pins must be the completed P8 `storytold/egui`
    and completed `storytold/winit` revisions: approved, reachable and immutable. Their SHAs do
@@ -1150,16 +1150,16 @@ S3 alone may be reverted only because it contains later policy/tests, not requir
    stage in the release manifest.
 3. **P7c selection/UI-regression fixes.** P7c owns the selected #8763 and #8748 fixes;
    #8764 is an open, unmerged proposal input. The approved P8 revision must contain the central
-   fixes and their pointer/keyboard regressions; a WordCraft workaround is not an accepted
+   fixes and their pointer/keyboard regressions; a Letra workaround is not an accepted
    substitute.
 4. **E21b/P7b and E4/P2b+W15P prerequisites.** The approved revisions must satisfy the complete
    shared contracts in `egui` plan §6 E21b/E4 and winit plan §5.2/§5.3, including the W27
    lifecycle/serial rules, the W15P pointer-or-keyboard synchronous claim and bounded async
-   transfer. WordCraft's two canvas producers need real model/preedit/UTF-8 adapters.
+   transfer. Letra's two canvas producers need real model/preedit/UTF-8 adapters.
 5. **Capacity and platform evidence.** Host build reservations, a Windows clone, a Wayland
    compositor, a browser with WebGPU/WebGL2, and macOS hardware are separate gates. Missing
    evidence remains an explicit blocker, not a pass.
-6. **Upstream #8731/#8736 measurements** are not yet reproduced on WordCraft. They may require a
+6. **Upstream #8731/#8736 measurements** are not yet reproduced on Letra. They may require a
    reviewed fork patch or a documented tradeoff; do not accept a clamp-only texture change.
 7. **Strict names/glyph sweep.** The exact list of unnamed inputs is unknown until the suite
    runs. Fixing names and glyph coverage is part of S1, required rather than disabling the
@@ -1175,12 +1175,12 @@ S3 alone may be reverted only because it contains later policy/tests, not requir
     wakeups and RSS are not measurable with the current tools and must be added before
     production edits. Harness CPU time is not presented-frame latency.
 11. **Font/emoji policy.** The actual family order is `Inter, Ubuntu-Light, egui-icons,
-    SourceSans, ...` (with `monochrome_emoji_fonts` explicitly enabled on WordCraft's test
+    SourceSans, ...` (with `monochrome_emoji_fonts` explicitly enabled on Letra's test
     root, not inherited from kittest), not the earlier proposed order. The UI has no color
     emoji; document emoji use a pinned test fixture or a recorded native platform result.
 12. **Craft-libs #198** remains a proposal, not a dependency. Do not silently include its
     locale/formatting scope or font assets.
-13. **`craft-print`/`craft-ui` #192** changes public print fields; confirm no other WordCraft
+13. **`craft-print`/`craft-ui` #192** changes public print fields; confirm no other Letra
     caller constructs these structs without the new field.
 14. **Panel ids and any persisted egui state.** The app does not enable egui persistence now;
     if that changes, old panel ids will not load. Record this as an explicit non-goal or add a
@@ -1227,7 +1227,7 @@ Immutable or primary sources used for the API and behavior statements above:
 - Pinned font fixtures (craft-fonts `2481a8a...`, Noto Color Emoji v2.047):
   <https://github.com/storytold/craft-fonts/blob/2481a8a324b986a45954e90045ed1f8f2efaaf3c/fonts/manifest.txt>
   and <https://github.com/googlefonts/noto-emoji/blob/22e564626297b4df0a40570ad81d6c05cc7c38bd/fonts/NotoColorEmoji.ttf>.
-- Upstream reports used as risk hypotheses, not reproduced WordCraft results:
+- Upstream reports used as risk hypotheses, not reproduced Letra results:
   <https://github.com/emilk/egui/issues/8731>,
   <https://github.com/emilk/egui/issues/8736>,
   <https://github.com/emilk/egui/issues/8763>,
@@ -1413,7 +1413,7 @@ current immutable pins and bounded remaining acceptance gates; preserve earlier 
 ### Bundled-font notice completion — pending package verification
 
 Canonical egui0.37 default_fonts embeds `EGUI_ICONS` (the small emoji-icon-font subset), and
-monochrome_emoji_fonts embeds its parent emoji-icon-font face. WordCraft starts from
+monochrome_emoji_fonts embeds its parent emoji-icon-font face. Letra starts from
 `FontDefinitions::default()` in `theme.rs`. NOTICE now carries the exact upstream MIT text,
 including Copyright (c) 2014 John Slegers, and ATTRIBUTION identifies both dependency assets.
 The PDF notice names the actual pinned 17744430 revision. Shared Linux/web/CLI staging, macOS app

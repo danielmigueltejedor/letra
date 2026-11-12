@@ -2,13 +2,13 @@
 
 > **Last reviewed:** 2026-11-04 · **Last updated:** 2026-11-04 · **Change:** trivial (paragraphs tied together kept as read as groups); previously trivial (paragraphs with charts kept as read); previously trivial (sections in table cells and at empty paragraphs kept); previously trivial (password, number, time and grid form controls kept); previously minor (first version: every element of the ODF 1.3 schema against two corpora and a generated sample of each element never seen)
 
-Every element the ODF 1.3 schema (OASIS, Part 3, RELAX NG) defines, checked against what WordCraft's ODT reader and writer do with it. The question for each: does a file holding it open, and does a save without edits keep it? (See [file-format-parity.md](file-format-parity.md) for what WordCraft models; markup it doesn't model is written back as read while unedited: [odf-interpretation.md](odf-interpretation.md).)
+Every element the ODF 1.3 schema (OASIS, Part 3, RELAX NG) defines, checked against what Letra's ODT reader and writer do with it. The question for each: does a file holding it open, and does a save without edits keep it? (See [file-format-parity.md](file-format-parity.md) for what Letra models; markup it doesn't model is written back as read while unedited: [odf-interpretation.md](odf-interpretation.md).)
 
 ## Method
 
 1. **The schema**: its 596 element names, by namespace.
-2. **Two corpora** (kept locally, not in the repository): 133 documents (LibreOffice's templates, bug-tracker and converter files, documents made for the checks) and 232 from the ODF Toolkit's and Calligra's test data, made by Microsoft Office, OpenOffice.org, StarOffice, LibreOffice, Calligra/KOffice, Lotus Symphony and others. Each is opened and saved by WordCraft, both copies are rendered by LibreOffice and compared page by page and by text, and a loss check lists every element, attribute and value the saved file has fewer of.
-3. **Elements no file held**: a small document of our own for each one a text document can hold, opened and saved by WordCraft without edits and with an edit, each saved copy checked well-formed and opened in LibreOffice.
+2. **Two corpora** (kept locally, not in the repository): 133 documents (LibreOffice's templates, bug-tracker and converter files, documents made for the checks) and 232 from the ODF Toolkit's and Calligra's test data, made by Microsoft Office, OpenOffice.org, StarOffice, LibreOffice, Calligra/KOffice, Lotus Symphony and others. Each is opened and saved by Letra, both copies are rendered by LibreOffice and compared page by page and by text, and a loss check lists every element, attribute and value the saved file has fewer of.
+3. **Elements no file held**: a small document of our own for each one a text document can hold, opened and saved by Letra without edits and with an edit, each saved copy checked well-formed and opened in LibreOffice.
 
 ## Namespaces
 
@@ -98,11 +98,11 @@ The check found these, each fixed with a test (see [file-format-parity.md](file-
 - Lists lost what a paragraph's markup can't say (a label followed by a space, picture bullets, an unnumbered header): unedited lists are now kept as read.
 - Styles of different families, and list styles, sharing a name overwrote each other among the definitions kept.
 - A form's data source (`form:connection-resource`) was taken for a control; index marks over text, plugins and floating frames weren't kept.
-- Password, number, time and grid form controls (ODF 1.3 §13.5), of kinds WordCraft doesn't model, were dropped; they are kept as read, in their place in the text, as buttons and image controls were.
+- Password, number, time and grid form controls (ODF 1.3 §13.5), of kinds Letra doesn't model, were dropped; they are kept as read, in their place in the text, as buttons and image controls were.
 
 ## Left
 
-- **A paragraph showing a form control**: written from the model, which keeps what WordCraft models of it.
+- **A paragraph showing a form control**: written from the model, which keeps what Letra models of it.
 - **Calligra's page sequence** (`text:page-sequence`, a layout of fixed pages) and **numbered paragraphs** (`text:numbered-paragraph`): read as text, written from the model.
 - **Soft page breaks between paragraphs** (a layout hint LibreOffice recomputes) and **unused automatic styles**: not written.
 
