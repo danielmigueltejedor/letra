@@ -178,7 +178,7 @@ mod tests {
 
     #[test]
     fn the_releases_are_this_apps_own() {
-        assert_eq!(crate::UPDATE_APP.repo, "danielmigueltejedor/letra");
+        assert_eq!(crate::UPDATE_APP.repo, "getnodalia/letra");
         assert_eq!(crate::UPDATE_APP.version, env!("CARGO_PKG_VERSION"));
     }
 
