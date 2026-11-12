@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-latest, macos-latest]
+        os: [blacksmith-4vcpu-ubuntu-2404, windows-latest, blacksmith-6vcpu-macos-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     env:
