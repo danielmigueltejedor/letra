@@ -1,8 +1,8 @@
-# WordCraft architecture
+# Letra architecture
 
 > **Last reviewed:** 2026-10-28 · **Last updated:** 2026-11-05 · **Change:** trivial (the hostile-parameter test now has a sibling for `file.*`, `insert.picture` and `insert.textFromFile`; previously trivial: craft-proof's row says what a build without the Language data keeps: English spelling from an installed Hunspell English or the built-in list, rule hyphenation for Bulgarian, Turkish and Russian; previously minor: proofing moved out: `wordcraft-proof` is craft-libs' `craft-proof`, its Language data craft-i18n's `language-data/` embedded from `CRAFT_I18N_DIR`; previously major: crate and layer inventory, source counts, proofing languages and module boundaries re-measured from this checkout; previously minor: `proof` is per language: English and Polish; previously major: first committed version; `plan/architecture.md` is local-only) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
 
-How WordCraft is built today. The longer design notes in
+How Letra is built today. The longer design notes in
 `plan/architecture.md` are gitignored and local to the original author's machine; this file is the
 committed, current summary. Rules for working in the code are in [`AGENTS.md`](../AGENTS.md).
 

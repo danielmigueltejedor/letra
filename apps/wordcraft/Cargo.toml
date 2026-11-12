@@ -93,4 +93,3 @@ arboard = { workspace = true, features = ["image-data"] }
 getrandom = "0.3"
 
 [target.'cfg(windows)'.dependencies]
-craft-update = { workspace = true }

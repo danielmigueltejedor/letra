@@ -1,6 +1,6 @@
 # Contributors in the About window
 
-**About ▸ Contributors** credits everyone who contributed to WordCraft, and **About ▸ Models** credits
+**About ▸ Contributors** credits everyone who contributed to Letra, and **About ▸ Models** credits
 the AI models named in `Co-Authored-By` trailers.
 
 ## Decision
@@ -20,7 +20,7 @@ the AI models named in `Co-Authored-By` trailers.
   first or last commit date. The name toggle cycles **Username → Display name → Real name**; a
   missing name falls back to `@username`. Alphabetical sorting is case-insensitive and ignores the `@`.
 
-## In WordCraft
+## In Letra
 
 - The About window is `Dialog::About` in `crates/ui-egui/src/dialogs.rs` (Help, or Backstage ▸ About); `ui.dialog {"name":"contributors"}` / `"models"` opens a tab.
 

@@ -133,7 +133,6 @@ impl eframe::App for App {
         if let Some(key_file) = &self.2 {
             key_file.remove();
         }
-        self.0.start_pending_update();
     }
 }
 
@@ -193,8 +192,6 @@ fn schedule_macos_terminate(app: &mut WordApp, key_file: Option<&control_server:
     if let Some(key_file) = key_file {
         key_file.remove();
     }
-    // `terminate:` ends the process without dropping the app, so a ready update's helper starts here.
-    app.start_pending_update();
     dispatch2::DispatchQueue::main().exec_async(|| {
         if let Some(mtm) = objc2::MainThreadMarker::new() {
             objc2_app_kit::NSApplication::sharedApplication(mtm).terminate(None);
@@ -451,11 +448,6 @@ fn main() -> eframe::Result {
     #[cfg(windows)]
     if let Some(code) = print::isolated::helper_mode() {
         std::process::exit(code);
-    }
-    // Windows: the update helper is a copy of this program started with `--finish-update`.
-    #[cfg(windows)]
-    if let Some(result) = craft_update::self_update::finish(&wordcraft_ui_egui::UPDATE_APP, &std::env::args_os().skip(1).collect::<Vec<_>>()) {
-        std::process::exit(i32::from(result.is_err()));
     }
     // Linux: before anything reads another program's AppImage variables, or a thread starts (#5653).
     #[cfg(target_os = "linux")]

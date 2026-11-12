@@ -115,6 +115,10 @@ fn english_words(text: &str) -> bool {
 
 /// Text that is right to show untranslated: what the author or the machine supplied, not the
 /// interface's own wording.
+/// What the shared update window (`nodalia-update`) draws while it checks. That crate translates
+/// its own text, in Spanish and English, so it never goes through this app's catalog.
+const SHARED_UPDATE_WINDOW: [&str; 3] = ["Checking for Updates", "Looking for the latest version…", "Close"];
+
 struct Exempt<'a> {
     /// The document's text (headings in the Navigation pane, the title in the title bar).
     body: String,
@@ -235,6 +239,7 @@ impl<'a> Exempt<'a> {
             || matches!(plain, "WordCraft" | "WordCraft User" | "Discord" | "https://" | "auto" | "I. II. III." | "i. ii. iii." | "I, II, III, …" | "i, ii, iii, …")
             || plain == "CONFIDENTIAL" // the watermark dialog's text: document content, kept as typed
             || plain == "Figure 1" // the caption dialog's sample: the label goes into the document as is
+            || app.updates_rt.shared_window_open() && SHARED_UPDATE_WINDOW.contains(&plain)
     }
 }
 
