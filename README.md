@@ -6,7 +6,7 @@
     </picture>
   </a>
   <br><br>
-  <img src="https://raw.githubusercontent.com/danielmigueltejedor/letra/main/assets/app-icon/hicolor/512x512/apps/ai.storyteller.wordcraft.png" width="160" alt="Letra">
+  <img src="https://raw.githubusercontent.com/danielmigueltejedor/letra/main/assets/app-icon/hicolor/512x512/apps/ai.storyteller.wordcraft.png" width="192" alt="Letra">
   <h1>Letra</h1>
   <p><strong>A word processor for the Nodalia suite, built on the WordCraft engine.</strong></p>
 
