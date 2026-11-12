@@ -7,13 +7,8 @@
 
 /// Where this app's releases live, for the in-app updates (`updates_ui`).
 #[cfg(not(target_arch = "wasm32"))]
-pub const UPDATE_APP: nodalia_update::App = nodalia_update::App {
-    name: "Letra",
-    repo: "getnodalia/letra",
-    bundle: "WordCraft.app",
-    version: env!("CARGO_PKG_VERSION"),
-    edition: None,
-};
+pub const UPDATE_APP: nodalia_update::App =
+    nodalia_update::App { name: "Letra", repo: "getnodalia/letra", bundle: "WordCraft.app", version: env!("CARGO_PKG_VERSION"), edition: None };
 
 /// An English UI string in the current interface language ([`i18n::t`]).
 #[macro_export]
