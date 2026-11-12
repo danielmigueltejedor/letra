@@ -9,7 +9,7 @@ Please report security problems privately through GitHub:
 Don't open a public issue or pull request for a vulnerability until a fix is released.
 
 Useful to include:
-- the WordCraft version or commit, and the platform (macOS, Windows, Linux, BSD, web);
+- the Letra version or commit, and the platform (macOS, Windows, Linux, BSD, web);
 - what an attacker can do, and what they need (a crafted document, MCP or control-channel access, a local account…);
 - steps or a sample file that reproduce it.
 
@@ -21,6 +21,6 @@ Fixes go into `main` and ship in the next release. Older releases don't get back
 
 ## Scope
 
-In scope: anything that lets a document, file, command, MCP or control-channel request, or network response read or write files it shouldn't, run code, leak data, or crash WordCraft and lose the user's work.
+In scope: anything that lets a document, file, command, MCP or control-channel request, or network response read or write files it shouldn't, run code, leak data, or crash Letra and lose the user's work.
 
-Crashes from hostile input count, because WordCraft treats every panic as a bug (see [Never crash](AGENTS.md)).
+Crashes from hostile input count, because Letra treats every panic as a bug (see [Never crash](AGENTS.md)).

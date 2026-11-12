@@ -1,6 +1,6 @@
 # Swedish interface
 
-> **Last reviewed:** 2026-10-13 · **Last updated:** 2026-10-23 · **Change:** trivial (the catalog moved to storytold/craft-i18n, `locales/sv/wordcraft.tsv`; previously trivial: interface-language tests: a missing translation never fails a test, `cargo xtask i18n-report` in `cargo xtask ci` prints the strings each language lacks, and lookup and template tests use inline fixture catalogs or the pseudo-language; previously trivial: the interface audit lists missing Swedish entries instead of failing; previously minor: Swedish interface catalog and regression checks) · **Target:** WordCraft 0.6.1
+> **Last reviewed:** 2026-10-13 · **Last updated:** 2026-10-23 · **Change:** trivial (the catalog moved to storytold/craft-i18n, `locales/sv/wordcraft.tsv`; previously trivial: interface-language tests: a missing translation never fails a test, `cargo xtask i18n-report` in `cargo xtask ci` prints the strings each language lacks, and lookup and template tests use inline fixture catalogs or the pseudo-language; previously trivial: the interface audit lists missing Swedish entries instead of failing; previously minor: Swedish interface catalog and regression checks) · **Target:** Letra 0.6.1
 
 Choose **File › Options › Interface language › Svenska**, or follow a Swedish system display
 language (`sv-SE`, `sv_SE.UTF-8`, and `sv-FI` for Swedish in Finland). The catalog code is `sv`;
@@ -36,7 +36,7 @@ wording choice, and reviewed the running app.
   where the group gives the context: the button `Framhäv\nfält`, the command `Framhäv kopplingsfält`.
 - Decimal comma in fixed labels (`Radavstånd 1,5`, `8,5" × 11"`), Swedish quotation marks (”…”),
   and a spaced en dash where English has an em dash (`Redigering – redigera dokumentet direkt`).
-- Names stay as they are: WordCraft, Zotero, SmartArt, WordArt, the Craft theme, paper sizes
+- Names stay as they are: Letra, Zotero, SmartArt, WordArt, the Craft theme, paper sizes
   (Letter, Legal …) and citation styles (APA, MLA …). Loanwords Swedish speakers use stay too:
   `community`, `commit`.
 
