@@ -129,4 +129,3 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
         run: gh release upload "$TAG" "$DIST"/wordcraft-*-macos-* --clobber --repo "$GITHUB_REPOSITORY"
-
