@@ -32,7 +32,7 @@ const MAX_OPEN_MARKS: usize = 64;
 
 /// An open frame: its size, picture, alt text, equation, chart and other embedded object.
 type Frame =
-    (Option<f32>, Option<f32>, Option<Vec<u8>>, String, Option<(String, bool)>, Option<wordcraft_doc::chart::ChartSpec>, Option<model::OdfObject>);
+    (Option<f32>, Option<f32>, Option<Vec<u8>>, String, Option<(String, bool)>, Option<letra_doc::chart::ChartSpec>, Option<model::OdfObject>);
 
 pub(super) struct Body<'a> {
     styles: &'a Styles,
@@ -40,14 +40,14 @@ pub(super) struct Body<'a> {
     /// The package's entry names and its manifest's media types, for embedded objects.
     pub(super) entries: &'a [String],
     /// The bibliography sources the citations carry.
-    pub(super) sources: Vec<wordcraft_doc::Source>,
+    pub(super) sources: Vec<letra_doc::Source>,
     /// The paragraph before had a page break after it: the next one starts a page.
     break_next: bool,
-    /// Shapes' ids (`xml:id`, `draw:id`) as WordCraft drawing ids, and where the shapes with one
+    /// Shapes' ids (`xml:id`, `draw:id`) as Letra drawing ids, and where the shapes with one
     /// sit (kind, frame relative to its anchor, turn, placement, the paragraph they are in), for
     /// connectors glued to them.
     pub(super) conn_ids: HashMap<String, u32>,
-    pub(super) shape_places: HashMap<u32, (wordcraft_doc::para::ShapeKind, [f32; 4], wordcraft_doc::para::Float, usize)>,
+    pub(super) shape_places: HashMap<u32, (letra_doc::para::ShapeKind, [f32; 4], letra_doc::para::Float, usize)>,
     /// Paragraphs started so far: which paragraph a shape is in.
     pub(super) para_seq: usize,
     /// Index entries over text whose end hasn't come (in the paragraph being read): their id,
@@ -61,10 +61,10 @@ pub(super) struct Body<'a> {
     /// The form controls of `office:forms`, placed where a `draw:control` names them.
     forms: super::forms::FormsReader,
     /// A watermark found (in a header): see [`Self::start_shape`].
-    pub(super) watermark: Option<wordcraft_doc::Watermark>,
+    pub(super) watermark: Option<letra_doc::Watermark>,
     /// The shape being read is a watermark's, if its geometry follows its text: its size, turn,
     /// colour and see-through, and whether its geometry is fontwork.
-    watermark_shape: Option<((f32, f32), f32, Option<wordcraft_doc::props::Rgb>, bool, bool)>,
+    watermark_shape: Option<((f32, f32), f32, Option<letra_doc::props::Rgb>, bool, bool)>,
     pub(super) manifest: Option<&'a HashMap<String, String>>,
     containers: Vec<Vec<FBlock>>,
     /// Drawings anchored in the text but outside any paragraph (LibreOffice's page-anchored
@@ -132,7 +132,7 @@ pub(super) struct Body<'a> {
     paras_done: usize,
     /// `(width, height, picture bytes, alt text, equation read from an embedded `draw:object`)`.
     frame: Option<Frame>,
-    /// The first picture the open frame offers that WordCraft can't show: an object coming after it
+    /// The first picture the open frame offers that Letra can't show: an object coming after it
     /// keeps it as its replacement.
     frame_unread: Option<Vec<u8>>,
     in_desc: bool,
@@ -168,7 +168,7 @@ pub(super) struct Body<'a> {
     /// The text field being read.
     field: Option<OpenField>,
     /// Where the frame being read floats.
-    frame_float: Option<wordcraft_doc::para::Float>,
+    frame_float: Option<letra_doc::para::Float>,
     /// The content of the text box in the frame being read.
     frame_box: Option<Vec<FBlock>>,
     /// The look of the frame being read, should it hold a text box.
@@ -179,12 +179,12 @@ pub(super) struct Body<'a> {
     /// The open frame's name (`draw:name`), which a linked text box names.
     pub(super) frame_name: Option<String>,
     /// The kind of the drawing shape being read (its text is read as a text box's).
-    shape_kind: Option<wordcraft_doc::para::ShapeKind>,
+    shape_kind: Option<letra_doc::para::ShapeKind>,
     /// A custom shape's mirroring (left to right, top to bottom), from its geometry.
     shape_flip: (bool, bool),
     /// A freeform shape's paths (a polygon's, polyline's, path's or regular polygon's).
-    shape_path: Option<std::sync::Arc<wordcraft_doc::freeform::Freeform>>,
-    /// A custom shape's geometry being read, when its type has no WordCraft kind: drawn from its
+    shape_path: Option<std::sync::Arc<letra_doc::freeform::Freeform>>,
+    /// A custom shape's geometry being read, when its type has no Letra kind: drawn from its
     /// own path and equations.
     geometry: Option<Box<super::geometry::Pending>>,
     /// That geometry's markup as read (see `ShapeExtra::odf_geometry`): being read, then
@@ -372,7 +372,7 @@ impl<'a> Body<'a> {
     /// [`Body::feed_at`] for a top-level list (§5.3.1): kept whole, as read, when each of its
     /// paragraphs is (a paragraph's own markup can't say how its list numbers and draws its
     /// labels: a label followed by a space, a picture bullet, an unnumbered header). Not one
-    /// continuing another by its `xml:id`, which WordCraft may write anew (one without its own
+    /// continuing another by its `xml:id`, which Letra may write anew (one without its own
     /// is given one, for a list continuing it to name). `None` when it took the event.
     fn whole_list(&mut self, ev: Ev, at: (usize, usize)) -> Option<Ev> {
         match &ev {
@@ -453,11 +453,11 @@ impl<'a> Body<'a> {
 
     /// [`Body::feed`], `at` the event's markup in [`Body::raw`]: a body paragraph that comes out
     /// whole and refers to nothing outside itself keeps its markup (`Para::kept`), so a save
-    /// that doesn't change it writes it as it was (see `wordcraft_doc::kept`).
+    /// that doesn't change it writes it as it was (see `letra_doc::kept`).
     pub(super) fn feed_at(&mut self, ev: Ev, at: (usize, usize)) {
         self.hide_read();
         self.hidden_section(&ev);
-        // A body index, kept whole: its settings and templates, which WordCraft writes its own.
+        // A body index, kept whole: its settings and templates, which Letra writes its own.
         match &ev {
             Ev::Start(q, _) => match &mut self.kept_index {
                 Some(k) => k.clean &= !(q.starts_with("draw:") || q.starts_with("office:annotation") || q.starts_with("text:change")),
@@ -698,7 +698,7 @@ impl<'a> Body<'a> {
             }
             Ev::End(q) if q == "text:placeholder" && self.placeholder.is_some() => {
                 if let Some((text, fmt, kind, about)) = self.placeholder.take() {
-                    let mut control = wordcraft_doc::control::ContentControl::new(wordcraft_doc::control::ControlKind::Text { multi_line: false });
+                    let mut control = letra_doc::control::ContentControl::new(letra_doc::control::ControlKind::Text { multi_line: false });
                     control.placeholder_text.clone_from(&text);
                     control.showing_placeholder = true;
                     // Its element, so it is written back a placeholder of its type.
@@ -897,7 +897,7 @@ impl Body<'_> {
         let mut p = Para { kind, align, page_break: pb, keep_next, spacing: look.spacing, ..Default::default() };
         // A paragraph starting a column (`fo:break-before="column"`): Word's column break first.
         if look.column_break && !pb {
-            p.inlines.push(Inline::Text(wordcraft_doc::para::COLUMN_BREAK.to_string(), model::Fmt::default()));
+            p.inlines.push(Inline::Text(letra_doc::para::COLUMN_BREAK.to_string(), model::Fmt::default()));
         }
         p.borders = look.borders;
         if let Some(l) = level {
@@ -1198,7 +1198,7 @@ impl Body<'_> {
         if self.tracked_context(q, a) {
             return;
         }
-        // A custom shape's geometry: its kind, or, for a type WordCraft has no kind for, its
+        // A custom shape's geometry: its kind, or, for a type Letra has no kind for, its
         // path, worked out from its equations when the element ends. Its handles aren't read.
         if q == "draw:enhanced-geometry" && self.shape_kind.is_some() {
             let t = get(a, "draw:type").unwrap_or_default();
@@ -1305,7 +1305,7 @@ impl Body<'_> {
                 let cells = get(a, "table:default-cell-style-name").and_then(|s| self.styles.cell_background(s));
                 let n = get(a, "table:number-columns-repeated").and_then(|v| v.trim().parse::<usize>().ok()).unwrap_or(1).max(1);
                 if let Some(t) = self.tables.last_mut() {
-                    let room = wordcraft_doc::table::MAX_COLS.saturating_sub(t.widths.len());
+                    let room = letra_doc::table::MAX_COLS.saturating_sub(t.widths.len());
                     t.widths.extend(std::iter::repeat_n(w, n.min(room)));
                     t.shares.extend(std::iter::repeat_n(share, n.min(room)));
                     t.column_backgrounds.extend(std::iter::repeat_n(cells, n.min(room)));
@@ -1316,7 +1316,7 @@ impl Body<'_> {
                 self.end_para();
                 let span = get(a, "table:number-columns-spanned").and_then(|v| v.trim().parse::<u32>().ok()).unwrap_or(1).clamp(1, 63);
                 let rows = get(a, "table:number-rows-spanned").and_then(|v| v.trim().parse::<u32>().ok()).unwrap_or(1).clamp(1, 1000);
-                // WordCraft's tables have their backgrounds on their cells: a row's or table's on
+                // Letra's tables have their backgrounds on their cells: a row's or table's on
                 // those with none of their own, as it shows behind them. A cell with no style has
                 // its column's default cell style; LibreOffice doesn't apply a row's.
                 let behind = self.tables.last().and_then(|t| t.row_background.or(t.background));
@@ -1436,7 +1436,7 @@ impl Body<'_> {
             t.row_background = background;
             t.row.clear();
             t.hcover = 0;
-            if t.extra.heights.len() < wordcraft_doc::table::MAX_ROWS {
+            if t.extra.heights.len() < letra_doc::table::MAX_ROWS {
                 t.extra.heights.truncate(t.rows.len());
                 t.extra.heights.push(height);
                 t.extra.keep_rows.truncate(t.rows.len());
@@ -1489,7 +1489,7 @@ impl Body<'_> {
                     let path = href.trim_start_matches("./");
                     // A frame may offer one picture in several formats, in order of preference
                     // (LibreOffice writes its own `.svm` metafile before a PNG): the first
-                    // WordCraft can read. An object's replacement is the first, kept whatever it
+                    // Letra can read. An object's replacement is the first, kept whatever it
                     // is, also when the object is still to come.
                     if let Some(d) = (self.zip)(path) {
                         let readable = drawing::readable_picture(&d);
@@ -1509,7 +1509,7 @@ impl Body<'_> {
             }
             // An embedded object (ODF 1.3 §10.4.3): a formula sub-document's `content.xml` holds
             // a `math:math` tree (#3099), a chart's an `office:chart`. Other object kinds (and
-            // charts WordCraft can't edit) fall back to the frame's `draw:image` replacement
+            // charts Letra can't edit) fall back to the frame's `draw:image` replacement
             // preview, read at `end` below.
             "object" | "object-ole" => {
                 if let Some(href) = get(a, "xlink:href") {
@@ -1745,9 +1745,9 @@ impl Body<'_> {
         let data = (self.zip)(href.trim_start_matches("./"))?;
         let img = model::make_img(data, None, None, "")?;
         let repeat = match repeat.as_str() {
-            "no-repeat" => wordcraft_doc::props::PictureRepeat::None,
-            "stretch" => wordcraft_doc::props::PictureRepeat::Stretch,
-            _ => wordcraft_doc::props::PictureRepeat::Tile,
+            "no-repeat" => letra_doc::props::PictureRepeat::None,
+            "stretch" => letra_doc::props::PictureRepeat::Stretch,
+            _ => letra_doc::props::PictureRepeat::Tile,
         };
         let mut align = [0.5, 0.5];
         for word in position.split_whitespace() {
@@ -1778,11 +1778,11 @@ impl Body<'_> {
         if let Some(g) = self.geometry.take()
             && let Some(f) = g.freeform()
         {
-            self.shape_kind = Some(wordcraft_doc::para::ShapeKind::Freeform);
+            self.shape_kind = Some(letra_doc::para::ShapeKind::Freeform);
             self.shape_path = Some(std::sync::Arc::new(f));
             self.shape_geometry = keep(xml);
-        } else if self.shape_kind == Some(wordcraft_doc::para::ShapeKind::Rectangle) {
-            // A preset WordCraft draws as a rectangle: its geometry kept as read.
+        } else if self.shape_kind == Some(letra_doc::para::ShapeKind::Rectangle) {
+            // A preset Letra draws as a rectangle: its geometry kept as read.
             self.shape_geometry = keep(xml);
         }
     }
@@ -1884,7 +1884,7 @@ impl Body<'_> {
             "table-row" => {
                 if let Some(t) = self.tables.last_mut() {
                     let r = std::mem::take(&mut t.row);
-                    if !r.is_empty() && t.rows.len() < wordcraft_doc::table::MAX_ROWS {
+                    if !r.is_empty() && t.rows.len() < letra_doc::table::MAX_ROWS {
                         t.rows.push(r);
                     }
                 }

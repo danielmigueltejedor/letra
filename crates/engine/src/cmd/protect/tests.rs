@@ -478,7 +478,7 @@ fn forms_mode_allows_edits_only_inside_fillable_controls() {
 }
 
 /// While Filling in forms is enforced, Word offers no Remove Content Control and greys out the
-/// Developer tab's control buttons and Properties. WordCraft removed a fillable control (its
+/// Developer tab's control buttons and Properties. Letra removed a fillable control (its
 /// content left as plain text), inserted new controls inside one, and renamed one.
 #[test]
 fn forms_mode_keeps_its_controls() {
@@ -652,7 +652,7 @@ fn lock_property_changes_are_refused_under_protection() {
 /// command changes, and an empty control has no content to flip either. Refused now.
 #[test]
 fn forms_mode_cannot_clear_a_controls_lock_by_properties() {
-    use wordcraft_doc::control::{ContentControl, ControlKind, ControlLock, ListItem};
+    use letra_doc::control::{ContentControl, ControlKind, ControlLock, ListItem};
     let mut s = Session::new(Document::from_text("Fill now."));
     select(&mut s, "now");
     s.run("developer.richText", &json!({"tag": "free"})).unwrap();
@@ -802,7 +802,7 @@ fn form_fields_state_and_find_next_region() {
 /// whatever their depth, and markers never pair across a table-cell boundary).
 #[test]
 fn forms_mode_with_malformed_markers_stays_conservative() {
-    use wordcraft_doc::control::{ContentControl, ControlKind};
+    use letra_doc::control::{ContentControl, ControlKind};
     let mut s = Session::new(Document::from_text("Locked.\nPick.\nEnd."));
     select(&mut s, "Pick.");
     s.run("developer.dropDown", &json!({"tag": "size", "items": ["S", "M"]})).unwrap();
@@ -889,7 +889,7 @@ fn forms_protection_survives_save_and_password_guards_stop() {
 }
 
 /// A Word file with the legacy hash (`w:cryptAlgorithmSid`): a wrong password is rejected, the
-/// right one unlocks; a hash WordCraft can't check never unlocks.
+/// right one unlocks; a hash Letra can't check never unlocks.
 #[test]
 fn legacy_password_is_verified_and_unknown_forms_refused() {
     let protected = |sid: &str| {
@@ -927,10 +927,10 @@ fn legacy_password_is_verified_and_unknown_forms_refused() {
 /// editable IDs once per marker. Both ends are used by typing and Enter.
 #[test]
 fn typing_boundary_many_permission_markers_is_not_quadratic() {
-    use wordcraft_doc::para::Run;
+    use letra_doc::para::Run;
     let cpu = || std::fs::read_to_string("/proc/thread-self/schedstat").ok()?.split_whitespace().next()?.parse::<u64>().ok();
     let measure = |n: usize, at_end: bool| {
-        let mut p = wordcraft_doc::Paragraph::new();
+        let mut p = letra_doc::Paragraph::new();
         p.text.push_str("λ prefix ");
         let start = p.text.len();
         for i in 0..n {
@@ -973,7 +973,7 @@ fn typing_boundary_many_permission_markers_is_not_quadratic() {
 
 #[test]
 fn typing_boundary_keeps_author_precedence_and_malformed_pairing() {
-    use wordcraft_doc::para::Run;
+    use letra_doc::para::Run;
     // Frozen boundary semantics from before the one-pass lookup. This oracle deliberately
     // uses object_at independently of the new traversal, including malformed storage.
     let original = |s: &Session, p: &Pos| {
@@ -1014,7 +1014,7 @@ fn typing_boundary_keeps_author_precedence_and_malformed_pairing() {
     {
         for count in 0..=objects.len() {
             for mode in [None, Some("readOnly"), Some("comments"), Some("forms"), Some("trackedChanges")] {
-                let mut p = wordcraft_doc::Paragraph::new();
+                let mut p = letra_doc::Paragraph::new();
                 p.text = text.clone();
                 p.objects = objects[..count].to_vec();
                 p.runs.push(Run { len: p.text.len(), props: CharProps::default() });
@@ -1037,8 +1037,8 @@ fn typing_boundary_keeps_author_precedence_and_malformed_pairing() {
 
 #[test]
 fn typing_boundary_keeps_duplicate_ids_across_stories_and_start_precedence() {
-    use wordcraft_doc::para::Run;
-    let paragraph = |text: String, objects| wordcraft_doc::Paragraph {
+    use letra_doc::para::Run;
+    let paragraph = |text: String, objects| letra_doc::Paragraph {
         runs: vec![Run { len: text.len(), props: CharProps::default() }],
         text,
         objects,
@@ -1053,7 +1053,7 @@ fn typing_boundary_keeps_duplicate_ids_across_stories_and_start_precedence() {
         .into(),
     ];
     doc.add_part(
-        wordcraft_doc::PartKind::Header,
+        letra_doc::PartKind::Header,
         vec![
             Block::Para(paragraph(
                 format!("{OBJ}y{OBJ}"),

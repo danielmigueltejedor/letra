@@ -1,16 +1,16 @@
-//! Package parts WordCraft doesn't read (ODF 1.3 Part 2 §3: any file a package lists), kept as
+//! Package parts Letra doesn't read (ODF 1.3 Part 2 §3: any file a package lists), kept as
 //! they are and written back: macros and dialogs (`Basic/`, `Dialogs/`, `Scripts/`),
 //! LibreOffice's interface configuration (`Configurations2/`), metadata (`manifest.rdf`) and
 //! files of other applications.
 //!
-//! Not kept: what WordCraft reads and writes itself (content, styles, meta, settings, pictures,
+//! Not kept: what Letra reads and writes itself (content, styles, meta, settings, pictures,
 //! embedded objects), the thumbnail (it would show the document as it was), and digital
 //! signatures (`META-INF/*signatures*.xml`): they sign the package as it was, so a saved, changed
 //! document can't carry them.
 
 use std::sync::Arc;
 
-use wordcraft_doc::Document;
+use letra_doc::Document;
 
 /// `Document::passthrough` key prefix of a kept part (its path follows), and the key of the list
 /// of kept paths with their media types (`path\tmedia type` lines; directories end in `/`).
@@ -21,7 +21,7 @@ pub(super) const LIST: &str = "odf-parts";
 const MAX_PARTS: usize = 1000;
 const MAX_BYTES: u64 = 64 << 20;
 
-/// Whether package path `name` is one WordCraft reads or writes itself, or drops.
+/// Whether package path `name` is one Letra reads or writes itself, or drops.
 fn own(name: &str, manifest: &std::collections::HashMap<String, String>) -> bool {
     const OWN: [&str; 6] = ["mimetype", "content.xml", "styles.xml", "meta.xml", "settings.xml", "META-INF/manifest.xml"];
     if OWN.contains(&name) || name.ends_with('/') {
@@ -58,7 +58,7 @@ fn safe(name: &str) -> bool {
         && !name.chars().any(char::is_control)
 }
 
-/// The parts of a package WordCraft doesn't read itself: each file's path and bytes, and the
+/// The parts of a package Letra doesn't read itself: each file's path and bytes, and the
 /// list of their paths with media types (see [`LIST`]).
 #[derive(Default)]
 pub(super) struct Kept {
@@ -78,7 +78,7 @@ impl Kept {
     }
 }
 
-/// Reads the parts of package `z` (entries `entries`) WordCraft doesn't read itself, with their
+/// Reads the parts of package `z` (entries `entries`) Letra doesn't read itself, with their
 /// media types from `manifest`.
 pub(super) fn read(
     z: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>,
@@ -123,7 +123,7 @@ pub(super) fn read(
 }
 
 /// The parts kept in `doc` to write back: (path, bytes) of each file, and (path, media type) of
-/// each manifest entry (directories too). Paths WordCraft writes itself are left out.
+/// each manifest entry (directories too). Paths Letra writes itself are left out.
 pub(super) fn kept(doc: &Document) -> (Vec<(String, Arc<Vec<u8>>)>, Vec<(String, String)>) {
     let mut files = Vec::new();
     let mut entries = Vec::new();

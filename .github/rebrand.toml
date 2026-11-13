@@ -11,7 +11,11 @@ keep = [
     # Links to upstream's issues, pull requests and commits, and to other people's repositories:
     # history, not branding. Links to upstream's tree and repository page are renamed below.
     "(https?://)?github\\.com/storytold/[\\w.-]+/(issues|pull|commit|discussions)/[^\\s)\\]\"'<>`]*",
-    "https?://(github\\.com|raw\\.githubusercontent\\.com)/(?!storytold/wordcraft\\b|getnodalia|danielmigueltejedor)[^\\s)\\]\"'<>`]*",
+    "https?://(github\\.com|raw\\.githubusercontent\\.com)/(?!storytold/(wordcraft|craft-fonts|craft-i18n|craft-libs|egui|winit)\\b|getnodalia|danielmigueltejedor)[^\\s)\\]\"'<>`]*",
+    # A Cargo [patch] names the source it overrides, which other crates still point at.
+    "\\[patch\\.\"https://github\\.com/storytold/[^\"]+\"\\]",
+    # Spelling language packs are still downloaded from upstream's translation releases.
+    "https://github\\.com/storytold/craft-i18n/releases/download/[^\\s\"`)]*",
     # Upstream's issues named without a link (`storytold/wordcraft#123`).
     "storytold/[\\w.-]+#\\d+",
     # Upstream's repository in the sync workflow and in the record of what came from it.
@@ -52,6 +56,14 @@ from = "ai.storyteller.wordcraft"
 to = "dev.danielmiguelt.Letra"
 
 [[replace]]
+from = "WordCraft maintainers <wordcraft@storyteller.ai>"
+to = "Nodalia <https://github.com/getnodalia/letra/issues>"
+
+[[replace]]
+from = "<developer id=\"ai.storyteller\">"
+to = "<developer id=\"dev.danielmiguelt\">"
+
+[[replace]]
 from = "Learning Machines LLC"
 to = "Nodalia"
 
@@ -66,6 +78,64 @@ to = "A7E2C9B4-1F36-4D85-B0C7-2E9F4A6D1B58"
 [[replace]]
 from = "EFF89E6A-F9B8-49F9-B3AE-E243347484B4"
 to = "3D9B7E15-6C2A-4F80-8E4B-D51A07C3F926"
+
+# The shared libraries, fonts and translations: Nodalia keeps them in getnodalia/foundation, on
+# vendor branches.
+[[replace]]
+from = "github.com/storytold/craft-fonts/blob/main/"
+to = "github.com/getnodalia/foundation/blob/vendor/craft-fonts/main/"
+
+[[replace]]
+from = "github.com/storytold/craft-i18n/blob/main/"
+to = "github.com/getnodalia/foundation/blob/vendor/craft-i18n/main/"
+
+[[replace]]
+from = "github.com/storytold/craft-libs/tree/main/"
+to = "github.com/getnodalia/foundation/tree/vendor/craft-libs/main/"
+
+[[replace]]
+from = "github.com/storytold/craft-libs/blob/main/"
+to = "github.com/getnodalia/foundation/blob/vendor/craft-libs/main/"
+
+[[replace]]
+from = "github.com/storytold/egui/blob/"
+to = "github.com/getnodalia/foundation/blob/"
+
+[[replace]]
+from = "github.com/storytold/craft-fonts"
+to = "github.com/getnodalia/foundation/tree/vendor/craft-fonts/main"
+
+[[replace]]
+from = "github.com/storytold/craft-i18n"
+to = "github.com/getnodalia/foundation/tree/vendor/craft-i18n/main"
+
+[[replace]]
+from = "github.com/storytold/craft-libs"
+to = "github.com/getnodalia/foundation/tree/vendor/craft-libs/main"
+
+[[replace]]
+from = "github.com/storytold/egui"
+to = "github.com/getnodalia/foundation/tree/vendor/egui/main"
+
+[[replace]]
+from = "github.com/storytold/winit"
+to = "github.com/getnodalia/foundation/tree/vendor/winit/master"
+
+[[replace]]
+from = "storytold/craft-fonts"
+to = "getnodalia/foundation (vendor/craft-fonts)"
+
+[[replace]]
+from = "storytold/craft-i18n"
+to = "getnodalia/foundation (vendor/craft-i18n)"
+
+[[replace]]
+from = "storytold/craft-libs"
+to = "getnodalia/foundation (vendor/craft-libs)"
+
+[[replace]]
+from = "storytold/winprint.rs"
+to = "getnodalia/foundation (vendor/winprint.rs)"
 
 # Where the app lives: its repository, releases, container images and web page.
 [[replace]]

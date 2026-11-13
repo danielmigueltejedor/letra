@@ -3,9 +3,9 @@
 //! the ruler clears it, and double-clicking one opens the Tabs dialog. A gesture runs `para.tabs`
 //! once when the button is released, so it is one undo step.
 use egui::{Painter, Rect, Sense, Shape, Stroke, Ui, pos2, vec2};
+use letra_doc::Pos;
+use letra_doc::props::{TAB_POS_EPS, TabAlign, TabLeader, TabStop};
 use serde_json::{Value, json};
-use wordcraft_doc::Pos;
-use wordcraft_doc::props::{TAB_POS_EPS, TabAlign, TabLeader, TabStop};
 
 use crate::WordApp;
 use crate::theme::Tokens;
@@ -323,7 +323,7 @@ mod tests {
     /// lands rather than where it was; a stop dragged off the ruler frees its number.
     #[test]
     fn marker_rects_cover_each_stop_and_a_dragged_one_where_it_lands() {
-        let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), Default::default());
+        let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), Default::default());
         let bar = Rect::from_min_max(pos2(0.0, 100.0), pos2(800.0, 115.0));
         let x_of = |pos: f32| 100.0 + pos;
         let stop = |pos: f32| TabStop { pos, align: TabAlign::Left, leader: TabLeader::None };

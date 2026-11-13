@@ -1,14 +1,14 @@
 //! Charts (ODF 1.3 §10.4.3 embedded objects holding an `office:chart` sub-document, Part 3
-//! §11): read into WordCraft's editable chart (type, categories, series, title, legend, data
-//! labels) from the chart's own data table, so they're drawn and edited like charts WordCraft
-//! makes. Charts WordCraft can't edit keep their replacement picture.
+//! §11): read into Letra's editable chart (type, categories, series, title, legend, data
+//! labels) from the chart's own data table, so they're drawn and edited like charts Letra
+//! makes. Charts Letra can't edit keep their replacement picture.
 
 use std::sync::Arc;
 
 use crate::model::Inline;
 use crate::odt::parse;
 use crate::odt::tests::{NS_T, paras, zip_of};
-use wordcraft_doc::chart::{ChartSeries, ChartSpec, ChartType, LegendPos};
+use letra_doc::chart::{ChartSeries, ChartSpec, ChartType, LegendPos};
 
 const NS_C: &str = r#"xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:chart="urn:oasis:names:tc:opendocument:xmlns:chart:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink""#;
 
@@ -139,7 +139,7 @@ fn line_area_pie_doughnut_and_scatter_classes() {
 }
 
 #[test]
-fn charts_wordcraft_cannot_edit_keep_their_picture() {
+fn charts_letra_cannot_edit_keep_their_picture() {
     // Percent-stacked, a radar chart, a chart mixing columns and a line, 3D: the picture.
     let mixed = format!(
         "{}{}",
@@ -170,9 +170,9 @@ fn hostile_chart_tables_are_bounded() {
         r#"<office:document-content><office:body><office:chart><chart:chart chart:class="chart:line"><chart:plot-area><chart:axis chart:dimension="x"><chart:categories table:cell-range-address="t.A1:XFD1048576"/></chart:axis>{series}</chart:plot-area>{table}</chart:chart></office:chart></office:body></office:document-content>"#
     );
     let s = spec(&xml).expect("a chart");
-    assert!(s.series.len() <= wordcraft_doc::chart::MAX_SERIES);
-    assert!(s.series.iter().all(|x| x.values.len() <= wordcraft_doc::chart::MAX_POINTS));
-    assert!(s.categories.len() <= wordcraft_doc::chart::MAX_POINTS);
+    assert!(s.series.len() <= letra_doc::chart::MAX_SERIES);
+    assert!(s.series.iter().all(|x| x.values.len() <= letra_doc::chart::MAX_POINTS));
+    assert!(s.categories.len() <= letra_doc::chart::MAX_POINTS);
 }
 
 #[test]
@@ -183,13 +183,13 @@ fn an_imported_chart_is_an_editable_chart_object() {
         r#"<office:document-content {NS_T} xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink"><office:body><office:text><text:p>{frame}</text:p></office:text></office:body></office:document-content>"#
     );
     let doc = crate::odt::import(&zip_of(&[("content.xml", content.as_bytes()), ("Object 1/content.xml", xml.as_bytes())])).unwrap();
-    let graphics: Vec<Arc<wordcraft_doc::graphic::Graphic>> = doc
+    let graphics: Vec<Arc<letra_doc::graphic::Graphic>> = doc
         .body
         .iter()
         .filter_map(|b| b.as_para())
         .flat_map(|p| p.objects_with_offsets())
         .filter_map(
-            |(_, o)| if let wordcraft_doc::para::InlineObject::Graphic { graphic, w, h, .. } = o { Some((graphic.clone(), *w, *h)) } else { None },
+            |(_, o)| if let letra_doc::para::InlineObject::Graphic { graphic, w, h, .. } = o { Some((graphic.clone(), *w, *h)) } else { None },
         )
         .map(|(g, w, h)| {
             assert_eq!((w, h), (288.0, 144.0));
@@ -197,12 +197,12 @@ fn an_imported_chart_is_an_editable_chart_object() {
         })
         .collect();
     let g = graphics.first().expect("a chart object");
-    assert_eq!(g.kind, wordcraft_doc::graphic::GraphicKind::Chart);
+    assert_eq!(g.kind, letra_doc::graphic::GraphicKind::Chart);
     assert_eq!(g.chart.as_ref().map(|c| c.kind), Some(ChartType::Line));
 }
 
 /// A document holding `spec` as a chart `w` × `h` points, after some text.
-fn doc_with(spec: ChartSpec, float: bool) -> wordcraft_doc::Document {
+fn doc_with(spec: ChartSpec, float: bool) -> letra_doc::Document {
     let flow = crate::model::Flow {
         blocks: vec![crate::model::FBlock::Para(crate::model::Para {
             inlines: vec![
@@ -212,9 +212,8 @@ fn doc_with(spec: ChartSpec, float: bool) -> wordcraft_doc::Document {
                     w: 300.0,
                     h: 180.0,
                     alt: "Sales chart".into(),
-                    float: float.then(|| {
-                        Box::new(wordcraft_doc::para::Float { wrap: wordcraft_doc::para::Wrap::Square, x: 20.0, y: 10.0, ..Default::default() })
-                    }),
+                    float: float
+                        .then(|| Box::new(letra_doc::para::Float { wrap: letra_doc::para::Wrap::Square, x: 20.0, y: 10.0, ..Default::default() })),
                     source: None,
                 }),
             ],
@@ -267,7 +266,7 @@ fn a_floating_chart_keeps_its_place_and_wrap() {
     let bytes = crate::odt::export(&doc_with(ChartSpec::sample(ChartType::Column), true)).unwrap();
     let back = reread(&bytes);
     let f = back.first().and_then(|c| c.float.as_deref()).expect("a floating chart");
-    assert_eq!((f.wrap, f.x.round(), f.y.round()), (wordcraft_doc::para::Wrap::Square, 20.0, 10.0));
+    assert_eq!((f.wrap, f.x.round(), f.y.round()), (letra_doc::para::Wrap::Square, 20.0, 10.0));
 }
 
 #[test]
@@ -282,7 +281,7 @@ fn a_flat_document_holds_its_chart_inline() {
         .filter_map(|b| b.as_para())
         .flat_map(|p| p.objects.clone())
         .filter_map(|o| match o {
-            wordcraft_doc::para::InlineObject::Graphic { graphic, w, h, alt, .. } => {
+            letra_doc::para::InlineObject::Graphic { graphic, w, h, alt, .. } => {
                 graphic.chart.clone().map(|spec| crate::model::Chart { spec, w, h, alt, float: None, source: None })
             }
             _ => None,
@@ -293,8 +292,8 @@ fn a_flat_document_holds_its_chart_inline() {
 
 #[test]
 fn an_unchanged_chart_is_written_back_as_it_was_and_an_edited_one_anew() {
-    // A chart keeps the look WordCraft doesn't model (its fonts, lines and colours) only if its
-    // object is written back whole; once edited, it's written from WordCraft's chart.
+    // A chart keeps the look Letra doesn't model (its fonts, lines and colours) only if its
+    // object is written back whole; once edited, it's written from Letra's chart.
     let original = chart_xml(
         "chart:bar",
         r#"chart:vertical="false""#,
@@ -342,9 +341,9 @@ fn an_unchanged_chart_is_written_back_as_it_was_and_an_edited_one_anew() {
     // Edited: a new title.
     let mut edited = doc.clone();
     for b in edited.body.iter_mut() {
-        if let wordcraft_doc::Block::Para(p) = Arc::make_mut(b) {
+        if let letra_doc::Block::Para(p) = Arc::make_mut(b) {
             for o in &mut p.objects {
-                if let wordcraft_doc::para::InlineObject::Graphic { graphic, .. } = o {
+                if let letra_doc::para::InlineObject::Graphic { graphic, .. } = o {
                     let g = Arc::make_mut(graphic);
                     let mut spec = (**g.chart.as_ref().unwrap()).clone();
                     spec.title = Some("Revenue".into());

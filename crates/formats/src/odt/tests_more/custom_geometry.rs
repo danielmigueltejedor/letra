@@ -1,12 +1,12 @@
-//! Custom shapes whose type WordCraft has no kind for (ODF 1.3 §10.6.2
+//! Custom shapes whose type Letra has no kind for (ODF 1.3 §10.6.2
 //! `draw:enhanced-geometry`): drawn from their own path (§19.145 `draw:enhanced-path`), its
 //! values worked out from the shape's equations (§10.6.3 `draw:equation`) and adjustment values
 //! (`draw:modifiers`), as freeforms.
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
-use wordcraft_doc::para::{InlineObject, ShapeKind};
+use letra_doc::Document;
+use letra_doc::para::{InlineObject, ShapeKind};
 
 const NS_D: &str =
     r#"xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0""#;
@@ -161,9 +161,9 @@ fn a_freeform_with_open_and_closed_paths_is_saved_as_a_custom_shape() {
     // A face and a mouth: the face filled, the mouth not. A path with an open part would be
     // drawn unfilled whole, so it is saved as a custom shape whose path marks the mouth unfilled.
     let mut d = open(&shape(r#"draw:type="smiley" draw:enhanced-path="M 0 0 L 21600 0 21600 21600 Z N M 5000 15000 L 16000 15000 F N""#, ""));
-    // As WordCraft's own freeform (the geometry read is written back whole otherwise).
+    // As Letra's own freeform (the geometry read is written back whole otherwise).
     for b in d.body.iter_mut() {
-        if let wordcraft_doc::Block::Para(p) = std::sync::Arc::make_mut(b) {
+        if let letra_doc::Block::Para(p) = std::sync::Arc::make_mut(b) {
             for o in &mut p.objects {
                 if let InlineObject::Shape { extra, .. } = o {
                     extra.odf_geometry = None;
@@ -205,7 +205,7 @@ fn points_far_outside_the_view_box_stay_finite() {
 #[test]
 fn a_custom_shapes_geometry_is_written_back_as_it_was_read() {
     // LibreOffice's shape presets: saved as their own geometry (type, path, equations, handles),
-    // so LibreOffice draws its own shape, not WordCraft's path of it; a preset WordCraft draws as
+    // so LibreOffice draws its own shape, not Letra's path of it; a preset Letra draws as
     // a rectangle (a cloud) keeps its geometry too. A shape made another kind loses it.
     let hexagon = shape(
         r#"svg:viewBox="0 0 21600 21600" draw:type="hexagon" draw:modifiers="5400" draw:mirror-horizontal="true" draw:enhanced-path="M ?f0 0 L ?f1 0 21600 10800 ?f1 21600 ?f0 21600 0 10800 Z N""#,
@@ -226,7 +226,7 @@ fn a_custom_shapes_geometry_is_written_back_as_it_was_read() {
     // Made an ellipse: written as one.
     let mut changed = d.clone();
     for b in changed.body.iter_mut() {
-        if let wordcraft_doc::Block::Para(p) = std::sync::Arc::make_mut(b) {
+        if let letra_doc::Block::Para(p) = std::sync::Arc::make_mut(b) {
             for o in &mut p.objects {
                 if let InlineObject::Shape { kind, extra, .. } = o {
                     *kind = ShapeKind::Ellipse;

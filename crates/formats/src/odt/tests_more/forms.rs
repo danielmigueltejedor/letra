@@ -1,10 +1,10 @@
 //! Form controls (ODF 1.3 §13): `office:forms` controls placed by `draw:control`, read as
-//! WordCraft content controls and written back as form controls LibreOffice shows.
+//! Letra content controls and written back as form controls LibreOffice shows.
 
 use crate::model::Inline;
 use crate::odt::tests::{NS_T, entry, package, paras};
 use crate::odt::{export, import, parse};
-use wordcraft_doc::control::{ControlKind, ListItem};
+use letra_doc::control::{ControlKind, ListItem};
 
 const NS_F: &str = r#"xmlns:form="urn:oasis:names:tc:opendocument:xmlns:form:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0""#;
 
@@ -40,7 +40,7 @@ fn form_controls_open_as_content_controls() {
     let flow = parse(&package(&doc_xml(), None)).unwrap();
     let got = controls(&flow);
     assert_eq!(got.len(), 9, "a missing control is left out: {got:?}");
-    // A button, which WordCraft has no kind for, shows its label (see `buttons_are_kept`).
+    // A button, which Letra has no kind for, shows its label (see `buttons_are_kept`).
     assert_eq!((got[8].1.as_str(), got[8].3.as_str()), ("Submit", "Send"));
     assert_eq!(got[0], (ControlKind::Text { multi_line: false }, "FullName".into(), String::new(), "Ada Lovelace".into(), false));
     assert!(matches!(got[1].0, ControlKind::CheckBox { checked: true, checked_char: '\u{2612}', unchecked_char: '\u{2610}', .. }));
@@ -131,7 +131,7 @@ fn buttons_are_kept() {
     );
     assert!(c.contains(r#"svg:width="72pt" svg:height="21.6pt" draw:control="control1""#), "{c}");
     // Made a check box, it is saved as one.
-    let mut c = wordcraft_doc::control::ContentControl::new(ControlKind::Text { multi_line: false });
+    let mut c = letra_doc::control::ContentControl::new(ControlKind::Text { multi_line: false });
     c.form_xml = "<form:button form:name=\"Go\"></form:button>".into();
     let kept = crate::odt::forms::form_xml(&c, "Go", "control1", 1).unwrap().0;
     assert!(kept.starts_with(r#"<form:button xml:id="control1" form:id="control1" form:name="Go">"#), "{kept}");
@@ -211,7 +211,7 @@ fn controls_keep_their_place_on_the_line_and_a_text_area_its_lines() {
         .iter()
         .filter_map(|b| b.as_para())
         .flat_map(|p| p.objects.iter())
-        .filter_map(|o| if let wordcraft_doc::para::InlineObject::ControlStart { control } = o { Some(control.form_raise) } else { None })
+        .filter_map(|o| if let letra_doc::para::InlineObject::ControlStart { control } = o { Some(control.form_raise) } else { None })
         .collect();
     assert!(!raises.is_empty() && raises.iter().all(|r| r.is_some_and(|v| (v + 14.4).abs() < 0.01)), "{raises:?}");
     let out = entry(&export(&doc).unwrap(), "content.xml");
@@ -224,7 +224,7 @@ fn controls_keep_their_place_on_the_line_and_a_text_area_its_lines() {
 
 #[test]
 fn password_number_time_and_grid_controls_are_kept() {
-    // ODF 1.3 §13.5 controls WordCraft has no kind for: kept as read, each in its place.
+    // ODF 1.3 §13.5 controls Letra has no kind for: kept as read, each in its place.
     let controls = r#"<form:password form:name="Secret" xml:id="p1" form:id="p1" form:echo-char="*"/><form:number form:name="Count" xml:id="n1" form:id="n1" form:value="3"/><form:time form:name="At" xml:id="t1" form:id="t1" form:value="10:30:00"/><form:grid form:name="Rows" xml:id="g1" form:id="g1"><form:column form:name="Col" form:label="Name"><form:text form:name="Cell"/></form:column></form:grid>"#;
     let anchor = |id: &str| format!(r#"<draw:control text:anchor-type="as-char" svg:width="1in" svg:height="0.3in" draw:control="{id}"/>"#);
     let content = format!(

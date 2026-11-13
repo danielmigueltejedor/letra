@@ -83,7 +83,7 @@ fn wrapped_list(s: &Session, i: usize) -> Option<(String, usize, usize, usize)> 
         _ => None,
     })?;
     // Only when it starts the paragraph: text before it is the document's, not the list's.
-    if !p.text.get(..off).is_some_and(|t| t.chars().all(|c| c.is_whitespace() || c == wordcraft_doc::para::OBJ)) {
+    if !p.text.get(..off).is_some_and(|t| t.chars().all(|c| c.is_whitespace() || c == letra_doc::para::OBJ)) {
         return None;
     }
     // Where it ends: the field end that closes it, nested fields counted from its own start (a
@@ -97,7 +97,7 @@ fn wrapped_list(s: &Session, i: usize) -> Option<(String, usize, usize, usize)> 
                 InlineObject::FieldEnd => {
                     depth = depth.saturating_sub(1);
                     if depth == 0 {
-                        return Some((instr, off, j, at + wordcraft_doc::para::OBJ.len_utf8()));
+                        return Some((instr, off, j, at + letra_doc::para::OBJ.len_utf8()));
                     }
                 }
                 _ => {}
@@ -151,7 +151,7 @@ fn captioned_as(doc: &Document, p: &Paragraph, ident: &str) -> bool {
 /// caption typed by hand what follows the label and the number, less the separator.
 fn caption_body(p: &Paragraph, label: &str) -> String {
     let seq_end = p.object_offsets().into_iter().find_map(|o| match p.object_at(o) {
-        Some(InlineObject::Field { instr, .. }) if FieldCode::parse(instr).name == "SEQ" => Some(o + wordcraft_doc::para::OBJ.len_utf8()),
+        Some(InlineObject::Field { instr, .. }) if FieldCode::parse(instr).name == "SEQ" => Some(o + letra_doc::para::OBJ.len_utf8()),
         _ => None,
     });
     let rest = match seq_end {
@@ -159,7 +159,7 @@ fn caption_body(p: &Paragraph, label: &str) -> String {
             let mut k = 0;
             let mut rest = String::new();
             for (at, c) in p.text.char_indices() {
-                if c == wordcraft_doc::para::OBJ {
+                if c == letra_doc::para::OBJ {
                     if at >= end
                         && let Some(o) = p.objects.get(k)
                     {
@@ -200,7 +200,7 @@ pub fn update_generated(s: &mut Session) -> Result<(), CmdError> {
     let mut i = 0;
     while i < s.doc.body.len() {
         // A list held as a field around its entries (as Word and ODT files hold them): made the
-        // field's own paragraph, as WordCraft inserts one, its old entries rebuilt below.
+        // field's own paragraph, as Letra inserts one, its old entries rebuilt below.
         // What follows its closing field end, and its first paragraph's properties and section
         // break, are the document's and stay.
         // (The field it is made: what comes before it in its paragraph may hold other fields.)
@@ -234,7 +234,7 @@ pub fn update_generated(s: &mut Session) -> Result<(), CmdError> {
             )?;
             // What followed the field end in its own paragraph comes after the list, in a
             // paragraph of its own that takes the section break.
-            let field = start + wordcraft_doc::para::OBJ.len_utf8();
+            let field = start + letra_doc::para::OBJ.len_utf8();
             if p.len() > field {
                 let rest = p.split_off(field)?;
                 s.doc.insert_block(StoryRef::Body, &Path::top(i + 1), Block::Para(rest))?;
@@ -319,12 +319,12 @@ pub fn update_generated(s: &mut Session) -> Result<(), CmdError> {
 /// layout cache starts over (and the saved file would gain a style it doesn't use).
 fn add_entry_style(s: &mut Session) {
     if s.doc.styles.get(ENTRY_STYLE).is_none() {
-        Arc::make_mut(&mut s.doc.styles).upsert(wordcraft_doc::Style {
+        Arc::make_mut(&mut s.doc.styles).upsert(letra_doc::Style {
             id: ENTRY_STYLE.into(),
             name: "List Entry".into(),
-            kind: wordcraft_doc::StyleKind::Paragraph,
+            kind: letra_doc::StyleKind::Paragraph,
             based_on: Some("Normal".into()),
-            para: wordcraft_doc::ParaProps { space_after: Some(4.0), ..Default::default() },
+            para: letra_doc::ParaProps { space_after: Some(4.0), ..Default::default() },
             hidden: true,
             ..Default::default()
         });
@@ -542,7 +542,7 @@ mod tests {
     #[test]
     fn a_wrapped_list_is_rebuilt_as_itself_after_another_list_field() {
         let mut s = wrapped("Old one\nOld two\nBelow", 0, 1, "Old two".len());
-        s.doc.sources.push(wordcraft_doc::Source { tag: "a".into(), kind: "book".into(), title: "Listed Source".into(), ..Default::default() });
+        s.doc.sources.push(letra_doc::Source { tag: "a".into(), kind: "book".into(), title: "Listed Source".into(), ..Default::default() });
         let index =
             InlineObject::Field { instr: "INDEX".into(), result: String::new(), locked: false, dirty: false, code: false, form: String::new() };
         if let Ok(p) = s.doc.para_mut(StoryRef::Body, &Path::top(0)) {

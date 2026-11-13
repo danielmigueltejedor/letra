@@ -1,12 +1,12 @@
 //! A table of contents in an ODT file (ODF 1.3 §8.3 `text:table-of-content`) opens as one
-//! WordCraft updates: References › Update Table regenerates its entries from the document's
+//! Letra updates: References › Update Table regenerates its entries from the document's
 //! headings, with or without a title, and it is saved back as an ODF table of contents. The ODT
 //! is original and synthetic, shaped like LibreOffice's.
 
 use std::io::Write;
 
+use letra_engine::{Session, io};
 use serde_json::json;
-use wordcraft_engine::{Session, io};
 
 const NS: &str = r#"xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0""#;
 
@@ -43,7 +43,7 @@ fn entries(s: &Session) -> Vec<String> {
         .iter()
         .filter_map(|b| b.as_para())
         .filter(|p| p.props.style.as_deref().is_some_and(|st| st.starts_with("TOC") && st != "TOCHeading"))
-        .map(|p| p.text.split('\t').next().unwrap_or("").trim_matches(wordcraft_doc::para::OBJ).to_string())
+        .map(|p| p.text.split('\t').next().unwrap_or("").trim_matches(letra_doc::para::OBJ).to_string())
         .filter(|t| !t.is_empty())
         .collect()
 }
@@ -84,7 +84,7 @@ fn an_odt_index_updates_from_its_marks() {
     }
     let mut s = Session::new(io::open_bytes("index.odt", &z.finish().unwrap().into_inner()).unwrap());
     s.run("references.updateIndex", &json!({})).unwrap();
-    let text: Vec<String> = s.doc.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(wordcraft_doc::para::OBJ, "")).collect();
+    let text: Vec<String> = s.doc.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(letra_doc::para::OBJ, "")).collect();
     assert!(text.iter().any(|t| t.starts_with("glazes")), "{text:?}");
     assert!(text.iter().any(|t| t.starts_with("kilns")), "{text:?}");
     assert!(!text.iter().any(|t| t.contains("stale")), "{text:?}");
@@ -107,7 +107,7 @@ fn an_odt_bibliography_updates_from_its_citations_sources() {
     }
     let mut s = Session::new(io::open_bytes("bib.odt", &z.finish().unwrap().into_inner()).unwrap());
     s.run("references.updateIndex", &json!({})).unwrap();
-    let text: Vec<String> = s.doc.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(wordcraft_doc::para::OBJ, "")).collect();
+    let text: Vec<String> = s.doc.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(letra_doc::para::OBJ, "")).collect();
     assert!(text.iter().any(|t| t.contains("Kilns and Fire")), "{text:?}");
     assert!(!text.iter().any(|t| t.contains("stale")), "{text:?}");
 }

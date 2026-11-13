@@ -3,10 +3,10 @@
 
 use std::sync::Arc;
 
-use wordcraft_doc::THEME_COLORS;
-use wordcraft_doc::fill::{Fill, Gradient, GradientFlip, GradientKind, PathShape};
-use wordcraft_doc::props::Rgb;
-use wordcraft_doc::wordart::{GradStop, MAX_STOPS};
+use letra_doc::THEME_COLORS;
+use letra_doc::fill::{Fill, Gradient, GradientFlip, GradientKind, PathShape};
+use letra_doc::props::Rgb;
+use letra_doc::wordart::{GradStop, MAX_STOPS};
 
 use crate::units::int;
 use crate::xml::El;
@@ -242,7 +242,7 @@ pub(crate) fn adjust_lum(c: Rgb, f: impl Fn(f64) -> f64) -> Rgb {
 
 #[cfg(test)]
 mod tests {
-    use wordcraft_doc::THEME_COLORS;
+    use letra_doc::THEME_COLORS;
 
     use super::*;
 

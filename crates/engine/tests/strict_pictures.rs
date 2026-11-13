@@ -1,9 +1,9 @@
 //! Pictures a layout draws that the exporters can't decode (#6005): a DOCX opened, laid out, and
 //! asked which of its pictures would be grey boxes, and in which story.
+use letra_doc::{Document, MissingPictureReason};
+use letra_layout::display::DisplayOptions;
+use letra_layout::{LayoutCache, LayoutOptions, StrictOutput, layout, media_check, undecodable_pictures};
 use std::io::Write;
-use wordcraft_doc::{Document, MissingPictureReason};
-use wordcraft_layout::display::DisplayOptions;
-use wordcraft_layout::{LayoutCache, LayoutOptions, StrictOutput, layout, media_check, undecodable_pictures};
 
 const NS: &str = r#"xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture""#;
 const REL: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
@@ -67,7 +67,7 @@ fn report(d: &Document, pages: Option<std::ops::RangeInclusive<usize>>) -> Vec<(
 
 #[test]
 fn a_header_picture_of_corrupt_bytes_is_reported_with_its_part_and_story() {
-    let d = wordcraft_docx::read(&docx(b"corrupt bytes, not a picture", &png())).unwrap();
+    let d = letra_docx::read(&docx(b"corrupt bytes, not a picture", &png())).unwrap();
     assert_eq!(report(&d, None), [("word/media/image2.bin".into(), "word/header2.xml".into(), MissingPictureReason::UnsupportedFormat)]);
 }
 
@@ -75,19 +75,19 @@ fn a_header_picture_of_corrupt_bytes_is_reported_with_its_part_and_story() {
 fn a_truncated_picture_is_undecodable_not_unsupported() {
     let mut cut = png();
     cut.truncate(cut.len() - 20);
-    let d = wordcraft_docx::read(&docx(&png(), &cut)).unwrap();
+    let d = letra_docx::read(&docx(&png(), &cut)).unwrap();
     assert_eq!(report(&d, None), [("word/media/body.png".into(), "word/document.xml".into(), MissingPictureReason::Undecodable)]);
 }
 
 #[test]
 fn a_real_png_in_a_header_is_not_reported() {
-    let d = wordcraft_docx::read(&docx(&png(), &png())).unwrap();
+    let d = letra_docx::read(&docx(&png(), &png())).unwrap();
     assert_eq!(report(&d, None), []);
 }
 
 #[test]
 fn only_the_selected_pages_are_checked() {
-    let d = wordcraft_docx::read(&docx(b"corrupt", &png())).unwrap();
+    let d = letra_docx::read(&docx(b"corrupt", &png())).unwrap();
     assert_eq!(report(&d, Some(0..=0)).len(), 1);
     assert_eq!(report(&d, Some(5..=9)), []);
 }

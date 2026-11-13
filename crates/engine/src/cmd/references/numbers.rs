@@ -20,7 +20,7 @@ pub(super) struct ParaNumber {
 /// Whether the body paragraph at `path` sits in a table cell merged into the one above
 /// (`w:vMerge` continue), at any nesting depth. The layout shows nothing of such a cell, so its
 /// paragraphs take no list number.
-fn in_merged_cell(doc: &wordcraft_doc::Document, path: &Path) -> bool {
+fn in_merged_cell(doc: &letra_doc::Document, path: &Path) -> bool {
     let p = &path.0;
     let mut j = 0usize;
     // [table, row, cell, block, row, cell, block, …]: a table at p[..=j], its row and cell next.
@@ -30,7 +30,7 @@ fn in_merged_cell(doc: &wordcraft_doc::Document, path: &Path) -> bool {
             .table(StoryRef::Body, &Path(tp.to_vec()))
             .and_then(|t| t.rows.get(r as usize))
             .and_then(|row| row.cells.get(c as usize))
-            .is_some_and(|cell| cell.props.vmerge == wordcraft_doc::props::VMerge::Continue);
+            .is_some_and(|cell| cell.props.vmerge == letra_doc::props::VMerge::Continue);
         if merged {
             return true;
         }
@@ -41,7 +41,7 @@ fn in_merged_cell(doc: &wordcraft_doc::Document, path: &Path) -> bool {
 
 /// Every numbered body paragraph's number, by path, walking the lists in document order as the
 /// layout does (cells merged into the one above count nothing). Bullets have no number.
-pub(super) fn para_numbers(doc: &wordcraft_doc::Document) -> std::collections::HashMap<Path, ParaNumber> {
+pub(super) fn para_numbers(doc: &letra_doc::Document) -> std::collections::HashMap<Path, ParaNumber> {
     let mut counters = Counters::default();
     let mut out = std::collections::HashMap::new();
     for path in doc.para_paths(StoryRef::Body) {
@@ -124,7 +124,7 @@ pub(super) fn ref_number(numbers: &std::collections::HashMap<Path, ParaNumber>, 
 }
 
 /// Index the first body paragraph for each bookmark name, retaining document-order lookup semantics.
-pub(super) fn body_bookmark_paths(doc: &wordcraft_doc::Document) -> std::collections::HashMap<String, Path> {
+pub(super) fn body_bookmark_paths(doc: &letra_doc::Document) -> std::collections::HashMap<String, Path> {
     let mut paths = std::collections::HashMap::new();
     for (name, pos) in doc.bookmarks() {
         if pos.story == StoryRef::Body {

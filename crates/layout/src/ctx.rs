@@ -30,7 +30,7 @@ pub(crate) struct Ctx<'a> {
     /// Automatic equation numbers so far.
     pub(crate) eq_count: u32,
     /// Bounds laying out text boxes inside text boxes, for the whole layout.
-    pub(crate) boxes: wordcraft_doc::BoxBudget,
+    pub(crate) boxes: letra_doc::BoxBudget,
     /// Linked text boxes (Create Link).
     pub(crate) chains: textbox::Chains,
     /// The current section's document grid (body text only: none for headers and footers).
@@ -64,7 +64,7 @@ pub(crate) struct Ctx<'a> {
     pub(crate) header_tables: HashMap<(usize, u32, bool), Vec<Rect>>,
     /// Heights of text boxes that resize to fit their text, by story, width and page fields,
     /// worked out once per matching layout context ([`textbox::fitted_height`]).
-    pub(crate) fitted: HashMap<(u32, u32, (u32, u32, u32, u32, u64, wordcraft_doc::section::NumFormat)), Option<f32>>,
+    pub(crate) fitted: HashMap<(u32, u32, (u32, u32, u32, u32, u64, letra_doc::section::NumFormat)), Option<f32>>,
     /// Each body float's latest placement: on which page and with what wrap area, when it is
     /// above its anchor paragraph with text before it ([`EarlyFloats`]).
     pub(crate) floats_above: HashMap<(usize, usize), Option<(usize, WrapArea)>>,
@@ -463,8 +463,8 @@ pub(crate) fn with_pct_base<T>(ctx: &mut Ctx, base: Option<f32>, f: impl FnOnce(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wordcraft_doc::para::{Float, ShapeKind, Wrap};
-    use wordcraft_doc::{PartKind, TextBody, para_block};
+    use letra_doc::para::{Float, ShapeKind, Wrap};
+    use letra_doc::{PartKind, TextBody, para_block};
 
     #[test]
     fn fitted_text_box_cache_separates_page_field_contexts() {
@@ -534,7 +534,7 @@ mod tests {
 
         ctx.fitted_boxes(&p);
         assert_eq!(ctx.fitted.len(), 1);
-        ctx.fields.page_format = wordcraft_doc::section::NumFormat::CardinalText;
+        ctx.fields.page_format = letra_doc::section::NumFormat::CardinalText;
         ctx.fitted_boxes(&p);
         assert_eq!(ctx.fitted.len(), 2, "the same box with a different PAGE format needs its own height");
         ctx.fitted_boxes(&p);

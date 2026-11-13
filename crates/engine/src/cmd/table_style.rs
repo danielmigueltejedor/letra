@@ -4,10 +4,10 @@
 
 use std::sync::Arc;
 
+use letra_doc::props::{Align, Border, BorderStyle, Borders, ParaProps, Rgb, TextColor, Underline, VAlign};
+use letra_doc::styles::{PartFormat, Style, StyleKind, TablePart, TableStyleParts, TableStyleProps};
+use letra_doc::{Block, Table};
 use serde_json::{Value, json};
-use wordcraft_doc::props::{Align, Border, BorderStyle, Borders, ParaProps, Rgb, TextColor, Underline, VAlign};
-use wordcraft_doc::styles::{PartFormat, Style, StyleKind, TablePart, TableStyleParts, TableStyleProps};
-use wordcraft_doc::{Block, Table};
 
 use crate::{CmdError, CmdResult, CommandSpec, Session, p};
 

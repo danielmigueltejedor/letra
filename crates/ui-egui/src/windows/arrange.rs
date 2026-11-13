@@ -12,8 +12,8 @@
 use std::collections::HashMap;
 
 use egui::{Rect, Vec2, ViewportCommand, ViewportId, pos2, vec2};
+use letra_engine::cmd::view::OtherWindow;
 use serde_json::Value;
-use wordcraft_engine::cmd::view::OtherWindow;
 
 use crate::WordApp;
 
@@ -258,7 +258,7 @@ mod tests {
     #[test]
     fn side_by_side_scrolls_with_its_partner_only() {
         let ctx = egui::Context::default();
-        let mut app = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), Services::default());
+        let mut app = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), Services::default());
         app.ctx = Some(ctx.clone());
         app.new_window();
         let keys: Vec<u64> = app.windows.open.iter().map(|w| w.key).collect();

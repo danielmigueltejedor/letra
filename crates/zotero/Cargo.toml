@@ -1,21 +1,21 @@
 [package]
-name = "wordcraft-zotero"
+name = "letra-zotero"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "WordCraft Zotero integration: Zotero's word-processor wire protocol, answered against an engine Session"
+description = "Letra Zotero integration: Zotero's word-processor wire protocol, answered against an engine Session"
 
 [lints]
 workspace = true
 
 [dependencies]
-wordcraft-doc = { workspace = true }
-wordcraft-engine = { workspace = true }
-wordcraft-formats = { workspace = true }
+letra-doc = { workspace = true }
+letra-engine = { workspace = true }
+letra-formats = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }
 
 [dev-dependencies]
-wordcraft-docx = { workspace = true }
+letra-docx = { workspace = true }
 proptest = { workspace = true }

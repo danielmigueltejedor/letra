@@ -4,8 +4,8 @@
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::props::{ParaProps, TabAlign, TabLeader, TabStop};
-use wordcraft_doc::{Document, Paragraph, para_block};
+use letra_doc::props::{ParaProps, TabAlign, TabLeader, TabStop};
+use letra_doc::{Document, Paragraph, para_block};
 
 const TABS: &str = r#"<style:tab-stops><style:tab-stop style:position="1in"/><style:tab-stop style:position="2in" style:type="center" style:leader-style="dotted" style:leader-text="."/><style:tab-stop style:position="3in" style:type="char" style:char="."/><style:tab-stop style:position="4in" style:type="right" style:leader-style="solid" style:leader-text="_"/><style:tab-stop style:position="5in" style:leader-text="-"/></style:tab-stops>"#;
 
@@ -85,7 +85,7 @@ fn tab_stops_round_trip() {
     ];
     let mut p = Paragraph::new();
     p.text = "a\tb".into();
-    p.runs = vec![wordcraft_doc::para::Run { len: 3, props: Default::default() }];
+    p.runs = vec![letra_doc::para::Run { len: 3, props: Default::default() }];
     p.props = ParaProps { tabs: Some(want.clone()), indent_left: Some(18.0), ..Default::default() };
     let mut d = Document::new();
     d.body = vec![para_block(p)];
@@ -152,7 +152,7 @@ fn tab_stops_and_other_paragraph_properties_together() {
     let mut p = Paragraph::with_text("a\tb", Default::default());
     p.props = ParaProps {
         tabs: Some(vec![TabStop { pos: 100.0, align: TabAlign::Left, leader: TabLeader::None }]),
-        shading: Some(wordcraft_doc::props::Rgb(200, 220, 240)),
+        shading: Some(letra_doc::props::Rgb(200, 220, 240)),
         contextual_spacing: Some(true),
         ..Default::default()
     };
@@ -161,7 +161,7 @@ fn tab_stops_and_other_paragraph_properties_together() {
     let back = import(&export(&d).unwrap()).unwrap();
     let props = &back.body[0].as_para().unwrap().props;
     assert_eq!(props.tabs.as_ref().map(|t| t.iter().map(|t| t.pos).collect::<Vec<_>>()), Some(vec![100.0]));
-    assert_eq!((props.shading, props.contextual_spacing), (Some(wordcraft_doc::props::Rgb(200, 220, 240)), Some(true)));
+    assert_eq!((props.shading, props.contextual_spacing), (Some(letra_doc::props::Rgb(200, 220, 240)), Some(true)));
 }
 
 #[test]

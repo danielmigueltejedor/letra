@@ -45,7 +45,7 @@ pub enum SectionStart {
 }
 
 /// A number format (ECMA-376 §17.18.59 ST_NumberFormat). Every value the format defines is
-/// kept, so a document saves back the format it was opened with even where WordCraft draws it as
+/// kept, so a document saves back the format it was opened with even where Letra draws it as
 /// plain decimal (see [`NumFormat::format`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -289,7 +289,7 @@ impl NumFormat {
     pub fn from_ooxml(s: &str) -> NumFormat {
         NumFormat::ALL.into_iter().find(|f| f.ooxml() == s).unwrap_or(NumFormat::Decimal)
     }
-    /// Format `n` (1-based). Formats WordCraft doesn't draw yet (Hebrew, Hindi, Thai letters
+    /// Format `n` (1-based). Formats Letra doesn't draw yet (Hebrew, Hindi, Thai letters
     /// and counting, Vietnamese, text amounts) show decimal, as do values past a sequence's end
     /// (the 21st item of ①…⑳). Thai numbers are the decimal number in Thai digits (๑, ๒ … ๑๐).
     pub fn format(self, n: u32) -> String {

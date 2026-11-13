@@ -10,13 +10,13 @@
 
 use std::sync::Arc;
 
+use letra_doc::props::VMerge;
+use letra_doc::props::{CellProps, CharProps, ParaProps, PropChange, RowProps, TableProps};
+use letra_doc::section::SectionProps;
+use letra_doc::table::{Cell, Row, Table};
+use letra_doc::{Block, Blocks, Document, Paragraph, Path, Revision, RevisionKind, StoryRef};
 use serde::Serialize;
 use serde_json::{Value, json};
-use wordcraft_doc::props::VMerge;
-use wordcraft_doc::props::{CellProps, CharProps, ParaProps, PropChange, RowProps, TableProps};
-use wordcraft_doc::section::SectionProps;
-use wordcraft_doc::table::{Cell, Row, Table};
-use wordcraft_doc::{Block, Blocks, Document, Paragraph, Path, Revision, RevisionKind, StoryRef};
 
 use crate::Session;
 

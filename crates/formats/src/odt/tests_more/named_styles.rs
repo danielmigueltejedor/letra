@@ -4,8 +4,8 @@
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::props::{LineSpacing, TextColor};
-use wordcraft_doc::{Document, Rgb};
+use letra_doc::props::{LineSpacing, TextColor};
+use letra_doc::{Document, Rgb};
 
 fn open() -> Document {
     let styles = format!(
@@ -42,7 +42,7 @@ fn paragraphs_keep_their_custom_style() {
     let (_, cp) = d.styles.para_style_props(&custom);
     assert_eq!((cp.bold, cp.color), (Some(true), Some(TextColor::Rgb(Rgb(0, 0, 0xaa)))));
     // The automatic style's own formatting is direct.
-    assert_eq!(d.body[2].as_para().unwrap().props.align, Some(wordcraft_doc::Align::Center));
+    assert_eq!(d.body[2].as_para().unwrap().props.align, Some(letra_doc::Align::Center));
 }
 
 #[test]

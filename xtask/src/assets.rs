@@ -75,7 +75,7 @@ mod tests {
         // files" passed the check.
         // Created exclusively under a name no one can predict: an existing folder or link there would be someone else's.
         let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.subsec_nanos());
-        let dir = std::env::temp_dir().join(format!("wordcraft-xtask-assets-{}-{nanos}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("letra-xtask-assets-{}-{nanos}", std::process::id()));
         std::fs::create_dir(&dir).unwrap();
         std::fs::write(dir.join("ATTRIBUTION.md"), "").unwrap();
         let inside_git = Command::new("git").current_dir(&dir).args(["rev-parse", "--git-dir"]).output().is_ok_and(|o| o.status.success());

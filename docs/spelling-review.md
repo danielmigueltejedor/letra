@@ -42,9 +42,9 @@ The language-independent pane is rebased by a three-way merge with main `436d444
 From the repository root, keep `Cargo.lock` and the existing dependency pins, use the normal native UI build prerequisites, and run:
 
 ```sh
-cargo test --locked -p wordcraft-engine --lib spelling_review_dialog_navigation
-cargo test --locked -p wordcraft-ui-egui --lib spelling_review_dialog -- --skip preview
-cargo test --locked -p wordcraft-ui-egui --lib spelling_review_dialog_preview -- --ignored --nocapture
+cargo test --locked -p letra-engine --lib spelling_review_dialog_navigation
+cargo test --locked -p letra-ui-egui --lib spelling_review_dialog -- --skip preview
+cargo test --locked -p letra-ui-egui --lib spelling_review_dialog_preview -- --ignored --nocapture
 ```
 
 The filters currently select two engine regressions, seven UI regressions and one explicitly ignored preview test. Check the reported counts; a successful command with zero selected tests is not verification. The last command needs a software or hardware graphics adapter supported by the headless renderer (for example Mesa Vulkan on Linux) and writes `crates/ui-egui/spelling-review-light.png` and `crates/ui-egui/spelling-review-dark.png`. Inspect both outputs and attach the resulting images manually to the review with their source SHA; the ignored test is not a new CI job. These synthetic English fixtures check pane geometry and actions, not an interactive Windows session or pixel-perfect Word identity.

@@ -3,7 +3,7 @@ use crate::Session;
 
 #[test]
 fn citations_and_bibliography() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("text.insert", &json!({"text": "Studios matter "})).unwrap();
     s.run("references.citation", &json!({"source": {"author": "Rivera, Alex; Chen, Mei", "title": "Shared Spaces", "year": "2021", "publisher": "Harbor Books", "city": "Portland"}})).unwrap();
     assert!(s.doc.plain_text(StoryRef::Body).contains("(Rivera & Chen, 2021)"), "{}", s.doc.plain_text(StoryRef::Body));
@@ -23,7 +23,7 @@ fn citations_and_bibliography() {
 /// place in an author-sorted list come from the name too.
 #[test]
 fn a_corporate_author_is_cited_and_listed_as_written() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("text.insert", &json!({"text": "Hearing loss is common "})).unwrap();
     let who = "World Health Organization";
     s.run("references.citation", &json!({"source": {"kind": "report", "corporate": who, "title": "World report on hearing", "year": "2021", "publisher": "WHO Press", "city": "Geneva"}}))
@@ -65,7 +65,7 @@ fn a_corporate_author_is_cited_and_listed_as_written() {
 /// style would make the next layout start over from nothing.
 #[test]
 fn update_fields_adds_the_entry_style_only_with_a_list() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("plain text"));
+    let mut s = Session::new(letra_doc::Document::from_text("plain text"));
     s.run("select.all", &json!({})).unwrap();
     s.run("references.updateFields", &json!({})).unwrap();
     assert!(s.doc.styles.get(ENTRY_STYLE).is_none());
@@ -79,7 +79,7 @@ fn update_fields_adds_the_entry_style_only_with_a_list() {
 
 #[test]
 fn bibliography_round_trip_docx() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("text.insert", &json!({"text": "Studios matter "})).unwrap();
     s.run(
         "references.citation",
@@ -105,8 +105,8 @@ fn bibliography_round_trip_docx() {
     s.run("references.bibliography", &json!({})).unwrap();
 
     // Serialize to DOCX and back — sources must survive.
-    let bytes = wordcraft_docx::write(&s.doc).expect("docx write");
-    let doc = wordcraft_docx::read(&bytes).expect("docx read");
+    let bytes = letra_docx::write(&s.doc).expect("docx write");
+    let doc = letra_docx::read(&bytes).expect("docx read");
     assert_eq!(doc.sources.len(), 1, "round-tripped sources: {:?}", doc.sources);
     assert_eq!(doc.sources[0].author, "Rivera, Alex; Chen, Mei");
     assert_eq!(doc.sources[0].title, "Shared Spaces");
@@ -128,23 +128,23 @@ fn bibliography_round_trip_docx() {
 
 #[test]
 fn citation_style_survives_docx_save_and_reopen() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("references.citation", &json!({"source": {"author": "Rivera, Alex", "title": "Shared Spaces", "year": "2021"}})).unwrap();
     s.run("references.citationStyle", &json!({"style": "Harvard (Anglia)"})).unwrap();
-    let bytes = wordcraft_docx::write(&s.doc).expect("docx write");
-    let doc = wordcraft_docx::read(&bytes).expect("docx read");
+    let bytes = letra_docx::write(&s.doc).expect("docx write");
+    let doc = letra_docx::read(&bytes).expect("docx read");
     assert_eq!(doc.settings.bib_style.as_deref(), Some("Harvard (Anglia)"));
     assert_eq!(Session::new(doc.clone()).bib_style, "Harvard (Anglia)");
-    let mut other = Session::new(wordcraft_doc::Document::new());
+    let mut other = Session::new(letra_doc::Document::new());
     other.set_document(doc);
     assert_eq!(other.bib_style, "Harvard (Anglia)");
     // A document without a recorded style is APA.
-    assert_eq!(Session::new(wordcraft_doc::Document::new()).bib_style, "APA");
+    assert_eq!(Session::new(letra_doc::Document::new()).bib_style, "APA");
 }
 
 #[test]
 fn index_and_figures() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Kilns are hot.\nPresses are heavy.\nMore kilns."));
+    let mut s = Session::new(letra_doc::Document::from_text("Kilns are hot.\nPresses are heavy.\nMore kilns."));
     s.run("select.text", &json!({"text": "Kilns"})).unwrap();
     s.run("references.markEntry", &json!({})).unwrap();
     s.run("select.text", &json!({"text": "Presses"})).unwrap();
@@ -173,7 +173,7 @@ fn index_and_figures() {
 /// cross-reference type of its own, `label:<Name>`, next to Figure, Table and Equation.
 #[test]
 fn cross_reference_to_a_custom_caption_label() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Rock\nSee "));
+    let mut s = Session::new(letra_doc::Document::from_text("Rock\nSee "));
     s.run("select.text", &json!({"text": "Rock"})).unwrap();
     s.run("references.caption", &json!({"label": "Plate", "text": "A rock"})).unwrap();
     assert_eq!(caption_labels(&s), vec!["Plate".to_string()]);
@@ -191,7 +191,7 @@ fn cross_reference_to_a_custom_caption_label() {
 /// letter and roman numbering, which have no digit, still name it; a multi-word label too.
 #[test]
 fn caption_labels_do_not_need_a_digit() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Rock\nGem\nSand\nSee "));
+    let mut s = Session::new(letra_doc::Document::from_text("Rock\nGem\nSand\nSee "));
     for (text, label, format) in [("Rock", "Plate", "ALPHABETIC"), ("Gem", "Photo Plate", "ROMAN"), ("Sand", "Chart", "ARABIC")] {
         s.run("select.text", &json!({"text": text})).unwrap();
         s.run("references.caption", &json!({"label": label, "text": text, "format": format})).unwrap();
@@ -211,7 +211,7 @@ fn caption_labels_do_not_need_a_digit() {
 /// Table target. Captions in a style not based on Caption are not, nor are their labels.
 #[test]
 fn captions_in_a_style_based_on_caption() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("T1\nT2\nT3\nT4\nT5\nNote\nGrid\nStone\nSee "));
+    let mut s = Session::new(letra_doc::Document::from_text("T1\nT2\nT3\nT4\nT5\nNote\nGrid\nStone\nSee "));
     let caption = |s: &mut Session, text: &str, label: &str, title: &str| {
         s.run("select.text", &json!({"text": text})).unwrap();
         s.run("references.caption", &json!({"label": label, "text": title})).unwrap();
@@ -237,8 +237,8 @@ fn captions_in_a_style_based_on_caption() {
             _ => continue,
         };
     }
-    let bytes = wordcraft_docx::write(&s.doc).expect("docx write");
-    let mut s = Session::new(wordcraft_docx::read(&bytes).expect("docx read"));
+    let bytes = letra_docx::write(&s.doc).expect("docx write");
+    let mut s = Session::new(letra_docx::read(&bytes).expect("docx read"));
     let want: Vec<String> = (1..=5).map(|k| format!("tableX {k}: Row {k}")).collect();
     assert_eq!(s.run("insert.crossReference", &json!({"to": "label:tableX"})).unwrap(), json!(want));
     assert_eq!(s.run("insert.crossReference", &json!({"to": "table"})).unwrap(), json!(["Table 1: Grid"]));
@@ -263,7 +263,7 @@ fn list_entries(s: &Session) -> Vec<(String, Option<TabLeader>)> {
 /// and a list of tables; each keeps its own label and leader when updated.
 #[test]
 fn table_of_figures_for_each_caption_label() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Kiln\nPress\nRock\nTablet\n"));
+    let mut s = Session::new(letra_doc::Document::from_text("Kiln\nPress\nRock\nTablet\n"));
     for (text, label) in [("Kiln", "Figure"), ("Press", "Table"), ("Rock", "Photo Plate"), ("Tablet", "Figure")] {
         s.run("select.text", &json!({"text": text})).unwrap();
         s.run("references.caption", &json!({"label": label, "text": text})).unwrap();
@@ -309,7 +309,7 @@ fn table_of_figures_options() {
         (json!({"pageNumbers": false}), "Figure 1: The kiln"),
         (json!({"rightAlign": false, "includeLabel": false}), "The kiln 1"),
     ] {
-        let mut s = Session::new(wordcraft_doc::Document::from_text("Kiln\n"));
+        let mut s = Session::new(letra_doc::Document::from_text("Kiln\n"));
         s.run("select.text", &json!({"text": "Kiln"})).unwrap();
         s.run("references.caption", &json!({"label": "Figure", "text": "The kiln"})).unwrap();
         s.run("caret.docEnd", &json!({})).unwrap();
@@ -325,7 +325,7 @@ fn table_of_figures_options() {
 /// with another's is not.
 #[test]
 fn table_of_figures_from_word_and_typed_captions() {
-    let mut d = wordcraft_doc::Document::from_text("Figure 1: Typed\nFigures 2: Not a figure\nFigure 3 \u{2014} Dashed\nfigure 4: Lower\nList");
+    let mut d = letra_doc::Document::from_text("Figure 1: Typed\nFigures 2: Not a figure\nFigure 3 \u{2014} Dashed\nfigure 4: Lower\nList");
     for path in d.para_paths(StoryRef::Body).into_iter().take(4) {
         d.para_mut(StoryRef::Body, &path).unwrap().props.style = Some("Caption".into());
     }
@@ -351,7 +351,7 @@ fn table_of_figures_from_word_and_typed_captions() {
 /// of date and gains entries (moving the new one down) while every list is rebuilt.
 #[test]
 fn table_of_figures_leader_survives_a_stale_list_above() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Kiln\nPress\nRock\n"));
+    let mut s = Session::new(letra_doc::Document::from_text("Kiln\nPress\nRock\n"));
     for (text, label) in [("Kiln", "Figure"), ("Press", "Table")] {
         s.run("select.text", &json!({"text": text})).unwrap();
         s.run("references.caption", &json!({"label": label, "text": text})).unwrap();
@@ -373,7 +373,7 @@ fn table_of_figures_leader_survives_a_stale_list_above() {
 /// paragraph) is replaced by the rebuilt entries, not listed twice, and keeps its leader.
 #[test]
 fn table_of_figures_from_word_replaces_its_saved_list() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Kiln\nList"));
+    let mut s = Session::new(letra_doc::Document::from_text("Kiln\nList"));
     s.run("select.text", &json!({"text": "Kiln"})).unwrap();
     s.run("references.caption", &json!({"label": "Figure", "text": "Kiln"})).unwrap();
     let last = s.doc.body.len() - 1;
@@ -403,7 +403,7 @@ fn table_of_figures_from_word_replaces_its_saved_list() {
 /// before the number (`STYLEREF`, " Specimen ", `SEQ Figure` is a figure).
 #[test]
 fn table_of_figures_goes_by_the_seq_identifier() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Rock\n"));
+    let mut s = Session::new(letra_doc::Document::from_text("Rock\n"));
     let field = |instr: &str| InlineObject::Field {
         instr: instr.into(),
         result: String::new(),
@@ -436,7 +436,7 @@ fn table_of_figures_goes_by_the_seq_identifier() {
 /// between that and the `SEQ` number; the text is the label, not the `SEQ` identifier.
 #[test]
 fn caption_label_after_a_chapter_number_field() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Rock\nSee "));
+    let mut s = Session::new(letra_doc::Document::from_text("Rock\nSee "));
     let field = |instr: &str| InlineObject::Field {
         instr: instr.into(),
         result: String::new(),
@@ -473,7 +473,7 @@ fn caption_label_after_a_chapter_number_field() {
 /// #661: References › Table of Authorities › Update Table picks up citations marked after the table.
 #[test]
 fn table_of_authorities_updates() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Smith v. Jones held it.\nDoe v. Roe agreed."));
+    let mut s = Session::new(letra_doc::Document::from_text("Smith v. Jones held it.\nDoe v. Roe agreed."));
     s.run("select.text", &json!({"text": "Smith v. Jones"})).unwrap();
     s.run("references.markCitation", &json!({})).unwrap();
     s.run("caret.docEnd", &json!({})).unwrap();
@@ -503,7 +503,7 @@ fn fields(s: &Session) -> Vec<(String, String)> {
 
 #[test]
 fn cross_references_point_at_real_bookmarks() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Kilns\nSee here."));
+    let mut s = Session::new(letra_doc::Document::from_text("Kilns\nSee here."));
     s.run("caret.docStart", &json!({})).unwrap();
     s.run("styles.apply", &json!({"style": "Heading 1"})).unwrap();
     s.run("caret.docEnd", &json!({})).unwrap();
@@ -529,7 +529,7 @@ fn cross_references_point_at_real_bookmarks() {
 
 #[test]
 fn cross_reference_to_a_bookmark_shows_its_text() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Kilns are hot.\nSee "));
+    let mut s = Session::new(letra_doc::Document::from_text("Kilns are hot.\nSee "));
     s.run("select.text", &json!({"text": "Kilns"})).unwrap();
     s.run("insert.bookmark", &json!({"name": "Spot"})).unwrap();
     s.run("caret.docEnd", &json!({})).unwrap();
@@ -540,7 +540,7 @@ fn cross_reference_to_a_bookmark_shows_its_text() {
 
 #[test]
 fn cross_reference_inside_its_own_target_paragraph() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Kilns"));
+    let mut s = Session::new(letra_doc::Document::from_text("Kilns"));
     s.run("styles.apply", &json!({"style": "Heading 1"})).unwrap();
     s.run("caret.docEnd", &json!({})).unwrap();
     s.run("insert.crossReference", &json!({"to": "heading", "target": "Kilns"})).unwrap();
@@ -556,7 +556,7 @@ fn src_of(author: &str, year: &str) -> Value {
 
 #[test]
 fn editing_author_and_year_keeps_the_tag_and_updates_the_citation_text() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("references.sources", &json!({"add": src_of("Smith, Ann", "2020")})).unwrap();
     assert_eq!(s.doc.sources[0].tag, "Smi20");
     s.run("references.citation", &json!({"tag": "Smi20"})).unwrap();
@@ -573,7 +573,7 @@ fn editing_author_and_year_keeps_the_tag_and_updates_the_citation_text() {
 
 #[test]
 fn a_new_sources_tag_is_three_letters_and_two_year_digits() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     for (a, y) in [
         ("Kim", "2000"),
         ("Kim", "2000"),
@@ -589,7 +589,7 @@ fn a_new_sources_tag_is_three_letters_and_two_year_digits() {
     }
     let tags: Vec<_> = s.doc.sources.iter().map(|x| x.tag.as_str()).collect();
     assert_eq!(tags, ["Kim00", "Kim001", "Kim002", "Lee19", "Li99", "Src", "Src1", "Üna7", "ONe05"]);
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     let mut a = src_of("Lee", "2019");
     a["tag"] = json!("MyTag");
     s.run("references.sources", &json!({"add": a})).unwrap();
@@ -606,7 +606,7 @@ fn two_sources(s: &mut Session, a_title: &str) {
 
 #[test]
 fn author_date_styles_cite_and_list() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     two_sources(&mut s, "Shared Spaces");
     s.run("references.citation", &json!({"tag": "A", "pages": "12"})).unwrap();
     s.run("references.citation", &json!({"tag": "B"})).unwrap();
@@ -665,7 +665,7 @@ fn import_sources_reads_a_word_bibliography_file() {
     std::fs::write(&path, xml).unwrap();
     let path = path.to_string_lossy().to_string();
 
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("references.sources", &json!({"import": path})).unwrap();
     assert_eq!(s.doc.sources.len(), 2, "the source with no content is dropped");
     assert_eq!(s.doc.sources[0].tag, "Riv21");
@@ -711,7 +711,7 @@ fn an_import_tags_each_untagged_source_once() {
     )
     .unwrap();
     let path = path.to_string_lossy().to_string();
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("references.sources", &json!({"import": path})).unwrap();
     let tags: Vec<_> = s.doc.sources.iter().map(|x| x.tag.as_str()).collect();
     assert_eq!(tags, ["Riv21", "Riv211", "Src"], "{tags:?}");
@@ -722,7 +722,7 @@ fn an_import_tags_each_untagged_source_once() {
 
 #[test]
 fn numbered_styles_count_in_order_of_first_citation() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     two_sources(&mut s, "Shared Spaces");
     s.run("references.citationStyle", &json!({"style": "ISO 690 (numerical)"})).unwrap();
     s.run("text.insert", &json!({"text": "Later "})).unwrap();
@@ -765,7 +765,7 @@ fn numbered_styles_count_in_order_of_first_citation() {
 
 #[test]
 fn gost_numbers_follow_its_name_or_title_sort() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     two_sources(&mut s, "Atlas of Studios");
     s.run("references.citation", &json!({"tag": "A"})).unwrap();
     s.run("references.citation", &json!({"tag": "B", "pages": "15"})).unwrap();
@@ -804,7 +804,7 @@ fn lookup_session(tags: &[&str]) -> Session {
         .unwrap();
     }
     let mut doc = Document::new();
-    doc.body = vec![wordcraft_doc::para_block(p)];
+    doc.body = vec![letra_doc::para_block(p)];
     Session::new(doc)
 }
 
@@ -848,8 +848,8 @@ fn citation_source_lookups_keep_first_duplicates_case_and_style_order() {
 fn citation_refresh_source_lookup_work_scales_with_document_size() {
     fn doc(n: usize) -> Session {
         let mut p = Paragraph::new();
-        p.text = wordcraft_doc::para::OBJ.to_string().repeat(n);
-        p.runs = vec![wordcraft_doc::Run { len: p.text.len(), props: CharProps::default() }];
+        p.text = letra_doc::para::OBJ.to_string().repeat(n);
+        p.runs = vec![letra_doc::Run { len: p.text.len(), props: CharProps::default() }];
         p.objects = (0..n)
             .rev()
             .map(|i| InlineObject::Field {
@@ -862,7 +862,7 @@ fn citation_refresh_source_lookup_work_scales_with_document_size() {
             })
             .collect();
         let mut d = Document::new();
-        d.body = vec![wordcraft_doc::para_block(p)];
+        d.body = vec![letra_doc::para_block(p)];
         d.sources = (0..n).map(|i| Source { tag: format!("T{i}"), ..Default::default() }).collect();
         let mut s = Session::new(d);
         s.bib_style = "IEEE".into();

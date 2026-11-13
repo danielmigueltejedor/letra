@@ -3,7 +3,7 @@ use super::{
     Draw, Exporter, Fill, FillRule, LineCap, LineJoin, LineStyle, PathBuilder, Rect, Rgb, ShapeKind, Size, Stroke, StrokeDash, Surface, Transform,
     append_path, fill, grown, krilla, norm, ok, paint_fill, pdf_line_cap, rect_path, rgb, shape_effects, shape_path, vector_picture,
 };
-use wordcraft_doc::picfx::PicFx;
+use letra_doc::picfx::PicFx;
 
 impl Exporter<'_> {
     /// Paint one display item on the PDF surface in its current point-coordinate system.
@@ -47,7 +47,7 @@ impl Exporter<'_> {
             Draw::Image { rect, media, crop, alpha, fx, .. } => self.picture(s, rect, media, crop, *alpha, *fx),
             Draw::Path { segs, fill: f, stroke, stroke_width, dash, cap } => {
                 let mut pb = PathBuilder::new();
-                append_path(&mut pb, &wordcraft_layout::display::seg_path(segs));
+                append_path(&mut pb, &letra_layout::display::seg_path(segs));
                 let Some(p) = pb.finish() else { return };
                 s.set_fill(f.as_ref().map(paint_fill));
                 s.set_stroke(stroke.map(|c| Stroke {
@@ -129,7 +129,7 @@ impl Exporter<'_> {
                 s.set_stroke(None);
             }
             Draw::Art { path, fx, color, alpha, .. } => {
-                for l in wordcraft_layout::wordart::art_layers(path, fx, *color, *alpha) {
+                for l in letra_layout::wordart::art_layers(path, fx, *color, *alpha) {
                     let mut pb = PathBuilder::new();
                     append_path(&mut pb, &l.path);
                     let Some(p) = pb.finish() else { continue };
@@ -277,7 +277,7 @@ impl Exporter<'_> {
 
     /// The page's picture or texture fill: tiled at 96 dpi for a `tile` fill (when that is a sane
     /// number of tiles), else stretched over the page.
-    pub(super) fn page_picture(&mut self, s: &mut Surface, pic: &wordcraft_doc::PagePicture, w: f32, h: f32) {
+    pub(super) fn page_picture(&mut self, s: &mut Surface, pic: &letra_doc::PagePicture, w: f32, h: f32) {
         const MAX_TILES: f32 = 4096.0;
         if !(w.is_finite() && h.is_finite() && w > 0.0 && h > 0.0) {
             return;
@@ -324,7 +324,7 @@ impl Exporter<'_> {
             s.set_fill(None);
             return;
         };
-        let [cl, ct, vis_w, vis_h] = wordcraft_metafile::crop_window(*crop).map(|v| v as f32);
+        let [cl, ct, vis_w, vis_h] = letra_metafile::crop_window(*crop).map(|v| v as f32);
         let (fw, fh) = (rect.w / vis_w, rect.h / vis_h);
         let Some(size) = Size::from_wh(fw.max(0.01), fh.max(0.01)) else { return };
         let fade = alpha < 0.999;

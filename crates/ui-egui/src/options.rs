@@ -1,17 +1,17 @@
 //! File › Options (#485): a list of panes on the left (General, Display, Proofing, Save,
 //! Language, Accessibility, Advanced, Agents), the chosen pane's settings on the right. Only
-//! settings WordCraft carries out are shown. Each pane is one function below, so a new setting
+//! settings Letra carries out are shown. Each pane is one function below, so a new setting
 //! goes into its pane's function. Settings agents can change too go through `file.options`; the
 //! rest live in [`crate::UiState`] (saved in `ui.json`).
 
 use std::cell::Cell;
 
 use egui::{RichText, Ui, vec2};
+use letra_engine::cmd::options::{MAX_WORD_CHARS, PANES};
+use letra_geom::Unit;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Map, Value, json};
-use wordcraft_engine::cmd::options::{MAX_WORD_CHARS, PANES};
-use wordcraft_geom::Unit;
 
 use crate::WordApp;
 use crate::theme::{Tokens, semibold};
@@ -72,7 +72,7 @@ pub fn parse_length(text: &str, unit: Unit) -> Option<f64> {
             break;
         }
     }
-    wordcraft_geom::parse_measure(&text, unit).map(|pt| f64::from(pt / unit.pt_per_unit()))
+    letra_geom::parse_measure(&text, unit).map(|pt| f64::from(pt / unit.pt_per_unit()))
 }
 
 /// Copy the session's settings the UI reads without the app.
@@ -226,7 +226,7 @@ fn general(app: &mut WordApp, ui: &mut Ui) {
     theme_picker(app, ui);
     interface_size_picker(app, ui);
     ui.horizontal(|ui| {
-        use wordcraft_engine::cmd::view::PaperColor;
+        use letra_engine::cmd::view::PaperColor;
         let label = ui.label(tl!("Screen paper color:"));
         let selected = app.session.prefs.paper_color;
         let combo = craft_ui::ComboBox::from_id_salt("screen_paper_color").selected_text(tl!(selected.label())).width(220.0).show_ui(ui, |ui| {
@@ -249,15 +249,14 @@ fn general(app: &mut WordApp, ui: &mut Ui) {
     {
         let _ = app.run("view.darkMode", json!({"value": dark_page}));
     }
-    ui.checkbox(&mut app.ui.show_discord, tl!("Show the community button in the title bar"));
     default_app_button(app, ui);
     ui.add_space(8.0);
     section(ui, "Start-up");
     let mut start = app.ui.start_screen;
     if ui
-        .checkbox(&mut start, tl!("Show the Start screen when WordCraft starts"))
+        .checkbox(&mut start, tl!("Show the Start screen when Letra starts"))
         .on_hover_text(tl!(
-            "On: WordCraft opens on File › Home, with a blank document, the templates and your recent documents. Off: it opens a blank document."
+            "On: Letra opens on File › Home, with a blank document, the templates and your recent documents. Off: it opens a blank document."
         ))
         .changed()
     {
@@ -270,7 +269,7 @@ fn general(app: &mut WordApp, ui: &mut Ui) {
             let user_label = r.cell(|ui| ui.label(tl!("User name:")));
             r.cell(|ui| {
                 let mut n = app.session.author.clone();
-                let protected = wordcraft_engine::cmd::protect::enforced(&app.session.doc);
+                let protected = letra_engine::cmd::protect::enforced(&app.session.doc);
                 if ui.add_enabled(!protected, egui::TextEdit::singleline(&mut n).desired_width(260.0)).labelled_by(user_label.id).changed()
                     && !protected
                 {
@@ -287,7 +286,7 @@ fn general(app: &mut WordApp, ui: &mut Ui) {
                     .add(
                         egui::TextEdit::singleline(&mut i)
                             .desired_width(80.0)
-                            .char_limit(wordcraft_engine::cmd::options::MAX_INITIALS_CHARS)
+                            .char_limit(letra_engine::cmd::options::MAX_INITIALS_CHARS)
                             .hint_text(hint),
                     )
                     .labelled_by(initials_label.id)
@@ -359,7 +358,7 @@ fn proofing(app: &mut WordApp, ui: &mut Ui) {
 
 /// Where the spelling dictionaries come from (#1063): a folder searched before the system's
 /// usual places, saved with the settings. An app started from Finder or the Dock doesn't see
-/// `WORDCRAFT_DICTIONARIES`, so this is how it finds a dictionary kept in a folder of the user's
+/// `LETRA_DICTIONARIES`, so this is how it finds a dictionary kept in a folder of the user's
 /// own. Each language's status ("Your own dictionary") is in Your languages above, and the file
 /// each language found is under Dictionary files.
 fn dictionaries(app: &mut WordApp, ui: &mut Ui) {
@@ -400,15 +399,15 @@ fn dictionaries(app: &mut WordApp, ui: &mut Ui) {
 fn dictionary_files(ui: &mut Ui) {
     // The dictionary each language found, looked up again after the folder changes.
     let found_id = egui::Id::unique("options_dictionaries_found");
-    let generation = wordcraft_engine::proof::dictionary_generation();
+    let generation = letra_engine::proof::dictionary_generation();
     let cached = ui.data(|d| d.get_temp::<(u64, Vec<(String, Option<String>, Option<String>)>)>(found_id)).filter(|(g, _)| *g == generation);
     let found = match cached {
         Some((_, f)) => f,
         None => {
-            let f: Vec<(String, Option<String>, Option<String>)> = wordcraft_engine::proof::installed_dictionaries()
+            let f: Vec<(String, Option<String>, Option<String>)> = letra_engine::proof::installed_dictionaries()
                 .into_iter()
                 .map(|(lang, dic)| {
-                    let error = wordcraft_engine::proof::dictionary_load_error(lang);
+                    let error = letra_engine::proof::dictionary_load_error(lang);
                     (language_name(lang).to_string(), dic.map(|d| d.to_string_lossy().into_owned()), error)
                 })
                 .collect();
@@ -430,8 +429,8 @@ fn dictionary_files(ui: &mut Ui) {
 }
 
 /// The interface name of a language with a Hunspell dictionary.
-fn language_name(lang: wordcraft_engine::proof::ProofLang) -> &'static str {
-    use wordcraft_engine::proof::ProofLang;
+fn language_name(lang: letra_engine::proof::ProofLang) -> &'static str {
+    use letra_engine::proof::ProofLang;
     match lang {
         ProofLang::Pl => tl!("Polish"),
         ProofLang::Pt => tl!("Portuguese (Brazil)"),
@@ -460,7 +459,7 @@ fn language_name(lang: wordcraft_engine::proof::ProofLang) -> &'static str {
 /// The custom dictionary: the words Add to Dictionary kept, each with a Remove button, and a
 /// field to add one.
 fn custom_dictionary(app: &mut WordApp, ui: &mut Ui) {
-    let words = wordcraft_engine::proof::user_dictionary();
+    let words = letra_engine::proof::user_dictionary();
     if words.is_empty() {
         note(ui, "No words yet. Add to Dictionary on a misspelled word puts it here.");
     }
@@ -499,7 +498,7 @@ fn save(app: &mut WordApp, ui: &mut Ui) {
     // The browser can't write to the user's files, so AutoSave can't be turned on there (#176).
     let browser = app.autosave_block() == Some(crate::AutoSaveBlock::Browser);
     let mut autosave = app.autosave && !browser;
-    let r = ui.add_enabled_ui(!browser, |ui| ui.checkbox(&mut autosave, tl!("AutoSave documents you have saved in WordCraft"))).inner;
+    let r = ui.add_enabled_ui(!browser, |ui| ui.checkbox(&mut autosave, tl!("AutoSave documents you have saved in Letra"))).inner;
     if browser {
         r.on_disabled_hover_text(crate::AutoSaveBlock::Browser.reason());
     } else if r.changed() {
@@ -536,7 +535,7 @@ fn language(app: &mut WordApp, ui: &mut Ui) {
     let text = if crate::ribbon::caret_no_proof(app) {
         tl!("The text at the insertion point is marked Do not check spelling or grammar.").to_string()
     } else if !crate::ribbon::caret_language_proofed(app) {
-        crate::i18n::fmt(tl!("{language}: WordCraft doesn't check spelling or grammar in this language yet."), &[("language", &lang)])
+        crate::i18n::fmt(tl!("{language}: Letra doesn't check spelling or grammar in this language yet."), &[("language", &lang)])
     } else {
         let unreadable = crate::ribbon::caret_unreadable_dictionary(app);
         crate::chrome::dictionary_problem(&lang, &unreadable, crate::ribbon::caret_missing_dictionary(app))
@@ -553,7 +552,7 @@ fn language(app: &mut WordApp, ui: &mut Ui) {
 
 /// Draws Accessibility options: the animation setting and Read Aloud speed and skip-citations.
 fn accessibility(app: &mut WordApp, ui: &mut Ui) {
-    use wordcraft_engine::speech::{MAX_RATE, MIN_RATE};
+    use letra_engine::speech::{MAX_RATE, MIN_RATE};
     section(ui, "Visual effects");
     animations_picker(app, ui);
     ui.add_space(8.0);
@@ -722,7 +721,7 @@ fn templates_folder(app: &mut WordApp, ui: &mut Ui) {
 
 fn agents(ui: &mut Ui) {
     section(ui, "Agents");
-    ui.label(tl!("Every command is available to scripts and AI agents: run `wordcraft-cli mcp` for an MCP server, or start the app with `--control <port>` for the JSON control channel."));
+    ui.label(tl!("Every command is available to scripts and AI agents: run `letra-cli mcp` for an MCP server, or start the app with `--control <port>` for the JSON control channel."));
 }
 
 /// Interface theme: Light, Dark, or follow the system's appearance (#115).
@@ -837,7 +836,7 @@ fn display_server_picker(app: &mut WordApp, ui: &mut Ui) {
         });
         combo.response.labelled_by(label.id);
     });
-    note(ui, "Applies the next time WordCraft starts.");
+    note(ui, "Applies the next time Letra starts.");
 }
 
 /// Interface language: follow the system (the default) or pick one (#8).
@@ -932,23 +931,23 @@ fn overlay<T: DeserializeOwned>(
     }
 }
 
-/// File ▸ Options ▸ General: make WordCraft the default app for Word documents (#295). Only where
+/// File ▸ Options ▸ General: make Letra the default app for Word documents (#295). Only where
 /// the host can (`Services::make_default_app`: Windows opens Default apps, Linux and BSD use
 /// `xdg-mime`); macOS shows how to do it in Finder, the web shows nothing.
 fn default_app_button(app: &mut WordApp, ui: &mut Ui) {
     if app.services.make_default_app.is_some() {
         let hint = if cfg!(target_os = "windows") {
-            tl!("Opens Settings › Default apps, where you choose WordCraft for .docx and the other document types.")
+            tl!("Opens Settings › Default apps, where you choose Letra for .docx and the other document types.")
         } else {
-            tl!("Opens .docx, .doc, .rtf and .odt files and Word templates with WordCraft from now on.")
+            tl!("Opens .docx, .doc, .rtf and .odt files and Word templates with Letra from now on.")
         };
-        if ui.button(tl!("Make WordCraft the default for Word documents…")).on_hover_text(hint).clicked() {
+        if ui.button(tl!("Make Letra the default for Word documents…")).on_hover_text(hint).clicked() {
             // Straight to the hook, not through `run`: only a click may change system defaults.
             let _ = app.make_default_app();
         }
     } else if cfg!(target_os = "macos") {
         ui.label(
-            egui::RichText::new(tl!("To open Word documents with WordCraft by default: select one in Finder, choose File › Get Info, pick WordCraft under Open with, then click Change All."))
+            egui::RichText::new(tl!("To open Word documents with Letra by default: select one in Finder, choose File › Get Info, pick Letra under Open with, then click Change All."))
                 .small()
                 .weak(),
         );
@@ -958,7 +957,7 @@ fn default_app_button(app: &mut WordApp, ui: &mut Ui) {
 /// File ▸ Options ▸ Numerals: how digits look on screen (display only, like Word's
 /// File › Options › Advanced › Numeral).
 fn numeral_picker(app: &mut WordApp, ui: &mut Ui) {
-    use wordcraft_layout::NumeralMode;
+    use letra_layout::NumeralMode;
     ui.horizontal(|ui| {
         let label = ui.label(tl!("Numerals:"));
         let mut sel = app.session.view.numeral;

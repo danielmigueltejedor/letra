@@ -1,12 +1,12 @@
 //! Rotated and mirrored shapes and pictures (ODF 1.3 §19.228 `draw:transform`, §20.112
 //! `draw:mirror-horizontal`/`-vertical` of a custom shape's geometry): a turn in the file
-//! (anticlockwise, about the shape's top left corner, then moved) opens as WordCraft's
+//! (anticlockwise, about the shape's top left corner, then moved) opens as Letra's
 //! (clockwise about the centre of the unrotated box at its offset), and is written back.
 
 use crate::odt::tests::{NS_T, content_of, package, zip_of};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
-use wordcraft_doc::para::{Float, InlineObject, Wrap};
+use letra_doc::Document;
+use letra_doc::para::{Float, InlineObject, Wrap};
 
 const NS_D: &str = r#"xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink""#;
 

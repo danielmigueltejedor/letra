@@ -1,11 +1,11 @@
-//! Fields in an ODT file update in WordCraft as they do in Word: a reference to a bookmark shows
+//! Fields in an ODT file update in Letra as they do in Word: a reference to a bookmark shows
 //! the bookmarked text (a bookmark over text, `text:bookmark-start`…`-end`, not a point). The
 //! ODT is original and synthetic, shaped like LibreOffice's.
 
 use std::io::Write;
 
+use letra_engine::{Session, io};
 use serde_json::json;
-use wordcraft_engine::{Session, io};
 
 const NS: &str = r#"xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0""#;
 
@@ -21,7 +21,7 @@ fn odt(body: &str) -> Vec<u8> {
 }
 
 fn text(s: &Session) -> Vec<String> {
-    s.doc.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(wordcraft_doc::para::OBJ, "")).collect()
+    s.doc.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(letra_doc::para::OBJ, "")).collect()
 }
 
 /// The displayed results of the fields in the body.
@@ -32,7 +32,7 @@ fn results(s: &Session) -> Vec<String> {
         .filter_map(|b| b.as_para())
         .flat_map(|p| p.objects.iter())
         .filter_map(|o| match o {
-            wordcraft_doc::para::InlineObject::Field { result, .. } => Some(result.clone()),
+            letra_doc::para::InlineObject::Field { result, .. } => Some(result.clone()),
             _ => None,
         })
         .collect()
@@ -120,7 +120,7 @@ fn a_table_formula_updates_as_a_word_formula() {
             .flat_map(|c| c.blocks.iter().filter_map(|b| b.as_para()))
             .flat_map(|p| p.objects.iter())
             .filter_map(|o| match o {
-                wordcraft_doc::para::InlineObject::Field { instr, result, .. } => Some((instr.clone(), result.clone())),
+                letra_doc::para::InlineObject::Field { instr, result, .. } => Some((instr.clone(), result.clone())),
                 _ => None,
             })
             .collect()

@@ -1,4 +1,4 @@
-//! Package parts WordCraft doesn't read (ODF 1.3 Part 2 §3): macros and dialogs (`Basic/`),
+//! Package parts Letra doesn't read (ODF 1.3 Part 2 §3): macros and dialogs (`Basic/`),
 //! LibreOffice's interface configuration, `manifest.rdf` and other applications' files are kept
 //! as they are and written back with their manifest entries; the thumbnail and digital
 //! signatures, which describe the package as it was, are not.
@@ -13,7 +13,7 @@ const MODULE: &str = r#"<?xml version="1.0" encoding="UTF-8"?><script:module xml
 End Sub
 </script:module>"#;
 
-/// A package with parts WordCraft doesn't read, `extra` more files, and a manifest listing
+/// A package with parts Letra doesn't read, `extra` more files, and a manifest listing
 /// some of them.
 fn odt(extra: &[(&str, &[u8])]) -> Vec<u8> {
     let content = format!(
@@ -100,7 +100,7 @@ fn parts_with_hostile_names_are_not_written() {
         assert!(file(&fs, name).is_none(), "{name}");
     }
     assert!(fs.iter().all(|(n, _)| !n.contains("..")));
-    // Parts named as WordCraft's own are WordCraft's.
+    // Parts named as Letra's own are Letra's.
     let own: [(&str, &[u8]); 2] = [("Pictures/stale.png", b"x"), ("ObjectReplacements/Object 9", b"x")];
     let fs = files(&export(&import(&odt(&own)).unwrap()).unwrap());
     assert!(file(&fs, "Pictures/stale.png").is_none() && file(&fs, "ObjectReplacements/Object 9").is_none());
@@ -110,8 +110,8 @@ fn parts_with_hostile_names_are_not_written() {
 fn who_changed_the_document_last_and_when_round_trip() {
     // meta.xml: the author (`meta:initial-creator`), who changed it last (`dc:creator`), when
     // (`dc:date`) and how often it was saved (`meta:editing-cycles`).
-    let mut d = wordcraft_doc::Document::new();
-    d.body = vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text("x", Default::default()))];
+    let mut d = letra_doc::Document::new();
+    d.body = vec![letra_doc::para_block(letra_doc::Paragraph::with_text("x", Default::default()))];
     d.core.creator = "Ada".into();
     d.core.last_modified_by = "Grace".into();
     d.core.created = "2026-01-02T03:04:05Z".into();

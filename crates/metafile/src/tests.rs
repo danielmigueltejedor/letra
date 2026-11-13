@@ -1027,7 +1027,7 @@ fn size_of_a_truncated_or_mutated_file_equals_the_full_parse() {
 }
 
 /// Time of the full parse against the header-only size for an EMF with one 8000 x 5000, 1 bpp bitmap
-/// (5 MB, decodes to 160 MB): `cargo test -p wordcraft-metafile --release -- --ignored --nocapture size_speed`.
+/// (5 MB, decodes to 160 MB): `cargo test -p letra-metafile --release -- --ignored --nocapture size_speed`.
 #[test]
 #[ignore = "timing only"]
 fn size_speed() {

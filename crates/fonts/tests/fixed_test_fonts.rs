@@ -2,7 +2,7 @@
 #![cfg(feature = "test-support")]
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use wordcraft_fonts::FontDb;
+use letra_fonts::FontDb;
 
 #[test]
 fn fixed_fonts_exclude_system_and_optional_faces() {

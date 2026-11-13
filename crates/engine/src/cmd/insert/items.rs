@@ -168,7 +168,7 @@ pub(super) fn symbol(s: &mut Session, v: &Value) -> CmdResult {
     // font later keeps the symbol; other fonts are ordinary run formatting. `w:sym` holds a 16-bit
     // code, so a character beyond the Basic Multilingual Plane stays ordinary text in that font.
     // Each character decides for itself, so a mixed string keeps its symbols and its text apart.
-    let font_is_symbol = wordcraft_doc::symbol_fonts::is_symbol_font(font);
+    let font_is_symbol = letra_doc::symbol_fonts::is_symbol_font(font);
     let mut r = Ok(());
     let mut buf = [0u8; 4];
     for ch in c.chars() {
@@ -217,8 +217,8 @@ pub(super) fn cover_page(s: &mut Session, v: &Value) -> CmdResult {
     }
     let mut t =
         Paragraph::with_text(&title, CharProps { size: Some(44.0), color: Some(TextColor::Rgb(accent)), ..Default::default() }).styled("Title");
-    t.props.borders = Some(wordcraft_doc::props::Borders {
-        bottom: Some(wordcraft_doc::props::Border { style: wordcraft_doc::props::BorderStyle::Single, width: 2.0, color: Some(accent), space: 6.0 }),
+    t.props.borders = Some(letra_doc::props::Borders {
+        bottom: Some(letra_doc::props::Border { style: letra_doc::props::BorderStyle::Single, width: 2.0, color: Some(accent), space: 6.0 }),
         ..Default::default()
     });
     blocks.push(Block::Para(t));
@@ -231,7 +231,7 @@ pub(super) fn cover_page(s: &mut Session, v: &Value) -> CmdResult {
     let mut date = Paragraph::with_text(&format_date("MMMM d, yyyy"), CharProps::default());
     date.insert_text(date.len(), "\u{000C}", &CharProps::default())?;
     blocks.push(Block::Para(date));
-    let frag = wordcraft_doc::edit::Fragment { blocks, ..Default::default() };
+    let frag = letra_doc::edit::Fragment { blocks, ..Default::default() };
     let start = s.doc.start_of(StoryRef::Body);
     let at = s.doc.split_paragraph(&start)?;
     let _ = at;
@@ -282,7 +282,7 @@ pub(super) fn drop_cap(s: &mut Session, v: &Value) -> CmdResult {
     let margin = p::str(v, "position") == Some("margin");
     let lines_given = lines.is_some();
     let lines = lines.map_or(3.0, |l| l.round().clamp(1.0, 10.0)) as u8;
-    let distance = p::f32(v, "distance").map_or(0.0, |d| d.clamp(0.0, wordcraft_doc::resolve::MAX_DROP_CAP_DISTANCE));
+    let distance = p::f32(v, "distance").map_or(0.0, |d| d.clamp(0.0, letra_doc::resolve::MAX_DROP_CAP_DISTANCE));
     // A family name, not a paragraph of text.
     let font = p::str(v, "font").map(str::trim).filter(|f| !f.is_empty()).map(|f| f.chars().take(64).collect::<String>());
     if !none && let Some(why) = drop_cap_selection_off(s) {

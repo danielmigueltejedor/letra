@@ -4,8 +4,8 @@
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::props::{CharProps, Underline};
-use wordcraft_doc::{Document, Paragraph, Rgb, para_block};
+use letra_doc::props::{CharProps, Underline};
+use letra_doc::{Document, Paragraph, Rgb, para_block};
 
 fn spans(props: &[&str]) -> Document {
     let styles: String = props
@@ -109,8 +109,8 @@ fn character_formatting_round_trips() {
     for (i, props) in want.iter().enumerate() {
         let s = format!("s{i}|");
         p.text.push_str(&s);
-        p.runs.push(wordcraft_doc::para::Run { len: s.len() - 1, props: props.clone() });
-        p.runs.push(wordcraft_doc::para::Run { len: 1, props: Default::default() });
+        p.runs.push(letra_doc::para::Run { len: s.len() - 1, props: props.clone() });
+        p.runs.push(letra_doc::para::Run { len: 1, props: Default::default() });
     }
     let mut d = Document::new();
     d.body = vec![para_block(p)];
@@ -230,14 +230,14 @@ fn a_border_around_text_is_read_and_written() {
     let d = crate::odt::import(&crate::odt::tests::package(&content, None)).unwrap();
     let p = d.body.iter().find_map(|b| b.as_para()).unwrap();
     let b = p.runs.iter().find_map(|r| r.props.border).expect("a text border");
-    assert_eq!((b.color, (b.width * 100.0).round(), (b.space * 100.0).round()), (Some(wordcraft_doc::props::Rgb(255, 0, 0)), 74.0, 144.0));
+    assert_eq!((b.color, (b.width * 100.0).round(), (b.space * 100.0).round()), (Some(letra_doc::props::Rgb(255, 0, 0)), 74.0, 144.0));
     let c = crate::odt::tests::content_of(&crate::odt::tests::export_model(&d).unwrap());
     assert!(c.contains(r#"loext:border="0.74pt solid #ff0000" loext:padding="1.44pt""#), "{c}");
 }
 
 #[test]
 fn emphasis_marks_are_read_and_written() {
-    use wordcraft_doc::props::EmphasisMark as E;
+    use letra_doc::props::EmphasisMark as E;
     let style = |n: &str, v: &str| {
         format!(r#"<style:style style:name="{n}" style:family="text"><style:text-properties style:text-emphasize="{v}"/></style:style>"#)
     };
@@ -276,13 +276,13 @@ fn objects_in_hidden_text_are_kept() {
     let mut p = Paragraph::with_text("Shown. Hidden words.", CharProps::default());
     let n = p.len();
     p.format(7, n, &|c| c.hidden = Some(true)).unwrap();
-    p.insert_object(14, wordcraft_doc::para::InlineObject::BookmarkStart { name: "Secret".into() }, &hidden).unwrap();
+    p.insert_object(14, letra_doc::para::InlineObject::BookmarkStart { name: "Secret".into() }, &hidden).unwrap();
     let mut d = Document::new();
     d.body = vec![para_block(p)];
     let back = import(&export(&d).unwrap()).unwrap();
     let p = back.body[0].as_para().unwrap();
     assert!(p.text.contains("Hidden"), "{:?}", p.text);
-    assert!(p.objects.iter().any(|o| matches!(o, wordcraft_doc::para::InlineObject::BookmarkStart { name } if name == "Secret")), "{:?}", p.objects);
+    assert!(p.objects.iter().any(|o| matches!(o, letra_doc::para::InlineObject::BookmarkStart { name } if name == "Secret")), "{:?}", p.objects);
 }
 
 /// A paragraph in style `style` holding `span`, with `auto` among its automatic styles.
@@ -438,12 +438,12 @@ fn the_default_language_is_the_files_and_written_back_from_the_model() {
     assert!(default_style(&styles).contains(r#"fo:language="de" fo:country="DE""#), "{styles}");
     assert!(!styles.contains(r#"fo:language="en""#), "no style says English: {styles}");
     assert_eq!(import(&saved).unwrap().styles.default_chr.lang.as_deref(), Some("de-DE"));
-    // Saved as read, the styles WordCraft adds beside the file's don't say English either.
+    // Saved as read, the styles Letra adds beside the file's don't say English either.
     let styles = crate::odt::tests::entry(&export(&d).unwrap(), "styles.xml");
     assert!(!styles.contains(r#"fo:language="en""#), "{styles}");
 }
 
-/// The document's language as WordCraft has it is Normal's (a Word file's Normal may state
+/// The document's language as Letra has it is Normal's (a Word file's Normal may state
 /// another than its defaults): that is what the default style says when written from the model.
 #[test]
 fn the_documents_language_written_is_normals() {
@@ -463,7 +463,7 @@ fn the_documents_language_written_is_normals() {
 #[test]
 fn a_file_stating_no_language_has_none_and_writes_none() {
     let d = import(&with_default_text("", "")).unwrap();
-    assert_eq!(d.styles.default_chr.lang, None, "not the English of WordCraft's new documents");
+    assert_eq!(d.styles.default_chr.lang, None, "not the English of Letra's new documents");
     let saved = crate::odt::tests::export_model(&d).unwrap();
     assert!(!crate::odt::tests::entry(&saved, "styles.xml").contains("fo:language"));
     assert_eq!(import(&saved).unwrap().styles.default_chr.lang, None);
@@ -515,7 +515,7 @@ fn a_language_with_a_script_keeps_it() {
     let content = format!(
         r#"<office:document-content {NS_T}><office:automatic-styles><style:style style:name="T1" style:family="text"><style:text-properties {run}/></style:style></office:automatic-styles><office:body><office:text><text:p text:style-name="Eigen">Own <text:span text:style-name="T1">span</text:span></text:p></office:text></office:body></office:document-content>"#
     );
-    let check = |d: &wordcraft_doc::Document| {
+    let check = |d: &letra_doc::Document| {
         let chr = &d.styles.get("Eigen").unwrap().chr;
         assert_eq!(
             (chr.lang.as_deref(), chr.lang_ea.as_deref(), chr.lang_bidi.as_deref()),
@@ -550,7 +550,7 @@ fn a_style_with_no_parent_has_the_default_styles_language() {
     let content = format!(
         r#"<office:document-content {NS_T}><office:body><office:text><text:p text:style-name="Eigen">a</text:p><text:p text:style-name="Gesagt">b</text:p><text:p text:style-name="Kind">c</text:p></office:text></office:body></office:document-content>"#
     );
-    let check = |d: &wordcraft_doc::Document| {
+    let check = |d: &letra_doc::Document| {
         assert_eq!(d.styles.default_chr.lang.as_deref(), Some("de-DE"));
         let lang = |id: &str| d.styles.resolve_char(Some(id), &Default::default()).lang;
         assert_eq!(lang("Eigen").as_deref(), Some("en-US"), "no parent: the default style's");
@@ -562,10 +562,10 @@ fn a_style_with_no_parent_has_the_default_styles_language() {
     check(&import(&crate::odt::tests::export_model(&d).unwrap()).unwrap());
 }
 
-/// WordCraft's own documents say their language, so a reader doesn't use its own default.
+/// Letra's own documents say their language, so a reader doesn't use its own default.
 #[test]
 fn a_new_documents_language_is_stated() {
-    let styles = crate::odt::tests::entry(&export(&wordcraft_doc::Document::new()).unwrap(), "styles.xml");
+    let styles = crate::odt::tests::entry(&export(&letra_doc::Document::new()).unwrap(), "styles.xml");
     assert!(default_style(&styles).contains(r#"fo:language="en" fo:country="US""#), "{styles}");
 }
 

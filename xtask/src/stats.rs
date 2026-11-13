@@ -122,7 +122,7 @@ mod tests {
     #[test]
     fn a_walk_does_not_follow_directory_links() {
         let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.subsec_nanos());
-        let dir = std::env::temp_dir().join(format!("wordcraft-xtask-stats-{}-{nanos}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("letra-xtask-stats-{}-{nanos}", std::process::id()));
         std::fs::create_dir(&dir).unwrap();
         std::fs::write(dir.join("a.rs"), "#[test]\n").unwrap();
         std::os::unix::fs::symlink(&dir, dir.join("loop")).unwrap();

@@ -1,5 +1,5 @@
 //! Form controls (ODF 1.3 §13: `office:forms` at the start of the text, each control placed by
-//! a `draw:control` in a paragraph) read as WordCraft content controls and written back:
+//! a `draw:control` in a paragraph) read as Letra content controls and written back:
 //! text fields (`form:text`, `form:textarea`) as plain text controls, check boxes and radio
 //! buttons as check boxes (a radio button with round symbols), list boxes as drop-down lists,
 //! combo boxes as combo boxes, date fields as date controls. A control's name is its tag, a
@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 
-use wordcraft_doc::control::{ContentControl, ControlKind, ListItem};
+use letra_doc::control::{ContentControl, ControlKind, ListItem};
 
 use super::writer::x;
 use super::xml::{Attrs, get};
@@ -21,7 +21,7 @@ const MAX_VALUE: usize = 10_000;
 pub(in crate::odt) const RADIO_ON: char = '\u{25C9}';
 pub(in crate::odt) const RADIO_OFF: char = '\u{25CB}';
 
-/// Form controls WordCraft has no kind for, kept verbatim (see [`ContentControl::form_xml`]):
+/// Form controls Letra has no kind for, kept verbatim (see [`ContentControl::form_xml`]):
 /// every control of ODF 1.3 §13.5 but those it reads (text fields and areas, check boxes, option
 /// buttons, list and combo boxes, date fields) and hidden ones (kept apart).
 const KEPT: [&str; 12] = [
@@ -40,7 +40,7 @@ const KEPT: [&str; 12] = [
 ];
 /// Most bytes of a kept control's XML.
 const MAX_KEPT: usize = 64 * 1024;
-/// The namespace prefixes a kept control may use: those the content WordCraft writes declares.
+/// The namespace prefixes a kept control may use: those the content Letra writes declares.
 const PREFIXES: [&str; 19] = [
     "office", "style", "text", "table", "draw", "fo", "xlink", "dc", "meta", "svg", "number", "form", "ooo", "ooow", "oooc", "script", "dom",
     "loext", "xml",
@@ -87,7 +87,7 @@ pub(in crate::odt) struct FormsReader {
     /// Hidden controls (§13.5.15 `form:hidden`: a name and a value the form sends, not shown),
     /// kept verbatim without their ids.
     pub(in crate::odt) hidden: Vec<String>,
-    /// A control WordCraft has no kind for being kept: its id, name, label, its XML so far (its
+    /// A control Letra has no kind for being kept: its id, name, label, its XML so far (its
     /// id left out) and how many of its elements are open.
     kept: Option<Kept>,
 }
@@ -98,11 +98,11 @@ struct Kept {
     label: String,
     xml: String,
     open: usize,
-    /// It uses a prefix the content WordCraft writes doesn't declare: not kept.
+    /// It uses a prefix the content Letra writes doesn't declare: not kept.
     foreign: bool,
 }
 
-/// Whether name `q` has a prefix the content WordCraft writes declares.
+/// Whether name `q` has a prefix the content Letra writes declares.
 fn known(q: &str) -> bool {
     q.split_once(':').is_some_and(|(p, _)| PREFIXES.contains(&p))
 }
@@ -173,7 +173,7 @@ impl FormsReader {
                     get(a, "form:current-state").or_else(|| get(a, "form:state")) == Some("checked")
                 };
                 let (checked_char, unchecked_char) =
-                    if radio { (RADIO_ON, RADIO_OFF) } else { (wordcraft_doc::control::CHECKED, wordcraft_doc::control::UNCHECKED) };
+                    if radio { (RADIO_ON, RADIO_OFF) } else { (letra_doc::control::CHECKED, letra_doc::control::UNCHECKED) };
                 let symbol = if on { checked_char } else { unchecked_char };
                 let kind =
                     ControlKind::CheckBox { checked: on, checked_char, checked_font: String::new(), unchecked_char, unchecked_font: String::new() };
@@ -237,13 +237,13 @@ impl FormsReader {
             if k.open == 0
                 && let Some(k) = self.kept.take()
             {
-                // Too long to keep whole, or naming what WordCraft can't write: not kept.
+                // Too long to keep whole, or naming what Letra can't write: not kept.
                 if k.xml.len() <= MAX_KEPT && !k.foreign && k.id.is_empty() {
                     self.hidden.push(k.xml);
                 } else if k.xml.len() <= MAX_KEPT && !k.foreign {
                     let mut c = ContentControl::new(ControlKind::Text { multi_line: false });
                     c.tag = k.name;
-                    c.lock = wordcraft_doc::control::ControlLock::ContentLocked;
+                    c.lock = letra_doc::control::ControlLock::ContentLocked;
                     c.form_xml = k.xml;
                     self.controls.insert(k.id, (c, k.label));
                 }

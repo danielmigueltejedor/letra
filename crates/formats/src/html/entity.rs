@@ -339,7 +339,7 @@ pub fn decode_as(b: &[u8], charset: Option<&str>) -> String {
             .strip_prefix("windows-")
             .or_else(|| cs.strip_prefix("cp"))
             .and_then(|n| n.parse::<u16>().ok())
-            .filter(|cp| wordcraft_doc::encoding::SINGLE_BYTE_CODE_PAGES.contains(cp)),
+            .filter(|cp| letra_doc::encoding::SINGLE_BYTE_CODE_PAGES.contains(cp)),
         None => None,
     };
     // Other labels (ISO 8859, KOI8, Shift_JIS, GBK, Big5, EUC-KR…) by their WHATWG decoders; a
@@ -349,7 +349,7 @@ pub fn decode_as(b: &[u8], charset: Option<&str>) -> String {
         .and_then(|l| encoding_rs::Encoding::for_label(l.trim().as_bytes()))
         .filter(|e| ![encoding_rs::UTF_8, encoding_rs::UTF_16LE, encoding_rs::UTF_16BE].contains(e));
     match (code_page, other) {
-        (Some(cp), _) => b.iter().map(|&c| wordcraft_doc::encoding::windows_byte(cp, c)).collect(),
+        (Some(cp), _) => b.iter().map(|&c| letra_doc::encoding::windows_byte(cp, c)).collect(),
         (None, Some(enc)) => enc.decode_without_bom_handling(b).0.into_owned(),
         (None, None) => match std::str::from_utf8(b) {
             Ok(s) => s.to_string(),

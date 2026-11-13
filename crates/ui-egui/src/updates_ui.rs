@@ -81,7 +81,7 @@ impl WordApp {
         let rt = &mut self.updates_rt;
         rt.startup_check = false;
         rt.disabled = Some(
-            tl!("Updates are off in this window: WordCraft was started with another program's AppImage settings. Start WordCraft from its own menu entry to update it.")
+            tl!("Updates are off in this window: Letra was started with another program's AppImage settings. Start Letra from its own menu entry to update it.")
                 .to_string(),
         );
     }
@@ -178,7 +178,7 @@ mod tests {
     use nodalia_update::egui::{Status, Updater};
 
     fn app() -> crate::WordApp {
-        let mut app = crate::WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+        let mut app = crate::WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
         app.updates_rt.updater = Updater::new(crate::UPDATE_APP).with_stamp(None);
         app
     }

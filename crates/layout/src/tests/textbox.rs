@@ -2,8 +2,8 @@
 
 #[allow(unused_imports)]
 use crate::*;
-use wordcraft_doc::props::{TextVert, VAlign};
-use wordcraft_doc::{PartKind, Pos, TextBody, para_block};
+use letra_doc::props::{TextVert, VAlign};
+use letra_doc::{PartKind, Pos, TextBody, para_block};
 
 fn lay(doc: &Document) -> DocLayout {
     let mut c = LayoutCache::new();
@@ -16,13 +16,13 @@ fn text_box(d: &mut Document, para: usize, text: &str, w: f32, h: f32, body: Tex
 }
 
 /// [`text_box`] placed as `float` says.
-fn text_box_with(d: &mut Document, para: usize, text: &str, w: f32, h: f32, body: TextBody, float: wordcraft_doc::para::Float) -> u32 {
+fn text_box_with(d: &mut Document, para: usize, text: &str, w: f32, h: f32, body: TextBody, float: letra_doc::para::Float) -> u32 {
     let id = d.add_part(PartKind::TextBox, vec![para_block(Paragraph::with_text(text, Default::default()))]);
     if let Some(p) = d.parts.get_mut(&id) {
         p.body = body;
     }
     let shape = InlineObject::Shape {
-        kind: wordcraft_doc::para::ShapeKind::TextBox,
+        kind: letra_doc::para::ShapeKind::TextBox,
         w,
         h,
         fill: None,
@@ -196,13 +196,13 @@ fn own_margins_and_resize_to_fit_keep_the_text_in_view() {
 fn inline_box_that_resizes_to_fit_takes_its_texts_height() {
     // #2791: an inline box with Resize shape to fit text, saved 10 cm tall around three short
     // lines, shrinks to them as in Word; the page break after it stays on the first page.
-    let brk = wordcraft_doc::para::PAGE_BREAK;
+    let brk = letra_doc::para::PAGE_BREAK;
     let doc = |auto_fit: bool| {
         let filler: Vec<String> = (1..=FILLER).map(|i| format!("Filler line {i}")).collect();
         let mut d = super::pagination_fixture_document(&format!("{}\n\n\n{brk}\nSecond page text.", filler.join("\n")));
         // Exact spacing is only for the filler/short text. The object paragraph must retain
         // automatic spacing so its inline box really contributes its physical height.
-        d.para_mut(StoryRef::Body, &Path::top(FILLER)).unwrap().props.line_spacing = Some(wordcraft_doc::props::LineSpacing::Multiple(1.15));
+        d.para_mut(StoryRef::Body, &Path::top(FILLER)).unwrap().props.line_spacing = Some(letra_doc::props::LineSpacing::Multiple(1.15));
         let probe = lay(&d);
         super::assert_pagination_fixture_font(&probe);
         let body_para = |layout: &DocLayout, index: usize| {
@@ -232,7 +232,7 @@ fn inline_box_that_resizes_to_fit_takes_its_texts_height() {
         d.parts.get_mut(&id).unwrap().blocks = (1..=3)
             .map(|i| {
                 let mut p = Paragraph::with_text(&format!("Text box line {i}"), Default::default());
-                p.props.line_spacing = Some(wordcraft_doc::props::LineSpacing::Exactly(14.0));
+                p.props.line_spacing = Some(letra_doc::props::LineSpacing::Exactly(14.0));
                 p.props.space_before = Some(0.0);
                 p.props.space_after = Some(8.0);
                 para_block(p)
@@ -309,7 +309,7 @@ const FILLER: usize = 22;
 /// drawn and the room the text beside it wraps around (an OpenDocument frame without a height).
 #[test]
 fn floating_box_that_resizes_to_fit_takes_its_texts_height() {
-    use wordcraft_doc::para::{Float, Wrap};
+    use letra_doc::para::{Float, Wrap};
     let rect = |auto_fit: bool, h: f32| {
         let mut d = Document::from_text("Beside the box the text runs on and on and on.");
         let id = text_box(&mut d, 0, "Inside", 144.0, h, TextBody { auto_fit, ..Default::default() });
@@ -333,7 +333,7 @@ fn floating_box_that_resizes_to_fit_takes_its_texts_height() {
 #[test]
 fn a_floating_box_on_a_later_page_of_its_paragraph_fits_its_text() {
     let mut d = Document::from_text(&"The quick brown fox jumps over the lazy dog. ".repeat(400));
-    let float = wordcraft_doc::para::Float { wrap: wordcraft_doc::para::Wrap::Square, ..Default::default() };
+    let float = letra_doc::para::Float { wrap: letra_doc::para::Wrap::Square, ..Default::default() };
     let id = text_box_with(&mut d, 0, "Inside", 144.0, 1.0, TextBody { auto_fit: true, ..Default::default() }, float);
     let l = lay(&d);
     assert!(l.pages.len() >= 3, "pages {}", l.pages.len());
@@ -349,7 +349,7 @@ fn a_turned_linked_box_turns_only_its_own_lines() {
     let mut d = Document::from_text("one\ntwo");
     let text = "Words that run on well past the first little box. ".repeat(6);
     let a = text_box(&mut d, 0, &text, 144.0, 48.0, TextBody::default());
-    let float = wordcraft_doc::para::Float { wrap: wordcraft_doc::para::Wrap::Square, x: 20.0, y: 300.0, rot: 30.0, ..Default::default() };
+    let float = letra_doc::para::Float { wrap: letra_doc::para::Wrap::Square, x: 20.0, y: 300.0, rot: 30.0, ..Default::default() };
     let b = text_box_with(&mut d, 1, "", 144.0, 400.0, TextBody::default(), float);
     d.parts.get_mut(&a).unwrap().body.next = Some(b);
     let l = lay(&d);
@@ -383,7 +383,7 @@ fn a_clipped_line_in_a_turned_box_is_drawn_once_turned_and_clipped() {
     // once, clipped, inside the box's turn (it was drawn upright and clipped, and again turned).
     let mut d = Document::from_text("one");
     let text = "Words in the box.";
-    let float = wordcraft_doc::para::Float { wrap: wordcraft_doc::para::Wrap::Square, x: 20.0, y: 100.0, rot: 30.0, ..Default::default() };
+    let float = letra_doc::para::Float { wrap: letra_doc::para::Wrap::Square, x: 20.0, y: 100.0, rot: 30.0, ..Default::default() };
     let b = text_box_with(&mut d, 0, text, 144.0, 200.0, TextBody::default(), float);
     let l = lay(&d);
     let mut page = l.pages[0].clone();
@@ -396,17 +396,9 @@ fn a_clipped_line_in_a_turned_box_is_drawn_once_turned_and_clipped() {
         .collect();
     // Its lines taken as ones in a clipped cell (table 5, row 0, cell 0).
     let Some(Placed::Lines { path, .. }) = in_box.first().and_then(|&i| page.items.get_mut(i)) else { panic!("the box has no lines") };
-    *path = wordcraft_doc::Path(vec![5, 0, 0, 0]);
+    *path = letra_doc::Path(vec![5, 0, 0, 0]);
     let rect = Rect::new(0.0, 0.0, 1000.0, 1000.0);
-    page.items.push(Placed::Cell {
-        rect,
-        covered: false,
-        table: wordcraft_doc::Path(vec![5]),
-        row: 0,
-        cell: 0,
-        story: StoryRef::Part(b),
-        clip: true,
-    });
+    page.items.push(Placed::Cell { rect, covered: false, table: letra_doc::Path(vec![5]), row: 0, cell: 0, story: StoryRef::Part(b), clip: true });
     let draws = display::page_display(&d, &page, &display::DisplayOptions::default());
     let upright_clips = draws.iter().filter(|x| matches!(x, display::Draw::Clip { .. })).count();
     let turned_clips: usize = draws

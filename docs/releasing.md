@@ -2,7 +2,7 @@
 
 1. Bump the version on `main`: `cargo xtask version set 0.2.0` (the one source of truth is
    `[workspace.package] version`; the app shows it in `--version` and About, with the commit from
-   `WORDCRAFT_BUILD_SHA`).
+   `LETRA_BUILD_SHA`).
 2. Merge `main` into `release` and push. `.github/workflows/release.yml` builds:
 
 | Platform | Artifacts | Signing |
@@ -12,7 +12,7 @@
 | Linux | x86_64 and aarch64 `.AppImage` (+ `.zsync` for AppImageUpdate), `.flatpak` bundle, `.deb`, `.rpm`, `.tar.gz`; Flathub manifest | checksums |
 | Linux riscv64 | `.tar.gz` (cross-compiled on `ubuntu-24.04`, glibc >= 2.39; CLI smoke-tested under QEMU) | checksums |
 | FreeBSD | x86_64 `.tar.gz` | checksums |
-| Web | `wordcraft-web-<version>.zip` (static site: `index.html`, wasm, glue) | none |
+| Web | `letra-web-<version>.zip` (static site: `index.html`, wasm, glue) | none |
 
 3. The run drafts a GitHub Release `Letra v<version>` with `SHA256SUMS.txt`; review and publish it.
 

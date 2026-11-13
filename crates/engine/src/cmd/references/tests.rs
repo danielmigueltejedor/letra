@@ -16,7 +16,7 @@ fn fields(s: &Session) -> Vec<(String, String)> {
 /// #775: body STYLEREF fields show the nearest paragraph of the style before them.
 #[test]
 fn body_styleref_finds_the_heading_before_it() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Intro\nChapter One\ntext here\nChapter Two\nend"));
+    let mut s = Session::new(letra_doc::Document::from_text("Intro\nChapter One\ntext here\nChapter Two\nend"));
     for t in ["Chapter One", "Chapter Two"] {
         s.run("select.text", &json!({"text": t})).unwrap();
         s.run("styles.apply", &json!({"style": "Heading 1"})).unwrap();
@@ -30,7 +30,7 @@ fn body_styleref_finds_the_heading_before_it() {
     s.run("insert.field", &json!({"instr": "STYLEREF \"Heading 1\" \\p"})).unwrap();
     s.run("insert.field", &json!({"instr": "STYLEREF \"No Such Style\""})).unwrap();
     let results: Vec<String> = fields(&s).into_iter().map(|f| f.1).collect();
-    assert_eq!(results, ["below", wordcraft_layout::styleref::NO_TEXT, "Chapter One", "above"]);
+    assert_eq!(results, ["below", letra_layout::styleref::NO_TEXT, "Chapter One", "above"]);
 }
 
 /// #775: a template's running header `STYLEREF "heading 1"` (a complex field, opened from
@@ -76,7 +76,7 @@ fn docx_styleref_header_shows_each_page_s_chapter() {
                 p.header
                     .iter()
                     .filter_map(|it| {
-                        if let wordcraft_layout::Placed::Lines { para, .. } = it {
+                        if let letra_layout::Placed::Lines { para, .. } = it {
                             Some(para.shown.iter().map(|x| x.1.clone()).collect::<String>())
                         } else {
                             None
@@ -106,7 +106,7 @@ fn docx_styleref_header_shows_each_page_s_chapter() {
 /// (`\p`), or none at all (`\n`).
 #[test]
 fn toc_switches_shape_the_entries() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Intro\nPart\nDeep\nNote"));
+    let mut s = Session::new(letra_doc::Document::from_text("Intro\nPart\nDeep\nNote"));
     for (text, style) in [("Intro", "Heading 1"), ("Part", "Heading 2"), ("Deep", "Heading 3"), ("Note", "Quote")] {
         s.run("select.text", &json!({"text": text})).unwrap();
         s.run("styles.apply", &json!({"style": style})).unwrap();
@@ -139,7 +139,7 @@ fn toc_switches_shape_the_entries() {
 /// numbers that restart after each Heading 1 (`STYLEREF 1 \s`, `SEQ … \s 1`).
 #[test]
 fn caption_numbering_with_chapters() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("One\nPic\nPic two\nTwo\nPic three"));
+    let mut s = Session::new(letra_doc::Document::from_text("One\nPic\nPic two\nTwo\nPic three"));
     for t in ["One", "Two"] {
         s.run("select.text", &json!({"text": t})).unwrap();
         s.run("styles.apply", &json!({"style": "Heading 1"})).unwrap();
@@ -166,7 +166,7 @@ fn caption_numbering_with_chapters() {
 
 #[test]
 fn update_fields_ref_and_pageref() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Bookmark target text here.\nSecond paragraph."));
+    let mut s = Session::new(letra_doc::Document::from_text("Bookmark target text here.\nSecond paragraph."));
     s.run("select.text", &json!({"text": "Bookmark target text"})).unwrap();
     s.run("insert.bookmark", &json!({"name": "TargetMark"})).unwrap();
     s.run("caret.docEnd", &json!({})).unwrap();
@@ -188,8 +188,8 @@ fn update_fields_ref_and_pageref() {
 
 /// A document with a body AUTHOR field and a header holding AUTHOR, NUMWORDS and a locked TITLE,
 /// all stale; the author is "Ada".
-fn doc_with_header_fields() -> (wordcraft_doc::Document, u32) {
-    use wordcraft_doc::{CharProps, Paragraph, PartKind};
+fn doc_with_header_fields() -> (letra_doc::Document, u32) {
+    use letra_doc::{CharProps, Paragraph, PartKind};
     let field = |instr: &str, locked: bool| InlineObject::Field {
         instr: instr.into(),
         result: "stale".into(),
@@ -198,7 +198,7 @@ fn doc_with_header_fields() -> (wordcraft_doc::Document, u32) {
         code: false,
         form: String::new(),
     };
-    let mut doc = wordcraft_doc::Document::from_text("one two three");
+    let mut doc = letra_doc::Document::from_text("one two three");
     doc.core.creator = "Ada".into();
     let mut p = Paragraph::new();
     for (instr, locked) in [("AUTHOR", false), ("NUMWORDS", false), ("TITLE", true)] {
@@ -207,7 +207,7 @@ fn doc_with_header_fields() -> (wordcraft_doc::Document, u32) {
     }
     let body_path = doc.para_paths(StoryRef::Body).remove(0);
     doc.para_mut(StoryRef::Body, &body_path).unwrap().insert_object(0, field("AUTHOR", false), &CharProps::default()).unwrap();
-    let hdr = doc.add_part(PartKind::Header, vec![std::sync::Arc::new(wordcraft_doc::Block::Para(p))]);
+    let hdr = doc.add_part(PartKind::Header, vec![std::sync::Arc::new(letra_doc::Block::Para(p))]);
     (doc, hdr)
 }
 
@@ -225,7 +225,7 @@ fn story_fields(s: &Session, story: StoryRef) -> Vec<(String, String)> {
 
 #[test]
 fn update_fields_filename() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.path = Some(std::path::PathBuf::from("/docs/my_thesis.docx"));
     s.run("insert.field", &serde_json::json!({"instr": "FILENAME"})).unwrap();
     let fields = story_fields(&s, StoryRef::Body);
@@ -238,7 +238,7 @@ fn update_fields_filename() {
 
 #[test]
 fn update_fields_filename_titled_unsaved() {
-    let mut doc = wordcraft_doc::Document::new();
+    let mut doc = letra_doc::Document::new();
     doc.core.title = "Important Document".into();
     let mut s = Session::new(doc);
     s.run("insert.field", &serde_json::json!({"instr": "FILENAME"})).unwrap();
@@ -250,11 +250,7 @@ fn update_fields_filename_titled_unsaved() {
         .items
         .iter()
         .filter_map(|it| {
-            if let wordcraft_layout::Placed::Lines { para, .. } = it {
-                Some(para.shown.iter().map(|x| x.1.clone()).collect::<String>())
-            } else {
-                None
-            }
+            if let letra_layout::Placed::Lines { para, .. } = it { Some(para.shown.iter().map(|x| x.1.clone()).collect::<String>()) } else { None }
         })
         .collect();
     assert!(text.contains("Document1"), "live layout renders Document1: {text}");
@@ -294,8 +290,8 @@ fn update_fields_in_a_header_updates_that_header() {
 
 /// A session whose body reads "one two three" and whose header holds stale fields with
 /// these codes, the caret in the header.
-fn header_fields_session(doc: wordcraft_doc::Document, instrs: &[&str]) -> (Session, u32) {
-    use wordcraft_doc::{CharProps, Paragraph, PartKind};
+fn header_fields_session(doc: letra_doc::Document, instrs: &[&str]) -> (Session, u32) {
+    use letra_doc::{CharProps, Paragraph, PartKind};
     let mut p = Paragraph::new();
     for instr in instrs {
         let off = p.len();
@@ -304,7 +300,7 @@ fn header_fields_session(doc: wordcraft_doc::Document, instrs: &[&str]) -> (Sess
         p.insert_object(off, field, &CharProps::default()).unwrap();
     }
     let mut doc = doc;
-    let hdr = doc.add_part(PartKind::Header, vec![std::sync::Arc::new(wordcraft_doc::Block::Para(p))]);
+    let hdr = doc.add_part(PartKind::Header, vec![std::sync::Arc::new(letra_doc::Block::Para(p))]);
     let mut s = Session::new(doc);
     let path = s.doc.para_paths(StoryRef::Part(hdr)).remove(0);
     s.sel = crate::session::Selection::caret(Pos::new(StoryRef::Part(hdr), path, 0));
@@ -315,7 +311,7 @@ fn header_fields_session(doc: wordcraft_doc::Document, instrs: &[&str]) -> (Sess
 /// NUMCHARS counts the body's characters without spaces; the counts take a `\*` format.
 #[test]
 fn document_information_fields_show_the_properties() {
-    let mut doc = wordcraft_doc::Document::from_text("one two three");
+    let mut doc = letra_doc::Document::from_text("one two three");
     doc.core.subject = "Budget".into();
     doc.core.keywords = "plan; costs".into();
     doc.core.description = "Draft for review".into();
@@ -332,7 +328,7 @@ fn document_information_fields_show_the_properties() {
 /// ends up with (an ODT's variables open as SET and REF).
 #[test]
 fn set_gives_a_value_that_ref_shows() {
-    let doc = wordcraft_doc::Document::from_text("one");
+    let doc = letra_doc::Document::from_text("one");
     let codes = [
         r#"SET who "Ada Lovelace""#,
         "REF who",
@@ -354,7 +350,7 @@ fn set_gives_a_value_that_ref_shows() {
 /// `text:author-name` opens as USERNAME); a quoted text after the name is shown instead.
 #[test]
 fn user_name_fields_show_the_users_name() {
-    let doc = wordcraft_doc::Document::from_text("one");
+    let doc = letra_doc::Document::from_text("one");
     let codes = ["USERNAME", "USERINITIALS", r"USERNAME \* Upper", r#"USERNAME "Someone Else""#];
     let (mut s, hdr) = header_fields_session(doc, &codes);
     s.author = "Ada Lovelace".into();
@@ -368,7 +364,7 @@ fn user_name_fields_show_the_users_name() {
 /// (at most 255 characters); the field and later ones, DOCPROPERTY too, show the new value.
 #[test]
 fn summary_fields_with_a_new_value_replace_the_property() {
-    let mut doc = wordcraft_doc::Document::from_text("one two three");
+    let mut doc = letra_doc::Document::from_text("one two three");
     doc.core.subject = "Old".into();
     let long = "x".repeat(300);
     let long_code = format!("COMMENTS \"{long}\"");
@@ -395,7 +391,7 @@ fn summary_fields_with_a_new_value_replace_the_property() {
 /// One word after the name sets the property without quotes; a switch alone sets nothing.
 #[test]
 fn summary_fields_take_one_word_without_quotes() {
-    let mut doc = wordcraft_doc::Document::from_text("one two three");
+    let mut doc = letra_doc::Document::from_text("one two three");
     doc.core.subject = "Old".into();
     doc.core.creator = "Grace".into();
     doc.core.title = "Plan".into();
@@ -411,7 +407,7 @@ fn summary_fields_take_one_word_without_quotes() {
 /// and `\* CardText` and `\* OrdText` are lowercase unless one of them follows.
 #[test]
 fn update_fields_apply_the_capitalization_switches() {
-    let mut doc = wordcraft_doc::Document::from_text("one two three");
+    let mut doc = letra_doc::Document::from_text("one two three");
     doc.core.subject = "budget".into();
     doc.core.creator = "Ada LOVELACE".into();
     doc.core.title = "weekly report on sales".into();
@@ -455,7 +451,7 @@ fn update_fields_apply_the_capitalization_switches() {
 /// The capitalization switches also apply to REF, PAGEREF, SEQ and FILENAME results in the body.
 #[test]
 fn body_fields_apply_the_capitalization_switches() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Bookmark target text here.\nSecond paragraph."));
+    let mut s = Session::new(letra_doc::Document::from_text("Bookmark target text here.\nSecond paragraph."));
     s.run("select.text", &json!({"text": "Bookmark target text"})).unwrap();
     s.run("insert.bookmark", &json!({"name": "TargetMark"})).unwrap();
     s.run("caret.docEnd", &json!({})).unwrap();
@@ -471,7 +467,7 @@ fn body_fields_apply_the_capitalization_switches() {
 /// A count the field's number format does not cover keeps its digits.
 #[test]
 fn counts_past_the_number_format_keep_their_digits() {
-    let mut doc = wordcraft_doc::Document::from_text("one two three");
+    let mut doc = letra_doc::Document::from_text("one two three");
     doc.core.revision = 1_000_000;
     let codes = [r"REVNUM \* ROMAN", r"REVNUM \* CardText", r"REVNUM \* alphabetic", r"NUMWORDS \* ROMAN"];
     let (mut s, hdr) = header_fields_session(doc, &codes);
@@ -497,7 +493,7 @@ fn update_fields_all_covers_every_story() {
 
 #[test]
 fn toc_tabs_ignore_nonentries() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Before\nContents\nOld\t9\nAfter"));
+    let mut s = Session::new(letra_doc::Document::from_text("Before\nContents\nOld\t9\nAfter"));
     let stop = |pos| TabStop { pos, align: TabAlign::Left, leader: TabLeader::None };
     for (i, pos) in [(0, 96.0), (1, 84.0), (2, 24.0)] {
         let p = s.doc.para_mut(StoryRef::Body, &Path::top(i)).unwrap();
@@ -520,7 +516,7 @@ fn toc_tabs_ignore_nonentries() {
 /// (or over) the paragraph that holds it, not after the whole table; the number counts on.
 #[test]
 fn caption_for_an_object_in_a_cell_stays_in_the_cell() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("insert.table", &json!({"rows": 1, "cols": 2})).unwrap();
     s.run("insert.shape", &json!({"kind": "ellipse", "width": 60, "height": 40})).unwrap();
     let (at, _) = crate::cmd::objects::selected(&s).expect("the shape is selected");
@@ -532,7 +528,7 @@ fn caption_for_an_object_in_a_cell_stays_in_the_cell() {
     assert_eq!(texts[1], "Figure 1: Kiln", "the caption is under the shape, in the cell");
     assert_eq!(s.doc.body.iter().filter(|b| b.as_para().is_some_and(|p| p.props.style.as_deref() == Some("Caption"))).count(), 0);
     // Above: over the shape's paragraph, and it is Figure 1 (the one below becomes 2).
-    let end = Pos { off: at.off + wordcraft_doc::para::OBJ.len_utf8(), ..at.clone() };
+    let end = Pos { off: at.off + letra_doc::para::OBJ.len_utf8(), ..at.clone() };
     s.sel = Selection { anchor: at.clone(), focus: end };
     assert!(crate::cmd::objects::object_selection(&s).is_some());
     s.run("references.caption", &json!({"label": "Figure", "text": "Lid", "position": "above"})).unwrap();
@@ -540,7 +536,7 @@ fn caption_for_an_object_in_a_cell_stays_in_the_cell() {
     assert_eq!(texts.len(), 3, "{texts:?}");
     assert_eq!((texts[0].as_str(), texts[2].as_str()), ("Figure 1: Lid", "Figure 2: Kiln"));
     // A picture outside a table: the caption goes right after its paragraph.
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Before\nAfter"));
+    let mut s = Session::new(letra_doc::Document::from_text("Before\nAfter"));
     s.run("select.text", &json!({"text": "Before"})).unwrap();
     s.run("caret.end", &json!({})).unwrap();
     s.run("insert.shape", &json!({"kind": "ellipse", "width": 60, "height": 40})).unwrap();
@@ -553,7 +549,7 @@ fn caption_for_an_object_in_a_cell_stays_in_the_cell() {
 #[cfg(not(target_arch = "wasm32"))]
 fn filename_scratch_dir(tag: &str) -> std::path::PathBuf {
     let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-    let dir = std::env::temp_dir().join(format!("wordcraft-filename-field-{tag}-{}-{nanos}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("letra-filename-field-{tag}-{}-{nanos}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     dir
 }
@@ -564,7 +560,7 @@ fn filename_scratch_dir(tag: &str) -> std::path::PathBuf {
 #[test]
 fn filename_fields_in_a_header_follow_save_as() {
     let dir = filename_scratch_dir("save-as");
-    let (mut s, hdr) = header_fields_session(wordcraft_doc::Document::from_text("body"), &["FILENAME", r"FILENAME \p"]);
+    let (mut s, hdr) = header_fields_session(letra_doc::Document::from_text("body"), &["FILENAME", r"FILENAME \p"]);
     let first = dir.join("report_v1.docx");
     let second = dir.join("report_v2.docx");
     s.run("file.save", &json!({"path": first.to_string_lossy()})).unwrap();
@@ -587,7 +583,7 @@ fn filename_fields_in_a_header_follow_save_as() {
 #[test]
 fn filename_mergeformat_field_replaces_its_cached_name_after_save_as() {
     let dir = filename_scratch_dir("mergeformat");
-    let (mut s, hdr) = header_fields_session(wordcraft_doc::Document::from_text("body"), &[r"FILENAME \* MERGEFORMAT"]);
+    let (mut s, hdr) = header_fields_session(letra_doc::Document::from_text("body"), &[r"FILENAME \* MERGEFORMAT"]);
     let first = dir.join("report_v1.docx");
     s.run("file.save", &json!({"path": first.to_string_lossy()})).unwrap();
     // The cached text a file written earlier would carry.
@@ -607,7 +603,7 @@ fn filename_mergeformat_field_replaces_its_cached_name_after_save_as() {
 #[test]
 fn filename_field_in_a_header_follows_rename() {
     let dir = filename_scratch_dir("rename");
-    let (mut s, hdr) = header_fields_session(wordcraft_doc::Document::from_text("body"), &["FILENAME"]);
+    let (mut s, hdr) = header_fields_session(letra_doc::Document::from_text("body"), &["FILENAME"]);
     s.run("file.save", &json!({"path": dir.join("report_v1.docx").to_string_lossy()})).unwrap();
     s.run("file.rename", &json!({"name": "report_v3"})).unwrap();
     s.run("references.updateFields", &json!({})).unwrap();
@@ -634,7 +630,7 @@ fn quoted_field_argument_backslash_escapes() {
 /// editor and the document keep every stored result.
 #[test]
 fn output_shows_fresh_seq_styleref_and_ref_results() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Refs\nChapter One\nTarget words"));
+    let mut s = Session::new(letra_doc::Document::from_text("Refs\nChapter One\nTarget words"));
     s.run("select.text", &json!({"text": "Chapter One"})).unwrap();
     s.run("styles.apply", &json!({"style": "Heading 1"})).unwrap();
     s.run("select.text", &json!({"text": "Target words"})).unwrap();
@@ -662,12 +658,12 @@ fn output_shows_fresh_seq_styleref_and_ref_results() {
         }
     }
     para.touch();
-    let shown = |l: &wordcraft_layout::DocLayout| -> Vec<String> {
+    let shown = |l: &letra_layout::DocLayout| -> Vec<String> {
         l.pages
             .iter()
             .flat_map(|pg| &pg.items)
             .flat_map(|it| match it {
-                wordcraft_layout::Placed::Lines { para, .. } => para.shown.iter().map(|s| s.1.clone()).collect(),
+                letra_layout::Placed::Lines { para, .. } => para.shown.iter().map(|s| s.1.clone()).collect(),
                 _ => vec![],
             })
             .collect()
@@ -798,13 +794,13 @@ fn output_shows_references_to_bookmarks_outside_the_body() {
 /// exporting with markup shown and hidden: Del 1, 9, 2; Lock 1, 7, 3; R 7, 6).
 #[test]
 fn output_counts_locked_seq_fields_and_not_deleted_ones() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text(""));
+    let mut s = Session::new(letra_doc::Document::from_text(""));
     let fields_in = ["SEQ Del", "SEQ Del", "SEQ Del", "SEQ Lock", "SEQ Lock", "SEQ Lock", "SEQ R \\r 5", "SEQ R"];
     for instr in fields_in {
         s.run("insert.field", &json!({"instr": instr, "result": "9"})).unwrap();
         s.run("text.insert", &json!({"text": " "})).unwrap();
     }
-    let top = wordcraft_doc::Path::top(0);
+    let top = letra_doc::Path::top(0);
     let para = s.doc.para_mut(StoryRef::Body, &top).unwrap();
     for (k, o) in para.objects.iter_mut().enumerate() {
         if let InlineObject::Field { result, locked, .. } = o {
@@ -837,25 +833,25 @@ fn output_counts_locked_seq_fields_and_not_deleted_ones() {
 /// document keep the stored result, and a REF showing "above" or "below" (`\p`) keeps it too.
 #[test]
 fn output_shows_words_error_for_a_reference_to_a_missing_bookmark() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("See "));
+    let mut s = Session::new(letra_doc::Document::from_text("See "));
     s.run("caret.docEnd", &json!({})).unwrap();
     for instr in ["REF NoSuchMark \\h", "REF NoSuchMark \\p"] {
         s.run("insert.field", &json!({"instr": instr, "result": "x"})).unwrap();
         s.run("text.insert", &json!({"text": " "})).unwrap();
     }
-    let para = s.doc.para_mut(StoryRef::Body, &wordcraft_doc::Path::top(0)).unwrap();
+    let para = s.doc.para_mut(StoryRef::Body, &letra_doc::Path::top(0)).unwrap();
     for o in &mut para.objects {
         if let InlineObject::Field { result, .. } = o {
             *result = "stale".into();
         }
     }
     para.touch();
-    let shown = |l: &wordcraft_layout::DocLayout| -> Vec<String> {
+    let shown = |l: &letra_layout::DocLayout| -> Vec<String> {
         l.pages[0]
             .items
             .iter()
             .flat_map(|it| match it {
-                wordcraft_layout::Placed::Lines { para, .. } => para.shown.iter().map(|s| s.1.clone()).collect(),
+                letra_layout::Placed::Lines { para, .. } => para.shown.iter().map(|s| s.1.clone()).collect(),
                 _ => vec![],
             })
             .collect()
@@ -870,7 +866,7 @@ fn output_shows_words_error_for_a_reference_to_a_missing_bookmark() {
 /// text; a plain REF to the same bookmark is filled in.
 #[test]
 fn output_keeps_paragraph_number_references_as_stored() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Target heading\nRefs "));
+    let mut s = Session::new(letra_doc::Document::from_text("Target heading\nRefs "));
     s.run("select.text", &json!({"text": "Target heading"})).unwrap();
     s.run("insert.bookmark", &json!({"name": "Mark"})).unwrap();
     s.run("caret.docEnd", &json!({})).unwrap();
@@ -902,7 +898,7 @@ fn output_keeps_paragraph_number_references_as_stored() {
 }
 
 /// The results of the fields in the paragraph at `path` of `d`.
-fn results_in(d: &wordcraft_doc::Document, path: &wordcraft_doc::Path) -> Vec<String> {
+fn results_in(d: &letra_doc::Document, path: &letra_doc::Path) -> Vec<String> {
     d.para(StoryRef::Body, path)
         .unwrap()
         .objects
@@ -915,7 +911,7 @@ fn results_in(d: &wordcraft_doc::Document, path: &wordcraft_doc::Path) -> Vec<St
 }
 
 /// Set every field result in the last body paragraph of `s` to `stale`; that paragraph's path.
-fn stale_last_paragraph(s: &mut Session, stale: &str) -> wordcraft_doc::Path {
+fn stale_last_paragraph(s: &mut Session, stale: &str) -> letra_doc::Path {
     let last = s.doc.para_paths(StoryRef::Body).pop().unwrap();
     let para = s.doc.para_mut(StoryRef::Body, &last).unwrap();
     for o in &mut para.objects {
@@ -933,8 +929,8 @@ fn stale_last_paragraph(s: &mut Session, stale: &str) -> wordcraft_doc::Path {
 /// rather than show the first paragraph's part alone.
 #[test]
 fn output_keeps_a_reference_to_a_bookmark_over_paragraphs_as_stored() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Alpha one\nBeta two\nShort mark\nRefs "));
-    let at = |block: usize, off: usize| wordcraft_doc::Pos { story: StoryRef::Body, path: wordcraft_doc::Path::top(block), off };
+    let mut s = Session::new(letra_doc::Document::from_text("Alpha one\nBeta two\nShort mark\nRefs "));
+    let at = |block: usize, off: usize| letra_doc::Pos { story: StoryRef::Body, path: letra_doc::Path::top(block), off };
     s.sel = crate::Selection { anchor: at(0, 6), focus: at(1, 4) };
     s.run("insert.bookmark", &json!({"name": "Span"})).unwrap();
     s.run("select.text", &json!({"text": "Short mark"})).unwrap();
@@ -953,15 +949,15 @@ fn output_keeps_a_reference_to_a_bookmark_over_paragraphs_as_stored() {
 /// in output and after F9: the numbers are filled in before the style references read them.
 #[test]
 fn a_style_reference_reads_the_headings_new_sequence_number() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("Chapter \nBody\nRefs "));
+    let mut s = Session::new(letra_doc::Document::from_text("Chapter \nBody\nRefs "));
     s.run("select.text", &json!({"text": "Chapter "})).unwrap();
     s.run("styles.apply", &json!({"style": "Heading 1"})).unwrap();
-    s.sel = crate::Selection::caret(wordcraft_doc::Pos { story: StoryRef::Body, path: wordcraft_doc::Path::top(0), off: 8 });
+    s.sel = crate::Selection::caret(letra_doc::Pos { story: StoryRef::Body, path: letra_doc::Path::top(0), off: 8 });
     s.run("insert.field", &json!({"instr": "SEQ Chapter \\* ARABIC", "result": "x"})).unwrap();
     s.run("caret.docEnd", &json!({})).unwrap();
     s.run("insert.field", &json!({"instr": "STYLEREF \"Heading 1\"", "result": "x"})).unwrap();
     // Stale stored results: the heading's number 9, the reference "stale".
-    let heading = wordcraft_doc::Path::top(0);
+    let heading = letra_doc::Path::top(0);
     let para = s.doc.para_mut(StoryRef::Body, &heading).unwrap();
     for o in &mut para.objects {
         if let InlineObject::Field { result, .. } = o {
@@ -982,7 +978,7 @@ fn a_style_reference_reads_the_headings_new_sequence_number() {
 /// `bookmark_text` (F9's lookup) gives, or Word's error.
 #[test]
 fn output_gives_every_reference_its_bookmarks_text() {
-    let mut s = Session::new(wordcraft_doc::Document::from_text("First target\nSecond target\nRefs "));
+    let mut s = Session::new(letra_doc::Document::from_text("First target\nSecond target\nRefs "));
     for (text, name) in [("First target", "A"), ("Second target", "B")] {
         s.run("select.text", &json!({"text": text})).unwrap();
         s.run("insert.bookmark", &json!({"name": name})).unwrap();

@@ -3,7 +3,7 @@
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
+use letra_doc::Document;
 
 fn open() -> Document {
     let styles = format!(

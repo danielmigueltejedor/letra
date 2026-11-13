@@ -10,9 +10,9 @@
 //! Format, Size, Rotate, Alt Text, Delete, Cut and Copy then act on that member, and Move or
 //! Resize and Nudge move it inside the canvas. The canvas stays the selection in the text.
 
+use letra_doc::para::{CanvasStyle, Float, GroupChild, InlineObject, MAX_GROUP_CHILDREN};
+use letra_doc::{PartKind, Pos, StoryRef};
 use serde_json::{Value, json};
-use wordcraft_doc::para::{CanvasStyle, Float, GroupChild, InlineObject, MAX_GROUP_CHILDREN};
-use wordcraft_doc::{PartKind, Pos, StoryRef};
 
 use super::objects::object_selection;
 use super::{delete_selection, sel_result};
@@ -89,8 +89,8 @@ fn insert(s: &mut Session, v: &Value) -> CmdResult {
     let w = p::f32(v, "width").unwrap_or(432.0).clamp(MIN_SIDE, MAX_SIDE);
     let h = p::f32(v, "height").unwrap_or(216.0).clamp(MIN_SIDE, MAX_SIDE);
     let style = CanvasStyle {
-        fill: p::str(v, "fill").and_then(wordcraft_doc::props::Rgb::parse).map(wordcraft_doc::fill::Fill::solid),
-        stroke: p::str(v, "outline").and_then(wordcraft_doc::props::Rgb::parse),
+        fill: p::str(v, "fill").and_then(letra_doc::props::Rgb::parse).map(letra_doc::fill::Fill::solid),
+        stroke: p::str(v, "outline").and_then(letra_doc::props::Rgb::parse),
         stroke_width: 0.75,
     };
     let props = s.typing_props();
@@ -313,11 +313,11 @@ pub(crate) fn member_command(s: &mut Session, id: &str, _: &Value) -> Option<Cmd
 
 /// Copy member `index` of the canvas at `pos` alone: pasted, it is a picture or shape of its own.
 fn copy_member(s: &mut Session, pos: &Pos, index: usize) -> CmdResult {
-    let end = Pos { off: pos.off + wordcraft_doc::para::OBJ.len_utf8(), ..pos.clone() };
+    let end = Pos { off: pos.off + letra_doc::para::OBJ.len_utf8(), ..pos.clone() };
     let mut f = s.doc.copy_range(pos, &end);
     let mut copied = false;
     for b in &mut f.blocks {
-        let wordcraft_doc::Block::Para(p) = b else { continue };
+        let letra_doc::Block::Para(p) = b else { continue };
         for o in &mut p.objects {
             if let InlineObject::Group { children, canvas: Some(_), .. } = o
                 && let Some(c) = children.get(index)
@@ -390,7 +390,7 @@ pub(crate) fn member_nudge(s: &mut Session, dx: f32, dy: f32) -> Option<CmdResul
 
 /// Change member `index` of the canvas at `pos`: `f` gets the canvas's frame on the page, the
 /// scale of its members' space and the member.
-fn edit_member(s: &mut Session, pos: &Pos, index: usize, f: impl FnOnce(wordcraft_geom::Rect, (f32, f32), &mut GroupChild)) -> CmdResult {
+fn edit_member(s: &mut Session, pos: &Pos, index: usize, f: impl FnOnce(letra_geom::Rect, (f32, f32), &mut GroupChild)) -> CmdResult {
     let frame = s.layout().object(pos, s.page_hint).ok_or_else(|| CmdError::Failed("the drawing canvas isn't laid out".into()))?.rect;
     let canvas =
         s.doc.para_at(pos).and_then(|p| p.object_at(pos.off)).cloned().ok_or_else(|| CmdError::Failed("the drawing canvas vanished".into()))?;
@@ -450,7 +450,7 @@ mod tests {
     /// selected canvas, not into the text, and the canvas's frame keeps its size (#344).
     #[test]
     fn shapes_inserted_with_a_canvas_selected_go_inside_it() {
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         s.run("text.insert", &json!({"text": "Before "})).unwrap();
         s.run("insert.canvas", &json!({})).unwrap();
         let c = canvas(&s);
@@ -472,8 +472,8 @@ mod tests {
         assert_eq!(
             style,
             CanvasStyle {
-                fill: wordcraft_doc::props::Rgb::parse("FFF2CC").map(wordcraft_doc::fill::Fill::solid),
-                stroke: wordcraft_doc::props::Rgb::parse("1F4E79"),
+                fill: letra_doc::props::Rgb::parse("FFF2CC").map(letra_doc::fill::Fill::solid),
+                stroke: letra_doc::props::Rgb::parse("1F4E79"),
                 stroke_width: 1.5
             }
         );
@@ -495,7 +495,7 @@ mod tests {
     /// Scale Drawing scales frame and members together.
     #[test]
     fn fit_expand_and_scale_change_the_frame() {
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         s.run("insert.canvas", &json!({"width": 400, "height": 300})).unwrap();
         s.run("insert.shape", &json!({"kind": "rectangle", "width": 100, "height": 40})).unwrap();
         s.run("insert.shape", &json!({"kind": "ellipse", "width": 50, "height": 50})).unwrap();
@@ -521,7 +521,7 @@ mod tests {
         s.doc.body.first().and_then(|b| b.as_para()).and_then(|p| p.objects.first()).cloned().unwrap()
     }
 
-    fn member_fill(o: &InlineObject, i: usize) -> Option<wordcraft_doc::fill::Fill> {
+    fn member_fill(o: &InlineObject, i: usize) -> Option<letra_doc::fill::Fill> {
         let InlineObject::Group { children, .. } = o else { panic!("{o:?}") };
         match &children[i].obj {
             InlineObject::Shape { fill, .. } => fill.clone(),
@@ -535,7 +535,7 @@ mod tests {
     /// (wrapping, position) don't apply to it.
     #[test]
     fn a_canvas_member_is_selected_and_changed_on_its_own() {
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         s.run("insert.canvas", &json!({"width": 400, "height": 300})).unwrap();
         s.run("insert.shape", &json!({"kind": "rectangle", "width": 100, "height": 40})).unwrap();
         s.run("insert.shape", &json!({"kind": "ellipse", "width": 50, "height": 50})).unwrap();
@@ -551,7 +551,7 @@ mod tests {
         let other = member_fill(&canvas(&s), 0);
         s.run("shape.fill", &json!({"color": "FF0000"})).unwrap();
         let c = canvas(&s);
-        assert_eq!(member_fill(&c, 1), wordcraft_doc::props::Rgb::parse("FF0000").map(wordcraft_doc::fill::Fill::solid));
+        assert_eq!(member_fill(&c, 1), letra_doc::props::Rgb::parse("FF0000").map(letra_doc::fill::Fill::solid));
         assert_eq!(member_fill(&c, 0), other);
         assert_eq!(c.canvas_style().and_then(|st| st.fill.clone()), None);
         assert!(selected_member(&s).is_some(), "still picked after a change");
@@ -569,7 +569,7 @@ mod tests {
         s.run("edit.copy", &json!({})).unwrap();
         let clip = s.clipboard.clone().unwrap();
         let copied: Vec<&InlineObject> = clip.blocks.iter().filter_map(|b| b.as_para()).flat_map(|p| p.objects.iter()).collect();
-        assert!(matches!(copied.as_slice(), [InlineObject::Shape { kind: wordcraft_doc::para::ShapeKind::Ellipse, .. }]), "{copied:?}");
+        assert!(matches!(copied.as_slice(), [InlineObject::Shape { kind: letra_doc::para::ShapeKind::Ellipse, .. }]), "{copied:?}");
         s.run("text.delete", &json!({})).unwrap();
         assert_eq!(members(&canvas(&s)), [(40.0, 30.0, 100.0, 40.0)]);
         assert!(selected_member(&s).is_none());
@@ -589,12 +589,12 @@ mod tests {
         // Pasted outside the canvas, the copied member is a shape of its own in the text.
         s.run("edit.paste", &json!({})).unwrap();
         let para = s.doc.body.first().and_then(|b| b.as_para()).unwrap();
-        assert!(matches!(para.objects.last(), Some(InlineObject::Shape { kind: wordcraft_doc::para::ShapeKind::Ellipse, .. })), "{:?}", para.objects);
+        assert!(matches!(para.objects.last(), Some(InlineObject::Shape { kind: letra_doc::para::ShapeKind::Ellipse, .. })), "{:?}", para.objects);
     }
 
     #[test]
     fn typing_or_removing_a_member_never_hits_another_shape_or_the_canvas() {
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         s.run("insert.canvas", &json!({"width": 400, "height": 300})).unwrap();
         s.run("insert.shape", &json!({"kind": "rectangle", "width": 100, "height": 40})).unwrap();
         s.run("insert.shape", &json!({"kind": "ellipse", "width": 50, "height": 50})).unwrap();

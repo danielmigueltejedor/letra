@@ -88,7 +88,7 @@ pub(super) fn link(s: &mut Session, v: &Value) -> CmdResult {
 /// text and both fit in one line of one paragraph without pictures or fields, outside any field's
 /// result. Otherwise (as Word shows `<<Selection in Document>>`) the selection keeps its text.
 fn retyped_text(s: &Session, v: &Value) -> Option<String> {
-    use wordcraft_doc::para::{COLUMN_BREAK, LINE_BREAK, OBJ, PAGE_BREAK};
+    use letra_doc::para::{COLUMN_BREAK, LINE_BREAK, OBJ, PAGE_BREAK};
     /// What can't stand in one line of text: breaks, and pictures or fields.
     const NOT_ONE_LINE: [char; 7] = [LINE_BREAK, '\r', '\u{2029}', '\u{b}', PAGE_BREAK, COLUMN_BREAK, OBJ];
     let text = p::str(v, "text").filter(|t| !t.is_empty() && t.len() <= 4096)?;
@@ -119,15 +119,15 @@ pub fn bookmark_name_ok(name: &str) -> bool {
 }
 
 /// Where bookmark `name` is: see [`bookmark_span`]. `None` when there is no such bookmark.
-pub fn bookmark_range(doc: &wordcraft_doc::Document, name: &str) -> Option<(Pos, Pos)> {
+pub fn bookmark_range(doc: &letra_doc::Document, name: &str) -> Option<(Pos, Pos)> {
     let (_, start) = doc.bookmarks().into_iter().find(|(n, _)| n == name)?;
     Some(bookmark_span(doc, name, &start))
 }
 
 /// The text of bookmark `name` whose start mark is at `start`: from just after that mark to its
 /// end mark — in a later paragraph when it spans several (the start again when it has no end).
-pub fn bookmark_span(doc: &wordcraft_doc::Document, name: &str, start: &Pos) -> (Pos, Pos) {
-    let from = Pos { off: start.off.saturating_add(wordcraft_doc::para::OBJ.len_utf8()), ..start.clone() };
+pub fn bookmark_span(doc: &letra_doc::Document, name: &str, start: &Pos) -> (Pos, Pos) {
+    let from = Pos { off: start.off.saturating_add(letra_doc::para::OBJ.len_utf8()), ..start.clone() };
     let end = doc.para_paths(start.story).into_iter().skip_while(|p| *p != start.path).find_map(|path| {
         let para = doc.para(start.story, &path)?;
         let off = para.object_offsets().into_iter().find(|o| {
@@ -142,7 +142,7 @@ pub fn bookmark_span(doc: &wordcraft_doc::Document, name: &str, start: &Pos) -> 
 /// Remove bookmark `name`'s start and end marks, in whichever paragraphs and stories they are,
 /// keeping the selection on the same text. Returns whether the bookmark was there.
 fn remove_bookmark(s: &mut Session, name: &str) -> Result<bool, CmdError> {
-    let mark_len = wordcraft_doc::para::OBJ.len_utf8();
+    let mark_len = letra_doc::para::OBJ.len_utf8();
     let mut found = false;
     let stories: Vec<StoryRef> = std::iter::once(StoryRef::Body).chain(s.doc.parts.keys().map(|k| StoryRef::Part(*k))).collect();
     for story in stories {

@@ -28,8 +28,8 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use wordcraft_doc::props::VAlign;
-use wordcraft_doc::{Align, Block, Blocks, Document, InlineObject, Paragraph, Rgb};
+use letra_doc::props::VAlign;
+use letra_doc::{Align, Block, Blocks, Document, InlineObject, Paragraph, Rgb};
 
 use crate::model::{self, Cell, FBlock, FTable, Flow, Fmt, Inline, Kind, ListInfo, Meta, Para, RevMark, make_img};
 

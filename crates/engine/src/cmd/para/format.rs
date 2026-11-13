@@ -2,7 +2,7 @@ use super::{Align, CmdError, CmdResult, LineSpacing, NumRef, ParaProps, Pos, Ses
 
 /// Resolved paragraph props of the selection: those of the paragraph the caret is in, or of the
 /// last paragraph a selection covers when it ends at the next paragraph's start.
-pub fn cur(s: &Session) -> wordcraft_doc::resolve::ResolvedPara {
+pub fn cur(s: &Session) -> letra_doc::resolve::ResolvedPara {
     // A selection ending at the next paragraph's start doesn't format that paragraph (#418), so
     // its state comes from the last paragraph it does cover.
     let (a, b) = s.sel.ordered();

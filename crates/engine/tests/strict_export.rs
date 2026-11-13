@@ -1,14 +1,14 @@
 //! Strict export (#6005): `strict: true` on the PDF and PNG exports refuses an output that would
 //! silently lack something, before any byte is written; `file.strictReport` says what.
+use letra_doc::Document;
+use letra_engine::{CmdError, Session};
+use letra_fonts::FontDb;
 use serde_json::{Value, json};
-use wordcraft_doc::Document;
-use wordcraft_engine::{CmdError, Session};
-use wordcraft_fonts::FontDb;
 
 /// Code points in unassigned plane 4 that no face of the host covers (as the layout tests find them).
 fn uncovered_many(n: usize) -> Vec<char> {
     let db = FontDb::global();
-    let primary = wordcraft_fonts::word::resolve(&Document::default().settings.minor_font, false, false).face;
+    let primary = letra_fonts::word::resolve(&Document::default().settings.minor_font, false, false).face;
     let out: Vec<char> = (0x40000u32..0x4FFF0)
         .filter_map(char::from_u32)
         .filter(|c| {
@@ -172,7 +172,7 @@ fn strict_report_changes_nothing() {
 
 fn garbage_background(d: &mut Document) {
     d.media.insert("bg.bin".into(), std::sync::Arc::new(b"this is not a picture".to_vec()));
-    d.settings.page_picture = Some(wordcraft_doc::PagePicture { media: "bg.bin".into(), fill_type: "stretch".into(), title: String::new() });
+    d.settings.page_picture = Some(letra_doc::PagePicture { media: "bg.bin".into(), fill_type: "stretch".into(), title: String::new() });
 }
 
 #[test]
@@ -200,7 +200,7 @@ fn a_decodable_page_background_picture_passes() {
         .unwrap();
     let mut doc = Document::from_text("Hello");
     doc.media.insert("bg.png".into(), std::sync::Arc::new(png));
-    doc.settings.page_picture = Some(wordcraft_doc::PagePicture { media: "bg.png".into(), fill_type: "stretch".into(), title: String::new() });
+    doc.settings.page_picture = Some(letra_doc::PagePicture { media: "bg.png".into(), fill_type: "stretch".into(), title: String::new() });
     let mut s = Session::new(doc);
     assert_eq!(s.run("file.strictReport", &json!({})).unwrap()["strict"], "passed");
 }
@@ -214,7 +214,7 @@ fn a_picture_wider_than_the_pdf_draws_is_refused_for_pdf_only() {
         .unwrap();
     let mut doc = Document::from_text("Hello");
     doc.media.insert("wide.png".into(), std::sync::Arc::new(png));
-    doc.settings.page_picture = Some(wordcraft_doc::PagePicture { media: "wide.png".into(), fill_type: "stretch".into(), title: String::new() });
+    doc.settings.page_picture = Some(letra_doc::PagePicture { media: "wide.png".into(), fill_type: "stretch".into(), title: String::new() });
     let mut s = Session::new(doc);
     assert_eq!(s.run("file.strictReport", &json!({})).unwrap()["strict"], "failed", "PDF");
     assert_eq!(s.run("file.strictReport", &json!({"page": 1})).unwrap()["strict"], "passed", "PNG");
@@ -222,7 +222,7 @@ fn a_picture_wider_than_the_pdf_draws_is_refused_for_pdf_only() {
 
 fn watermark(text: &str) -> Document {
     let mut doc = Document::from_text("Hello");
-    doc.settings.watermark = Some(wordcraft_doc::Watermark { text: text.into(), ..Default::default() });
+    doc.settings.watermark = Some(letra_doc::Watermark { text: text.into(), ..Default::default() });
     doc
 }
 
@@ -250,9 +250,9 @@ fn watermark_text_no_font_can_draw_is_refused_and_latin_passes() {
 #[test]
 fn wordart_text_effects_keep_their_glyphs_in_the_check() {
     let c = uncovered();
-    let props = wordcraft_doc::CharProps { shadow: Some(true), outline: Some(true), ..Default::default() };
+    let props = letra_doc::CharProps { shadow: Some(true), outline: Some(true), ..Default::default() };
     let mut doc = Document::from_text("");
-    doc.body = vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text(&format!("a{c}b"), props))].into_iter().collect();
+    doc.body = vec![letra_doc::para_block(letra_doc::Paragraph::with_text(&format!("a{c}b"), props))].into_iter().collect();
     let mut s = Session::new(doc);
     let r = s.run("file.strictReport", &json!({})).unwrap();
     assert_eq!(r["missing_glyphs"][0]["cp"], format!("U+{:04X}", c as u32), "{r}");
@@ -267,7 +267,7 @@ fn each_list_says_for_itself_that_it_was_cut() {
     let r = s.run("file.strictReport", &json!({})).unwrap();
     assert_eq!(r["missing_glyphs"].as_array().unwrap().len(), 256);
     assert_eq!((r["truncated"].clone(), r["glyphs_truncated"].clone(), r["pictures_truncated"].clone()), (json!(true), json!(true), json!(false)));
-    let lines = wordcraft_engine::strict::lines_from_json(&r);
+    let lines = letra_engine::strict::lines_from_json(&r);
     assert!(lines[0].ends_with(", …"), "{}", lines[0]);
     assert!(lines[0].starts_with("strict: 300 characters cannot be drawn (first 256 listed): "), "{}", lines[0]);
     assert!(!lines[1].contains('…'), "{}", lines[1]);
@@ -279,16 +279,16 @@ fn a_truncated_report_carries_totals_past_the_cap() {
     let many = uncovered_many(300);
     let mut doc = Document::from_text(&many.iter().collect::<String>());
     for n in 0..300 {
-        doc.missing_pictures.push(wordcraft_doc::MissingPicture {
+        doc.missing_pictures.push(letra_doc::MissingPicture {
             part: format!("word/media/gone{n}.png"),
             story: "word/document.xml".into(),
-            reason: wordcraft_doc::MissingPictureReason::MissingPart,
+            reason: letra_doc::MissingPictureReason::MissingPart,
         });
         // The same record again is one picture.
-        doc.missing_pictures.push(wordcraft_doc::MissingPicture {
+        doc.missing_pictures.push(letra_doc::MissingPicture {
             part: format!("word/media/gone{n}.png"),
             story: "word/document.xml".into(),
-            reason: wordcraft_doc::MissingPictureReason::MissingPart,
+            reason: letra_doc::MissingPictureReason::MissingPart,
         });
     }
     let mut s = Session::new(doc);

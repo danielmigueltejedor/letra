@@ -11,9 +11,9 @@ use super::{MeasureExt, Sense, Serialize, Tokens, Ui, Value, WordApp, json, semi
 #[serde(rename_all = "camelCase")]
 pub struct CustomPropertiesForm {
     /// The working copy, in document order.
-    pub props: Vec<wordcraft_doc::CustomProp>,
+    pub props: Vec<letra_doc::CustomProp>,
     /// What the document held when the dialog opened; OK sends only what differs.
-    start: Vec<wordcraft_doc::CustomProp>,
+    start: Vec<letra_doc::CustomProp>,
     /// The row the list selection is on.
     pub selected: usize,
     /// The name/value boxes under the list.
@@ -51,13 +51,13 @@ impl CustomPropertiesForm {
     /// The typed name and value, validated against the engine's own limits
     /// (`file.properties`, which refuses them the same way).
     fn form(&self) -> Result<(String, String), String> {
-        let max_name = wordcraft_engine::cmd::file::MAX_CUSTOM_NAME;
+        let max_name = letra_engine::cmd::file::MAX_CUSTOM_NAME;
         let name = self.name.trim();
         if name.is_empty() || name.chars().count() > max_name {
             return Err(crate::i18n::fmt(tl!("Property names are 1–{max} characters."), &[("max", &max_name.to_string())]));
         }
-        if self.value.len() > wordcraft_engine::cmd::file::MAX_CUSTOM_VALUE {
-            let max = wordcraft_engine::cmd::file::MAX_CUSTOM_VALUE;
+        if self.value.len() > letra_engine::cmd::file::MAX_CUSTOM_VALUE {
+            let max = letra_engine::cmd::file::MAX_CUSTOM_VALUE;
             return Err(crate::i18n::fmt(tl!("Property values are at most {max} bytes."), &[("max", &max.to_string())]));
         }
         Ok((name.to_string(), self.value.clone()))
@@ -78,7 +78,7 @@ impl CustomPropertiesForm {
                         self.selected = i;
                     }
                     None => {
-                        self.props.push(wordcraft_doc::CustomProp { name, kind: "lpwstr".into(), value, ..Default::default() });
+                        self.props.push(letra_doc::CustomProp { name, kind: "lpwstr".into(), value, ..Default::default() });
                         self.selected = self.props.len().saturating_sub(1);
                     }
                 }
@@ -120,7 +120,7 @@ impl CustomPropertiesForm {
             }
             None => {
                 let i = self.selected.min(self.props.len());
-                self.props.insert(i, wordcraft_doc::CustomProp { name, value, ..old });
+                self.props.insert(i, letra_doc::CustomProp { name, value, ..old });
                 self.selected = i;
             }
         }
@@ -167,7 +167,7 @@ impl CustomPropertiesForm {
 }
 
 /// The Table Properties dialog's fields. Lengths are in the interface unit
-/// ([`wordcraft_geom::Unit`], inches by default).
+/// ([`letra_geom::Unit`], inches by default).
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TableForm {
@@ -238,24 +238,24 @@ impl TableForm {
     /// The caret's table, row, column and cell as the dialog shows them; a row check box the
     /// selected rows differ in is mixed.
     pub fn read(app: &WordApp) -> Option<TableForm> {
-        use wordcraft_doc::props::{Align, HeightRule, VAlign};
+        use letra_doc::props::{Align, HeightRule, VAlign};
         let s = &app.session;
         let (tp, r, c) = s.sel.focus.path.cell()?;
         let t = s.doc.table(s.sel.focus.story, &tp)?;
         let k = crate::options::unit().pt_per_unit();
         let row = t.rows.get(r).map(|x| x.props.clone()).unwrap_or_default();
-        let mut rows: Vec<usize> = wordcraft_engine::cmd::table::selected_cells(s).into_iter().map(|(r, _)| r).collect();
+        let mut rows: Vec<usize> = letra_engine::cmd::table::selected_cells(s).into_iter().map(|(r, _)| r).collect();
         rows.sort_unstable();
         rows.dedup();
-        let selected: Vec<&wordcraft_doc::props::RowProps> = rows.iter().filter_map(|&i| t.rows.get(i)).map(|x| &x.props).collect();
-        let differ = |f: fn(&wordcraft_doc::props::RowProps) -> bool| selected.iter().any(|p| f(p) != f(&row));
+        let selected: Vec<&letra_doc::props::RowProps> = rows.iter().filter_map(|&i| t.rows.get(i)).map(|x| &x.props).collect();
+        let differ = |f: fn(&letra_doc::props::RowProps) -> bool| selected.iter().any(|p| f(p) != f(&row));
         let mixed = [("allowBreak", differ(|p| p.cant_split)), ("headerRow", differ(|p| p.header))]
             .into_iter()
             .filter(|(_, d)| *d)
             .map(|(k, _)| k.to_string())
             .collect();
         let cell = t.rows.get(r).and_then(|x| x.cells.get(c)).map(|x| x.props.clone()).unwrap_or_default();
-        let tw = wordcraft_engine::cmd::page::sect(s).text_width();
+        let tw = letra_engine::cmd::page::sect(s).text_width();
         let width = t.props.width_pct.filter(|p| *p > 0.0).map(|p| tw * p.min(100.0) / 100.0).or(t.props.width.filter(|w| *w > 0.0));
         let fin = |v: f32| if v.is_finite() { v } else { 0.0 };
         Some(TableForm {
@@ -382,7 +382,7 @@ pub fn table_grid_picker(ui: &mut Ui, app: &mut WordApp) {
 /// The Table Properties dialog's fields: Table, Row, Column and Cell sections.
 pub(super) fn table_properties(ui: &mut Ui, f: &mut TableForm) {
     let unit = crate::options::unit();
-    fn len(v: &mut f32, lo: f32, unit: wordcraft_geom::Unit) -> egui::DragValue<'_> {
+    fn len(v: &mut f32, lo: f32, unit: letra_geom::Unit) -> egui::DragValue<'_> {
         egui::DragValue::new(v).speed(0.01).range(lo..=22.0).measure(unit).max_decimals(2)
     }
     let heading = |ui: &mut Ui, s: &str| {
@@ -534,7 +534,7 @@ pub(super) fn custom_properties(app: &mut WordApp, ui: &mut Ui, f: &mut CustomPr
         t.row(|r| {
             let name = r.cell(|ui| ui.label(tl!("Name:")));
             r.cell(|ui| {
-                ui.add(egui::TextEdit::singleline(&mut f.name).desired_width(300.0).char_limit(wordcraft_engine::cmd::file::MAX_CUSTOM_NAME))
+                ui.add(egui::TextEdit::singleline(&mut f.name).desired_width(300.0).char_limit(letra_engine::cmd::file::MAX_CUSTOM_NAME))
                     .labelled_by(name.id)
             });
         });

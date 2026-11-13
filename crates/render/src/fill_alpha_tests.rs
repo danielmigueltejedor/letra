@@ -1,7 +1,7 @@
 use super::*;
-use wordcraft_doc::effects::{Glow, Shadow, ShapeEffects};
-use wordcraft_doc::graphic::PathSeg;
-use wordcraft_geom::Rect;
+use letra_doc::effects::{Glow, Shadow, ShapeEffects};
+use letra_doc::graphic::PathSeg;
+use letra_geom::Rect;
 
 const PIXEL_TOLERANCE: u8 = 3;
 const BLUE: Rgb = Rgb(0, 0, 255);
@@ -24,7 +24,7 @@ fn soft_shape(kind: ShapeKind, alpha: f32, radius: f32, effects: ShapeEffects) -
     Draw::Shape {
         rect: Rect::new(4.0, 4.0, 24.0, 24.0),
         kind,
-        fill: Some(wordcraft_layout::display::Paint::Solid(RED, alpha)),
+        fill: Some(letra_layout::display::Paint::Solid(RED, alpha)),
         stroke: None,
         stroke_width: 0.0,
         dash: Vec::new(),
@@ -39,7 +39,7 @@ fn path_fill_keeps_stroke_alpha() {
     for alpha in [0.0, 0.5, 1.0] {
         let item = Draw::Path {
             segs: vec![PathSeg::Move(4.0, 4.0), PathSeg::Line(28.0, 4.0), PathSeg::Line(28.0, 28.0), PathSeg::Line(4.0, 28.0), PathSeg::Close],
-            fill: Some(wordcraft_layout::display::Paint::Solid(RED, alpha)),
+            fill: Some(letra_layout::display::Paint::Solid(RED, alpha)),
             stroke: Some(GREEN),
             stroke_width: 2.0,
             dash: Vec::new(),
@@ -111,7 +111,7 @@ fn caret_samples_soft_edge_bands() {
             let rendered = image(shape.clone());
             for (x, y) in [(18, 64), (22, 64), (30, 64), (64, 64)] {
                 let mut bg = [0.0, 0.0, 255.0];
-                let point = wordcraft_geom::Point::new((x as f32 + 0.5) / 4.0, (y as f32 + 0.5) / 4.0);
+                let point = letra_geom::Point::new((x as f32 + 0.5) / 4.0, (y as f32 + 0.5) / 4.0);
                 blend_backgrounds(std::slice::from_ref(&shape), point, &RenderOptions::default(), &mut bg, 0);
                 let pixel = rendered.pixel(x, y);
                 for (sample, channel) in bg.into_iter().zip(pixel) {

@@ -7,9 +7,9 @@
 //! are the engine's (`cmd::table_resize`).
 
 use egui::{Pos2, Rect, Stroke, Ui, pos2};
+use letra_engine::cmd::table_resize::{self, Edge, Plan, ResizeTarget, Share};
+use letra_layout::DocLayout;
 use serde_json::json;
-use wordcraft_engine::cmd::table_resize::{self, Edge, Plan, ResizeTarget, Share};
-use wordcraft_layout::DocLayout;
 
 use crate::WordApp;
 use crate::theme::Tokens;
@@ -293,7 +293,7 @@ pub(crate) fn caret_handles(
     painter: &egui::Painter,
     layout: &DocLayout,
     rects: &[Rect],
-) -> Vec<(usize, Option<wordcraft_geom::Rect>, Option<wordcraft_geom::Rect>)> {
+) -> Vec<(usize, Option<letra_geom::Rect>, Option<letra_geom::Rect>)> {
     let focus = &app.session.sel.focus;
     let Some((tp, _, _)) = focus.path.cell() else { return Vec::new() };
     let clip = painter.clip_rect();
@@ -302,7 +302,7 @@ pub(crate) fn caret_handles(
         .enumerate()
         .filter(|(_, r)| r.intersects(clip))
         .map(|(page, _)| {
-            let (m, z) = wordcraft_engine::cmd::table_mouse::caret_handles(layout, &app.session.doc, focus.story, &tp, page);
+            let (m, z) = letra_engine::cmd::table_mouse::caret_handles(layout, &app.session.doc, focus.story, &tp, page);
             (page, m, z)
         })
         .filter(|(_, m, z)| m.is_some() || z.is_some())

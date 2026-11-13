@@ -8,11 +8,11 @@ use std::collections::BTreeMap;
 
 use craft_ui::panes::{Edge, PaneContent, PaneHost, PaneLabels, PaneRequest, PaneState, Place, SidePolicy};
 use egui::{Stroke, Ui, vec2};
+use letra_doc::numbering::{Counters, LevelSuffix};
+use letra_doc::section::NumFormat;
+use letra_doc::{Document, Path, Pos, StoryRef};
+use letra_engine::StylesPaneDock;
 use serde_json::{Value, json};
-use wordcraft_doc::numbering::{Counters, LevelSuffix};
-use wordcraft_doc::section::NumFormat;
-use wordcraft_doc::{Document, Path, Pos, StoryRef};
-use wordcraft_engine::StylesPaneDock;
 
 use crate::WordApp;
 use crate::theme::{Tokens, regular, semibold};
@@ -50,7 +50,7 @@ pub(crate) use state::{lenient_order, lenient_places};
 /// The task panes, in their default order: each edge's first pane is outermost.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Pane {
-    /// SmartArt Design › Text Pane, while a SmartArt graphic WordCraft can edit is selected.
+    /// SmartArt Design › Text Pane, while a SmartArt graphic Letra can edit is selected.
     SmartArtText,
     Navigation,
     Clipboard,
@@ -192,8 +192,8 @@ mod navigation_tests {
     /// the same list still count (#3418).
     #[test]
     fn headings_show_their_list_numbers() {
-        use wordcraft_doc::props::NumRef;
-        use wordcraft_doc::{CharProps, ListKind, Paragraph, para_block};
+        use letra_doc::props::NumRef;
+        use letra_doc::{CharProps, ListKind, Paragraph, para_block};
         let mut doc = Document::new();
         let num = Arc::make_mut(&mut doc.numbering).add_list(ListKind::Legal);
         let para = |text: &str, style: &str, level: Option<u8>| {

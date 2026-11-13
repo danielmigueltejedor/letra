@@ -3,8 +3,8 @@
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::para::{InlineObject, OBJ, ShapeKind, Wrap};
-use wordcraft_doc::{Document, PartKind};
+use letra_doc::para::{InlineObject, OBJ, ShapeKind, Wrap};
+use letra_doc::{Document, PartKind};
 
 const NS_D: &str =
     r#"xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0""#;
@@ -66,7 +66,7 @@ fn hostile_text_boxes_do_not_panic() {
 
 /// Each text box's look: (fill, outline colour and width, inner margins in points, grows to fit).
 #[allow(clippy::type_complexity)]
-fn looks(d: &Document) -> Vec<(Option<wordcraft_doc::props::Rgb>, Option<(wordcraft_doc::props::Rgb, f32)>, [f32; 4], bool)> {
+fn looks(d: &Document) -> Vec<(Option<letra_doc::props::Rgb>, Option<(letra_doc::props::Rgb, f32)>, [f32; 4], bool)> {
     let mut out = Vec::new();
     for b in d.body.iter() {
         let Some(p) = b.as_para() else { continue };
@@ -95,7 +95,7 @@ fn open_styled() -> Document {
 
 #[test]
 fn a_box_keeps_its_frame_look() {
-    use wordcraft_doc::props::Rgb;
+    use letra_doc::props::Rgb;
     let d = open_styled();
     assert_eq!(
         looks(&d),
@@ -303,9 +303,9 @@ fn a_custom_style_only_in_a_text_box_is_kept() {
         d.styles.resolve_para(&p.props).align
     };
     let d = import(&package(&content, Some(&styles))).unwrap();
-    assert_eq!(centred(&d), wordcraft_doc::props::Align::Center);
+    assert_eq!(centred(&d), letra_doc::props::Align::Center);
     let back = import(&export(&d).unwrap()).unwrap();
-    assert_eq!(centred(&back), wordcraft_doc::props::Align::Center);
+    assert_eq!(centred(&back), letra_doc::props::Align::Center);
 }
 
 #[test]
@@ -321,7 +321,7 @@ fn a_frames_drawn_stroke_is_its_line_when_it_has_no_border() {
     let line = |d: &Document| looks(d).first().map(|l| l.1).expect("a box");
     let stroke = r##"draw:stroke="solid" svg:stroke-width="0cm" svg:stroke-color="#000000""##;
     // A 0 width draws at a hairline, 0.25 pt.
-    assert_eq!(line(&open_with(stroke)), Some((wordcraft_doc::props::Rgb::BLACK, 0.25)));
+    assert_eq!(line(&open_with(stroke)), Some((letra_doc::props::Rgb::BLACK, 0.25)));
     assert_eq!(line(&open_with(&format!(r#"{stroke} fo:border="none""#))), None);
     assert_eq!(line(&open_with("")), None);
 }

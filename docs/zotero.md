@@ -28,7 +28,7 @@ new document is left as it is.
 From a terminal, against a file:
 
 ```
-wordcraft-cli zotero refresh paper.docx --save paper.docx [--trace]
+letra-cli zotero refresh paper.docx --save paper.docx [--trace]
 ```
 
 Two engine commands work with Zotero's fields without Zotero running:
@@ -40,7 +40,7 @@ Two engine commands work with Zotero's fields without Zotero running:
   bibliography by default. This covers Zotero, Mendeley, EndNote and Word's own citation
   fields. The player window has previous/next sentence, pause, stop and speed (0.5–3×).
   Its commands are `readAloud.playPause`, `.next`, `.previous`, `.stop`, `.speed {"value"}`,
-  `.skipCitations {"value"}` and `.status`. Set `WORDCRAFT_SPEECH=off` to keep it silent.
+  `.skipCitations {"value"}` and `.status`. Set `LETRA_SPEECH=off` to keep it silent.
 
 Switching between an in-text style and a note style in Document Preferences moves the citations:
 into new footnotes (or endnotes) at the same place, and back into the text where the note marks
@@ -85,7 +85,7 @@ isn't another user's. On Windows and macOS (and the BSDs) the loopback rule is t
   Zotero is closed would be taken for Zotero. An owner check for these systems is tracked in
   #3831. A program running as you is trusted on every system; it could change your documents
   anyway.
-- `wordcraft-cli zotero` prints Zotero's messages (and `--trace` lines) with control
+- `letra-cli zotero` prints Zotero's messages (and `--trace` lines) with control
   characters, line breaks and backslashes shown as escapes (`\n`, `\u{1b}`, `\\`), so a peer
   can't forge other output or drive the terminal.
 

@@ -4,8 +4,8 @@
 use crate::para::{bidi_levels, visual_order};
 #[allow(unused_imports)]
 use crate::*;
-use wordcraft_doc::props::{Align, ParaProps};
-use wordcraft_doc::{Pos, StoryRef};
+use letra_doc::props::{Align, ParaProps};
+use letra_doc::{Pos, StoryRef};
 
 fn lay(doc: &Document) -> DocLayout {
     let mut c = LayoutCache::new();
@@ -138,7 +138,7 @@ fn numbers_and_latin_inside_persian_keep_their_order() {
 #[test]
 fn caret_and_hit_agree_in_bidi_text() {
     crate::test_fonts();
-    for (s, rtl) in [("سلام world ۱۲۳", true), ("Hello سلام دنیا end", false), ("کتاب «WordCraft» (نسخه ۲)", true)] {
+    for (s, rtl) in [("سلام world ۱۲۳", true), ("Hello سلام دنیا end", false), ("کتاب «Letra» (نسخه ۲)", true)] {
         let d = doc_of(&[(s, rtl)]);
         let l = lay(&d);
         let (pl, _) = first_line(&l, 0);
@@ -225,11 +225,9 @@ fn rtl_indents_and_alignment_are_measured_from_the_right() {
 fn rtl_list_label_sits_on_the_right() {
     crate::test_fonts();
     let mut d = doc_of(&[("مورد اول", true), ("مورد دوم", true)]);
-    let id = Arc::make_mut(&mut d.numbering).add_list(wordcraft_doc::ListKind::Numbered);
-    d.format_paragraphs(&Pos::body(0, 0), &Pos::body(1, 0), &|p: &mut ParaProps| {
-        p.numbering = Some(wordcraft_doc::props::NumRef { num: id, level: 0 })
-    })
-    .unwrap();
+    let id = Arc::make_mut(&mut d.numbering).add_list(letra_doc::ListKind::Numbered);
+    d.format_paragraphs(&Pos::body(0, 0), &Pos::body(1, 0), &|p: &mut ParaProps| p.numbering = Some(letra_doc::props::NumRef { num: id, level: 0 }))
+        .unwrap();
     let l = lay(&d);
     let (pl, x) = first_line(&l, 0);
     let lab = pl.label.as_ref().expect("numbered");
@@ -252,7 +250,7 @@ fn rtl_empty_and_trailing_lines_mirror() {
     // A paragraph ending in a line break gets an empty last line, also on the right.
     let mut d = doc_of(&[("سطر", true)]);
     let end = "سطر".len();
-    d.para_mut(StoryRef::Body, &wordcraft_doc::Path::top(0)).unwrap().insert_text(end, "\n", &Default::default()).unwrap();
+    d.para_mut(StoryRef::Body, &letra_doc::Path::top(0)).unwrap().insert_text(end, "\n", &Default::default()).unwrap();
     let l = lay(&d);
     assert!((caret_x(&l, 0, end + 1) - 540.0).abs() < 0.5, "{}", caret_x(&l, 0, end + 1));
 }
@@ -313,14 +311,14 @@ fn hostile_bidi_text_never_panics() {
 }
 
 /// A face that has Arabic letters (installed system fonts), or `None` to skip.
-fn arabic_face() -> Option<wordcraft_fonts::FaceRef> {
+fn arabic_face() -> Option<letra_fonts::FaceRef> {
     crate::test_fonts();
-    wordcraft_fonts::FontDb::global().fallback_for('ب', 0).map(|f| wordcraft_fonts::FaceRef::of(&f)).filter(|f| f.covers('پ'))
+    letra_fonts::FontDb::global().fallback_for('ب', 0).map(|f| letra_fonts::FaceRef::of(&f)).filter(|f| f.covers('پ'))
 }
 
 /// The glyph ids of each cluster, in order. A font may draw a letter as several glyphs (Noto
 /// Naskh Arabic draws ب as its dotless form plus the dot), so letters are compared by cluster.
-fn cluster_glyphs(glyphs: &[wordcraft_fonts::ShapedGlyph]) -> Vec<Vec<u32>> {
+fn cluster_glyphs(glyphs: &[letra_fonts::ShapedGlyph]) -> Vec<Vec<u32>> {
     let mut out: Vec<(usize, Vec<u32>)> = Vec::new();
     for g in glyphs {
         match out.last_mut() {
@@ -338,9 +336,9 @@ fn persian_letters_join_and_brackets_mirror() {
         eprintln!("skipped: no font with Persian letters installed");
         return;
     };
-    let isolated = cluster_glyphs(&wordcraft_fonts::shape_run(&face, "ب", &[], |c| c, true));
+    let isolated = cluster_glyphs(&letra_fonts::shape_run(&face, "ب", &[], |c| c, true));
     assert_eq!(isolated.len(), 1, "{isolated:?}");
-    let shaped = wordcraft_fonts::shape_run(&face, "ببب", &[], |c| c, true);
+    let shaped = letra_fonts::shape_run(&face, "ببب", &[], |c| c, true);
     let joined = cluster_glyphs(&shaped);
     assert_eq!(joined.len(), 3, "one cluster per letter: {joined:?}");
     assert!(shaped.iter().all(|g| g.gid != 0), "the font has the letters");
@@ -349,18 +347,18 @@ fn persian_letters_join_and_brackets_mirror() {
     // Clusters come back in logical order.
     assert!(shaped.windows(2).all(|w| w[0].cluster <= w[1].cluster));
     // ZWNJ (نیم‌فاصله) breaks the join: "می‌خواهم" keeps می separate.
-    let with_zwnj = cluster_glyphs(&wordcraft_fonts::shape_run(&face, "ب\u{200C}ب", &[], |c| c, true));
+    let with_zwnj = cluster_glyphs(&letra_fonts::shape_run(&face, "ب\u{200C}ب", &[], |c| c, true));
     assert_eq!(with_zwnj.first(), isolated.first(), "a letter before ZWNJ takes its isolated form");
     // Farsi Yeh (ی, U+06CC) joins like any letter (#824).
-    let mi = wordcraft_fonts::shape_run(&face, "می", &[], |c| c, true);
+    let mi = letra_fonts::shape_run(&face, "می", &[], |c| c, true);
     let mi_cl = cluster_glyphs(&mi);
     assert_eq!(mi_cl.len(), 2, "meem + Farsi Yeh: {mi_cl:?}");
     assert!(mi.iter().all(|g| g.gid != 0), "the font has Farsi Yeh");
-    let meem_alone = cluster_glyphs(&wordcraft_fonts::shape_run(&face, "م", &[], |c| c, true));
+    let meem_alone = cluster_glyphs(&letra_fonts::shape_run(&face, "م", &[], |c| c, true));
     assert_ne!(mi_cl[0], meem_alone[0], "meem takes its initial form before Yeh: {mi_cl:?} vs {meem_alone:?}");
     // In right-to-left text, "(" is drawn with the mirrored glyph.
-    let open = wordcraft_fonts::shape_run(&face, "(", &[], |c| c, true);
-    let close = wordcraft_fonts::shape_run(&face, ")", &[], |c| c, false);
+    let open = letra_fonts::shape_run(&face, "(", &[], |c| c, true);
+    let close = letra_fonts::shape_run(&face, ")", &[], |c| c, false);
     if let (Some(o), Some(c)) = (open.first(), close.first())
         && c.gid != 0
     {
@@ -390,11 +388,11 @@ fn persian_text_in_a_latin_font_stays_in_one_fallback_face() {
 #[test]
 fn glyph_runs_carry_their_text_for_pdf_export() {
     crate::test_fonts();
-    let s = "سلام WordCraft می‌خواهم";
+    let s = "سلام Letra می‌خواهم";
     let d = doc_of(&[(s, true)]);
     let l = lay(&d);
     let lam_alef_ligature = arabic_face().is_some_and(|f| {
-        let g = wordcraft_fonts::shape_run(&f, "لا", &[], |c| c, true);
+        let g = letra_fonts::shape_run(&f, "لا", &[], |c| c, true);
         !g.is_empty() && g.iter().all(|g| g.cluster == 0)
     });
     let mut all = String::new();
@@ -422,7 +420,7 @@ fn character_border_boxes_a_whole_rtl_word() {
     crate::test_fonts();
     let s = "کتاب خوب";
     let mut d = doc_of(&[(s, true)]);
-    let b = wordcraft_doc::props::Border { space: 0.0, ..wordcraft_doc::props::Border::single(0.5) };
+    let b = letra_doc::props::Border { space: 0.0, ..letra_doc::props::Border::single(0.5) };
     d.format_range(&Pos::body(0, 0), &Pos::body(0, at(s, 4)), &|c| c.border = Some(b)).unwrap();
     let l = lay(&d);
     let (pl, x) = first_line(&l, 0);
@@ -450,7 +448,7 @@ fn inline_picture_in_rtl_text_sits_in_its_place() {
     let s = "متن  بیشتر";
     let mut d = doc_of(&[(s, true)]);
     let off = at(s, 4);
-    let pic = wordcraft_doc::InlineObject::Image {
+    let pic = letra_doc::InlineObject::Image {
         media: "m".into(),
         w: 30.0,
         h: 20.0,
@@ -460,7 +458,7 @@ fn inline_picture_in_rtl_text_sits_in_its_place() {
         fx: Default::default(),
         ole: None,
     };
-    d.para_mut(StoryRef::Body, &wordcraft_doc::Path::top(0)).unwrap().insert_object(off, pic, &Default::default()).unwrap();
+    d.para_mut(StoryRef::Body, &letra_doc::Path::top(0)).unwrap().insert_object(off, pic, &Default::default()).unwrap();
     let l = lay(&d);
     let (pl, x) = first_line(&l, 0);
     let line = &pl.lines[0];
@@ -484,15 +482,15 @@ fn inline_picture_in_rtl_text_sits_in_its_place() {
 #[test]
 fn rtl_table_lays_its_columns_out_right_to_left() {
     crate::test_fonts();
-    use wordcraft_doc::props::{Border, Borders};
-    use wordcraft_doc::{Path, Table};
+    use letra_doc::props::{Border, Borders};
+    use letra_doc::{Path, Table};
     let mut d = Document::from_text("before\nafter");
     let mut t = Table::new(1, 3, 300.0);
     t.props.bidi_visual = true;
     // Start margin 10pt, end margin 2pt.
     t.props.cell_margins = Some([0.0, 10.0, 0.0, 2.0]);
     for (i, c) in t.rows[0].cells.iter_mut().enumerate() {
-        c.blocks = vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text(&format!("c{i}"), Default::default()))];
+        c.blocks = vec![letra_doc::para_block(letra_doc::Paragraph::with_text(&format!("c{i}"), Default::default()))];
     }
     // A thick start border on the first cell.
     t.rows[0].cells[0].props.borders = Some(Borders { left: Some(Border::single(3.0)), ..Default::default() });
@@ -532,7 +530,7 @@ fn rtl_table_lays_its_columns_out_right_to_left() {
 #[test]
 fn rtl_section_puts_its_first_column_on_the_right() {
     crate::test_fonts();
-    use wordcraft_doc::section::Columns;
+    use letra_doc::section::Columns;
     let text = "Columns flow from the right edge in a right-to-left section. ".repeat(150);
     let mut d = Document::from_text(&text);
     d.last_section.rtl = true;
@@ -557,9 +555,9 @@ fn list_label_moves_with_its_text_when_the_paragraph_is_aligned() {
     // margin. In Word the label stays attached to the start of the text, in both directions.
     for (rtl, text) in [(false, "alpha beta"), (true, "مورد اول")] {
         let mut d = doc_of(&[(text, rtl), (text, rtl), (text, rtl), (text, rtl)]);
-        let id = Arc::make_mut(&mut d.numbering).add_list(wordcraft_doc::ListKind::Bullet);
+        let id = Arc::make_mut(&mut d.numbering).add_list(letra_doc::ListKind::Bullet);
         d.format_paragraphs(&Pos::body(0, 0), &Pos::body(3, 1), &|p: &mut ParaProps| {
-            p.numbering = Some(wordcraft_doc::props::NumRef { num: id, level: 0 })
+            p.numbering = Some(letra_doc::props::NumRef { num: id, level: 0 })
         })
         .unwrap();
         // Start edge (the default), centre, end edge, and a justified one.
@@ -598,9 +596,9 @@ fn list_label_moves_with_its_text_when_the_paragraph_is_aligned() {
 #[test]
 fn rtl_list_label_mirrors_its_brackets() {
     let mut d = doc_of(&[("סעיף", true)]);
-    let lvl = wordcraft_doc::numbering::Level { text: "(%1)".into(), ..Default::default() };
+    let lvl = letra_doc::numbering::Level { text: "(%1)".into(), ..Default::default() };
     let num = Arc::make_mut(&mut d.numbering).try_add_levels(None, vec![lvl]).unwrap();
-    d.format_paragraphs(&Pos::body(0, 0), &Pos::body(0, 0), &|p: &mut ParaProps| p.numbering = Some(wordcraft_doc::props::NumRef { num, level: 0 }))
+    d.format_paragraphs(&Pos::body(0, 0), &Pos::body(0, 0), &|p: &mut ParaProps| p.numbering = Some(letra_doc::props::NumRef { num, level: 0 }))
         .unwrap();
     let l = lay(&d);
     let (pl, _) = first_line(&l, 0);
@@ -619,7 +617,7 @@ fn list_label_after_leading_page_break_uses_its_text_lines_alignment() {
     // #2964: the number moved to page 2, but kept the centring of the empty break line.
     // Adding the break must leave both the label and text at the same horizontal positions.
     for (rtl, heading) in [(false, "SUBJECT OF THE AGREEMENT"), (true, "عنوان القسم")] {
-        for kind in [wordcraft_doc::ListKind::Numbered, wordcraft_doc::ListKind::Bullet] {
+        for kind in [letra_doc::ListKind::Numbered, letra_doc::ListKind::Bullet] {
             for align in [Align::Left, Align::Center, Align::Right, Align::Justify] {
                 for tab in [false, true] {
                     let text = if tab { format!("{heading}\tTail") } else { heading.into() };
@@ -635,7 +633,7 @@ fn list_label_after_leading_page_break_uses_its_text_lines_alignment() {
                         }
                         let at = Pos::body(1, 0);
                         d.format_paragraphs(&at, &at, &|p| {
-                            p.numbering = Some(wordcraft_doc::props::NumRef { num: id, level: 0 });
+                            p.numbering = Some(letra_doc::props::NumRef { num: id, level: 0 });
                             p.align = Some(align);
                         })
                         .unwrap();
@@ -669,7 +667,7 @@ fn letters(l: &DocLayout) -> Vec<Vec<u32>> {
 }
 
 /// `text` as one right-to-left paragraph with `format` applied to each `(start, end)` byte range.
-fn formatted(text: &str, splits: &[(usize, usize)], format: &dyn Fn(&mut wordcraft_doc::props::CharProps)) -> Document {
+fn formatted(text: &str, splits: &[(usize, usize)], format: &dyn Fn(&mut letra_doc::props::CharProps)) -> Document {
     let mut d = doc_of(&[(text, true)]);
     for &(start, end) in splits {
         d.format_range(&Pos::body(0, start), &Pos::body(0, end), format).unwrap();
@@ -679,8 +677,8 @@ fn formatted(text: &str, splits: &[(usize, usize)], format: &dyn Fn(&mut wordcra
 
 const BEH: usize = 'ب'.len_utf8();
 
-fn red(c: &mut wordcraft_doc::props::CharProps) {
-    c.color = Some(wordcraft_doc::props::TextColor::Rgb(wordcraft_doc::props::Rgb(0xC0, 0, 0)));
+fn red(c: &mut letra_doc::props::CharProps) {
+    c.color = Some(letra_doc::props::TextColor::Rgb(letra_doc::props::Rgb(0xC0, 0, 0)));
 }
 
 /// The reporter's symptom: after a change of formatting inside a word, the letters on either side
@@ -778,14 +776,14 @@ fn letters_stay_apart_where_nothing_joins_them() {
 
 #[test]
 fn the_shaper_takes_a_letters_form_from_the_text_around_it() {
-    use wordcraft_fonts::{ShapeContext, shape_run_in};
+    use letra_fonts::{ShapeContext, shape_run_in};
     let Some(face) = arabic_face() else {
         eprintln!("skipped: no font with Persian letters installed");
         return;
     };
     let form = |around| cluster_glyphs(&shape_run_in(&face, "ب", &[], |c| c, true, around));
     let isolated = form(ShapeContext::default());
-    let joined = cluster_glyphs(&wordcraft_fonts::shape_run(&face, "ببب", &[], |c| c, true));
+    let joined = cluster_glyphs(&letra_fonts::shape_run(&face, "ببب", &[], |c| c, true));
     assert_eq!(form(ShapeContext { before: "", after: "ب" }).first(), joined.first(), "initial");
     assert_eq!(form(ShapeContext { before: "ب", after: "ب" }).first(), joined.get(1), "medial");
     assert_eq!(form(ShapeContext { before: "ب", after: "" }).first(), joined.get(2), "final");
@@ -799,7 +797,7 @@ fn the_shaper_takes_a_letters_form_from_the_text_around_it() {
 
 #[test]
 fn scripts_that_join_their_letters_are_told_apart() {
-    use wordcraft_fonts::joins_cursively;
+    use letra_fonts::joins_cursively;
     for c in ['ب', 'پ', 'ܐ', 'ᠠ', 'ߊ', '𞤀'] {
         assert!(joins_cursively(c), "{c}");
     }

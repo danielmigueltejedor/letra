@@ -100,7 +100,7 @@ The first folder holding a matching pair wins:
    way on every system, and it works for an app started from the Start menu, Finder or the Dock.
    Your languages marks each language it supplies *Your own dictionary*, and the **Dictionary
    files** list under it shows the file each language found.
-2. The folder in the `WORDCRAFT_DICTIONARIES` environment variable, and Letra's own
+2. The folder in the `LETRA_DICTIONARIES` environment variable, and Letra's own
    `dictionaries` folder (the first row of each system below).
 3. An installed [Language pack](#language-packs) for the language.
 4. The system's usual places:
@@ -109,11 +109,11 @@ The first folder holding a matching pair wins:
 |---|---|
 | Windows | `%LOCALAPPDATA%\Letra\dictionaries`, `%LOCALAPPDATA%\hunspell`, `%APPDATA%\Letra\dictionaries`, `%APPDATA%\hunspell`, LibreOffice's `share\extensions\dict-*` under `Program Files` (on any drive) |
 | macOS | `~/Library/Application Support/Letra/dictionaries`, `~/Library/Spelling`, `/Library/Spelling`, `/opt/homebrew/share/hunspell`, `/usr/local/share/hunspell`, `/Applications/LibreOffice.app/Contents/Resources/extensions/dict-*` |
-| Linux and BSD | `$XDG_DATA_HOME/wordcraft/dictionaries` (default `~/.local/share/wordcraft/dictionaries`), `~/.local/share/hunspell`, `/usr/share/hunspell`, `/usr/share/myspell`, `/usr/share/myspell/dicts`, `/usr/local/share/hunspell`, `/usr/local/share/myspell`, LibreOffice's `share/extensions/dict-*` under `/usr/lib/libreoffice` or `/opt/libreoffice` |
+| Linux and BSD | `$XDG_DATA_HOME/letra/dictionaries` (default `~/.local/share/letra/dictionaries`), `~/.local/share/hunspell`, `/usr/share/hunspell`, `/usr/share/myspell`, `/usr/share/myspell/dicts`, `/usr/local/share/hunspell`, `/usr/local/share/myspell`, LibreOffice's `share/extensions/dict-*` under `/usr/lib/libreoffice` or `/opt/libreoffice` |
 
 The Flatpak runs in a sandbox: its `$XDG_DATA_HOME` is
-`~/.var/app/ai.storyteller.wordcraft/data`, so its own folder is
-`~/.var/app/ai.storyteller.wordcraft/data/wordcraft/dictionaries`, and it can't see the host's
+`~/.var/app/dev.danielmiguelt.Letra/data`, so its own folder is
+`~/.var/app/dev.danielmiguelt.Letra/data/letra/dictionaries`, and it can't see the host's
 `/usr/share/hunspell` or `~/.local/share/hunspell` (the paths above are for the other builds).
 Put dictionaries in that folder.
 
@@ -180,11 +180,11 @@ from the LibreOffice repository (for example `it_IT/it_IT.aff`; the Spanish ones
 - From the command line:
 
   ```sh
-  wordcraft-cli run --cmd 'text.insert={"text":"Vou impramir o documento."}' --cmd select.all --cmd 'review.language={"lang":"pt-BR"}' --cmd review.issues --print
+  letra-cli run --cmd 'text.insert={"text":"Vou impramir o documento."}' --cmd select.all --cmd 'review.language={"lang":"pt-BR"}' --cmd review.issues --print
   ```
 
   The `review.issues` line lists `impramir` as a spelling issue with its suggestions.
-- The log file (`%APPDATA%\Letra\logs\wordcraft.log` on Windows) says
+- The log file (`%APPDATA%\Letra\logs\letra.log` on Windows) says
   `Portuguese spelling: no Hunspell pt_BR dictionary installed` when none was found.
 
 Never commit dictionary files to this repository: they stay on the user's system.
@@ -197,11 +197,11 @@ Never commit dictionary files to this repository: they stay on the user's system
 | 2026-11-03 | trivial | Language packs: install from Your languages or Add a language… in Options › Language; the Dictionaries folder is in Options › Language, not Proofing |
 | 2026-11-03 | trivial | Language packs: language-packs-2 is published and pinned (75 languages, adding the compounding languages); Mongolian and Thai aren't packs yet, and why |
 | 2026-11-02 | trivial | Language packs: language-packs-1 is published and pinned (61 languages); which languages aren't packs yet and why (CP4.4) |
-| 2026-11-02 | trivial | The Flatpak's own dictionaries folder (`~/.var/app/ai.storyteller.wordcraft/data/wordcraft/dictionaries`); the host's folders are outside its sandbox |
+| 2026-11-02 | trivial | The Flatpak's own dictionaries folder (`~/.var/app/dev.danielmiguelt.Letra/data/letra/dictionaries`); the host's folders are outside its sandbox |
 | 2026-11-01 | minor | Language packs (CP4.3): installing a language from File › Options › Language or the missing-pack bar, the download consent, About › Language data, the commands; an installed pack is searched after the dictionaries folders and before the system's |
 | 2026-10-22 | minor | Spanish (#3360, #3553): the file names for Spain, Mexico, Latin America and Uruguay and their fallbacks |
 | 2026-10-22 | trivial | Italian, Croatian, Turkish, Russian, Czech and Indonesian without a dictionary now show **(no dictionary)** (or **(dictionary unreadable)**) too, as this page already said; before, only Polish and Portuguese did. Indonesian is listed with its file names (#3150) |
-| 2026-11-01 | trivial | Letra's own `dictionaries` folder under the user's application data is searched on macOS (`~/Library/Application Support/Letra/dictionaries`) and Linux/BSD (`$XDG_DATA_HOME/wordcraft/dictionaries`) too, before the system folders, as it was on Windows (craft-proof; ported from storytold/craft-libs#31 by brzuchal) |
+| 2026-11-01 | trivial | Letra's own `dictionaries` folder under the user's application data is searched on macOS (`~/Library/Application Support/Letra/dictionaries`) and Linux/BSD (`$XDG_DATA_HOME/letra/dictionaries`) too, before the system folders, as it was on Windows (craft-proof; ported from storytold/craft-libs#31 by brzuchal) |
 | 2026-10-23 | trivial | ISO 8859-9 (`SET ISO8859-9`) dictionaries are read, so an older Turkish `tr_TR` loads without converting it to UTF-8; the Turkish dictionary is read through the same size-capped reader and `SET` decoding as the others (#3692) |
 | 2026-10-18 | trivial | ISO 8859-1 (`SET ISO8859-1`) dictionaries are read, so the original VERO `pt_BR` works without converting it to UTF-8 (#2824) |
 | 2026-10-18 | minor | An installed dictionary that can't be read shows **(dictionary unreadable)** in the status bar, with the file and reason in its tooltip and in File › Options › Proofing (#2830) |

@@ -102,7 +102,7 @@ pub(super) struct Writer {
     /// size, code font…): what a run's formatting without a direct value resolves to.
     pub(super) base: Fmt,
     /// The body's sections in order (the last is the document's); empty when it has just one.
-    pub(super) sections: Vec<wordcraft_doc::SectionProps>,
+    pub(super) sections: Vec<letra_doc::SectionProps>,
     /// The section being written.
     pub(super) sect_i: usize,
 }
@@ -191,7 +191,7 @@ impl Marker<'_> {
                 InlineObject::NoteRef { id, kind, .. } => self.doc.parts.get(&id).map(|part| {
                     let mut blocks = Vec::new();
                     self.story(&part.blocks, id, 0, &mut blocks);
-                    self.token(Mark::Note { endnote: kind == wordcraft_doc::para::NoteKind::Endnote, blocks })
+                    self.token(Mark::Note { endnote: kind == letra_doc::para::NoteKind::Endnote, blocks })
                 }),
                 InlineObject::CommentStart { id } if note.is_none() => Some(self.token(Mark::RangeStart(id))),
                 InlineObject::CommentEnd { id } if note.is_none() => {
@@ -201,7 +201,7 @@ impl Marker<'_> {
                 _ => None,
             };
             let Some(tok) = tok else { continue };
-            let end = off + wordcraft_doc::para::OBJ.len_utf8();
+            let end = off + letra_doc::para::OBJ.len_utf8();
             let text = if tok.is_empty() { tok } else { format!("{MARK_OPEN}{tok}{MARK_CLOSE}") };
             if q.delete(off, end).is_err() {
                 continue;
@@ -223,8 +223,8 @@ impl Marker<'_> {
 }
 
 /// `\sectd` and a section's formatting, in the words the reader reads back.
-fn sect_words(s: &wordcraft_doc::SectionProps) -> String {
-    use wordcraft_doc::section::{NumFormat, SectionStart};
+fn sect_words(s: &letra_doc::SectionProps) -> String {
+    use letra_doc::section::{NumFormat, SectionStart};
     let tw = |v: f32| if v.is_finite() { ((v * 20.0).round() as i64).max(0) } else { 0 };
     let mut o = String::from("\\sectd");
     o.push_str(match s.start {
@@ -282,8 +282,8 @@ fn style_num(k: Kind) -> Option<u32> {
     }
 }
 
-fn rtf_border_style(s: wordcraft_doc::props::BorderStyle) -> &'static str {
-    use wordcraft_doc::props::BorderStyle;
+fn rtf_border_style(s: letra_doc::props::BorderStyle) -> &'static str {
+    use letra_doc::props::BorderStyle;
     match s {
         BorderStyle::None => "\\brdrnone",
         BorderStyle::Single => "\\brdrs",
@@ -307,7 +307,7 @@ fn rtf_border_style(s: wordcraft_doc::props::BorderStyle) -> &'static str {
 }
 
 impl Writer {
-    fn write_border(&mut self, prefix: &str, side: char, b: wordcraft_doc::props::Border, out: &mut String) {
+    fn write_border(&mut self, prefix: &str, side: char, b: letra_doc::props::Border, out: &mut String) {
         out.push_str(&format!("\\{prefix}{side}"));
         out.push_str(rtf_border_style(b.style));
         let w = ((b.width * 20.0).round() as i64).clamp(1, 150);
@@ -324,7 +324,7 @@ impl Writer {
         }
     }
 
-    fn cell_borders(&mut self, borders: Option<&wordcraft_doc::props::Borders>, borderless: bool, out: &mut String) {
+    fn cell_borders(&mut self, borders: Option<&letra_doc::props::Borders>, borderless: bool, out: &mut String) {
         if let Some(b) = borders {
             for (side, opt) in [('t', &b.top), ('l', &b.left), ('b', &b.bottom), ('r', &b.right)] {
                 if let Some(border) = opt.filter(|x| x.is_visible()) {
@@ -450,7 +450,7 @@ impl Writer {
         // A script, `file:`, UNC or other non-web target is written as plain text, as the HTML and
         // Markdown exporters do: Word follows a HYPERLINK field's target on click, and a UNC one
         // leaks the reader's NTLM credentials.
-        match f.link.as_deref().filter(|l| wordcraft_doc::link::is_safe_href(l)) {
+        match f.link.as_deref().filter(|l| letra_doc::link::is_safe_href(l)) {
             Some(l) => {
                 // In a field's quotes `\\` is one backslash; a quote is stored as `%22`.
                 let target = l.replace('\\', "\\\\").replace('"', "%22");
@@ -893,7 +893,7 @@ pub fn export(doc: &Document) -> String {
     };
     let doc = marked.as_ref().unwrap_or(doc);
     let flow = model::from_doc_tracked(doc);
-    let base_font = doc.styles.default_chr.font.clone().unwrap_or_else(|| wordcraft_doc::styles::BODY_FONT.to_string());
+    let base_font = doc.styles.default_chr.font.clone().unwrap_or_else(|| letra_doc::styles::BODY_FONT.to_string());
     let mut w = Writer {
         marks,
         t: Tables { fonts: vec![base_font], colors: Vec::new() },
@@ -905,7 +905,7 @@ pub fn export(doc: &Document) -> String {
     };
     let mut body = String::new();
     // Every section starts with its own `\sectd`; `\sect` breaks only where there are several.
-    let secs: Vec<wordcraft_doc::SectionProps> = doc.sections().into_iter().map(|(_, s)| s.clone()).collect();
+    let secs: Vec<letra_doc::SectionProps> = doc.sections().into_iter().map(|(_, s)| s.clone()).collect();
     if let Some(first) = secs.first() {
         body.push_str(&sect_words(first));
     }
@@ -916,7 +916,7 @@ pub fn export(doc: &Document) -> String {
     export_with(&flow.meta, &w, &body, &doc.last_section)
 }
 
-fn export_with(m: &Meta, w: &Writer, body: &str, sec: &wordcraft_doc::SectionProps) -> String {
+fn export_with(m: &Meta, w: &Writer, body: &str, sec: &letra_doc::SectionProps) -> String {
     let mut out = String::from("{\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang1033\\uc1\n{\\fonttbl");
     for (i, f) in w.t.fonts.iter().enumerate() {
         let fam = if model::is_mono(f) { "\\fmodern" } else { "\\fswiss" };
@@ -926,7 +926,7 @@ fn export_with(m: &Meta, w: &Writer, body: &str, sec: &wordcraft_doc::SectionPro
     for c in &w.t.colors {
         out.push_str(&format!("\\red{}\\green{}\\blue{};", c.0, c.1, c.2));
     }
-    out.push_str("}\n{\\*\\generator WordCraft;}\n{\\stylesheet{\\s0\\snext0 Normal;}");
+    out.push_str("}\n{\\*\\generator Letra;}\n{\\stylesheet{\\s0\\snext0 Normal;}");
     for n in 1..=6u32 {
         let sz = HEAD_SIZES.get(n as usize - 1).copied().unwrap_or(12.0);
         out.push_str(&format!("{{\\s{n}\\sbasedon0\\snext0\\outlinelevel{}\\keepn\\b\\fs{} heading {n};}}", n - 1, (sz * 2.0) as i32));

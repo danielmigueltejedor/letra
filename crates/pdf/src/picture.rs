@@ -3,7 +3,7 @@ use super::paint::{append_path, norm};
 use super::{
     Arc, Fill, FillRule, Image, LineCap, LineJoin, NormalizedF32, Path, PathBuilder, Picture, PlacedItem, Rect, Size, Stroke, Surface, Transform, rgb,
 };
-use wordcraft_doc::picfx::PicFx;
+use letra_doc::picfx::PicFx;
 
 /// Largest picture side we embed (pixels).
 const MAX_IMAGE_SIDE: u32 = 30_000;
@@ -17,7 +17,7 @@ pub(crate) struct Vector {
 
 /// Parses a metafile and embeds its bitmaps. None when the picture has no usable size.
 pub(crate) fn build_vector(bytes: &[u8]) -> Option<Vector> {
-    let mut pic = wordcraft_metafile::parse(bytes).ok()?;
+    let mut pic = letra_metafile::parse(bytes).ok()?;
     if !pic.has_size() {
         return None;
     }
@@ -78,7 +78,7 @@ pub(crate) fn vector_picture(ex: &mut Exporter, s: &mut Surface, v: &Vector, r: 
                 s.pop();
             }
             PlacedItem::Text { index, tf } => {
-                if let Some(wordcraft_metafile::Item::Text(t)) = v.pic.items.get(index) {
+                if let Some(letra_metafile::Item::Text(t)) = v.pic.items.get(index) {
                     ex.vector_text(s, t, tf);
                 }
             }
@@ -108,18 +108,18 @@ fn path_from(b: &kurbo::BezPath) -> Option<Path> {
 /// fails here only because it has corrections.
 pub(crate) fn load_image(data: &Arc<Vec<u8>>, fx: PicFx) -> Option<Image> {
     // The shared probe also charges what the decoder holds beside its output (#3644).
-    if !wordcraft_geom::picture::probe(data).is_ok_and(|p| p.fits(wordcraft_geom::MAX_DECODED_BYTES)) {
+    if !letra_geom::picture::probe(data).is_ok_and(|p| p.fits(letra_geom::MAX_DECODED_BYTES)) {
         return None;
     }
-    load_image_within(data, fx, wordcraft_geom::MAX_DECODED_BYTES)
+    load_image_within(data, fx, letra_geom::MAX_DECODED_BYTES)
 }
 
 /// [`load_image`] with an explicit RGBA byte budget (a small one in tests).
 pub(crate) fn load_image_within(data: &Arc<Vec<u8>>, fx: PicFx, budget: u64) -> Option<Image> {
     let fmt = image::guess_format(data).ok()?;
-    // The decision to draw or not is the shared one (`wordcraft_geom::picture`), the one strict
+    // The decision to draw or not is the shared one (`letra_geom::picture`), the one strict
     // export checks with.
-    let dec = wordcraft_geom::picture::decode_for_drawing(data, budget, MAX_IMAGE_SIDE).ok()?;
+    let dec = letra_geom::picture::decode_for_drawing(data, budget, MAX_IMAGE_SIDE).ok()?;
     let (w, h) = (dec.width(), dec.height());
     if !fx.changes_pixels() && fmt == image::ImageFormat::Jpeg && matches!(dec.color(), image::ColorType::L8 | image::ColorType::Rgb8) {
         return Image::from_jpeg(data.clone().into(), true).ok();

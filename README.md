@@ -6,7 +6,7 @@
     </picture>
   </a>
   <br><br>
-  <img src="https://raw.githubusercontent.com/danielmigueltejedor/letra/main/assets/app-icon/hicolor/512x512/apps/ai.storyteller.wordcraft.png" width="192" alt="Letra">
+  <img src="https://raw.githubusercontent.com/danielmigueltejedor/letra/main/assets/app-icon/hicolor/512x512/apps/dev.danielmiguelt.Letra.png" width="192" alt="Letra">
   <h1>Letra</h1>
   <p><strong>The word processor of the Nodalia suite.</strong></p>
 
@@ -43,7 +43,7 @@ You need a recent stable Rust toolchain.
 ```bash
 git clone https://github.com/getnodalia/letra.git
 cd letra
-cargo run --release -p wordcraft
+cargo run --release -p letra
 ```
 
 ## Project status

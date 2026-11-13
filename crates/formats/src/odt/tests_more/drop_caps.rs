@@ -1,9 +1,9 @@
 //! Drop caps (ODF 1.3 §17.9 `style:drop-cap`): a paragraph's first letter over several lines,
-//! its distance from the text, kept as WordCraft's drop cap and written back.
+//! its distance from the text, kept as Letra's drop cap and written back.
 
 use crate::odt::tests::{NS_T, content_of, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
+use letra_doc::Document;
 
 fn open(drop: &str) -> Document {
     let content = format!(

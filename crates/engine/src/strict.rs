@@ -6,10 +6,10 @@
 
 use std::ops::RangeInclusive;
 
+use letra_doc::{Document, MAX_MISSING_PICTURES, MissingPicture};
+use letra_layout::display::DisplayOptions;
+use letra_layout::{DocLayout, LayoutCache, StrictOutput};
 use serde_json::{Value, json};
-use wordcraft_doc::{Document, MAX_MISSING_PICTURES, MissingPicture};
-use wordcraft_layout::display::DisplayOptions;
-use wordcraft_layout::{DocLayout, LayoutCache, StrictOutput};
 
 use crate::io::ExportOptions;
 
@@ -131,7 +131,7 @@ pub fn lines_from_json(report: &Value) -> Vec<String> {
 
 /// The words for a JSON reason code; a code this version does not know is shown as it is.
 fn reason_label(code: &str) -> String {
-    wordcraft_doc::MissingPictureReason::from_code(code).map_or_else(|| code.to_string(), |r| r.label().to_string())
+    letra_doc::MissingPictureReason::from_code(code).map_or_else(|| code.to_string(), |r| r.label().to_string())
 }
 
 /// `U+2D30`: upper-case hex, at least four digits.
@@ -158,12 +158,12 @@ pub fn strict_report(
     let any_page = lay.pages.iter().enumerate().any(|(n, _)| pages.as_ref().is_none_or(|r| r.contains(&n)));
     if any_page && let Some(wm) = &doc.settings.watermark {
         let max = match output {
-            StrictOutput::Pdf => wordcraft_pdf::WATERMARK_MAX_CHARS,
+            StrictOutput::Pdf => letra_pdf::WATERMARK_MAX_CHARS,
             StrictOutput::Png => usize::MAX,
         };
-        missing.merge(wordcraft_layout::missing_watermark_glyphs(wm, max));
+        missing.merge(letra_layout::missing_watermark_glyphs(wm, max));
     }
-    let (undecodable, mut pictures_truncated, undecodable_total) = wordcraft_layout::undecodable_pictures(doc, lay, pages, display, output);
+    let (undecodable, mut pictures_truncated, undecodable_total) = letra_layout::undecodable_pictures(doc, lay, pages, display, output);
     pictures_truncated |= doc.missing_pictures.truncated;
     // The two lists overlap where the same picture is in both; those are counted once.
     let mut overlap: u64 = 0;
@@ -192,14 +192,14 @@ pub fn strict_report(
 
 /// The PDF export's options for `opts`: the one place they are built, shared by the export and
 /// its strict check.
-pub(crate) fn pdf_options(opts: &ExportOptions) -> wordcraft_pdf::PdfOptions {
-    wordcraft_pdf::PdfOptions { include_markup: opts.markup, comments: opts.markup && opts.comments, numeral: opts.numeral, ..Default::default() }
+pub(crate) fn pdf_options(opts: &ExportOptions) -> letra_pdf::PdfOptions {
+    letra_pdf::PdfOptions { include_markup: opts.markup, comments: opts.markup && opts.comments, numeral: opts.numeral, ..Default::default() }
 }
 
 /// What a page image shows: the display options `file.exportPng` renders with.
 pub(crate) fn png_display() -> DisplayOptions {
     // A page image is the printed page: headers and footers at full strength.
-    let mut opts = wordcraft_render::RenderOptions::default();
+    let mut opts = letra_render::RenderOptions::default();
     opts.display.dim_header = false;
     opts.display
 }
@@ -207,7 +207,7 @@ pub(crate) fn png_display() -> DisplayOptions {
 /// The strict report of a PDF export of `doc`: every page, laid out as the export lays it out.
 pub(crate) fn pdf_report(doc: &Document, opts: &ExportOptions) -> StrictReport {
     let pdf = pdf_options(opts);
-    let lay = wordcraft_layout::layout(doc, &mut LayoutCache::new(), &pdf.layout_options());
+    let lay = letra_layout::layout(doc, &mut LayoutCache::new(), &pdf.layout_options());
     strict_report(doc, &lay, &pdf.display_options(), None, StrictOutput::Pdf)
 }
 
@@ -216,14 +216,14 @@ pub(crate) fn pdf_report(doc: &Document, opts: &ExportOptions) -> StrictReport {
 pub(crate) fn export_pdf(doc: &Document, opts: &ExportOptions) -> Result<Vec<u8>, String> {
     let pdf = pdf_options(opts);
     if !opts.strict {
-        return wordcraft_pdf::export(doc, &pdf).map_err(|e| e.to_string());
+        return letra_pdf::export(doc, &pdf).map_err(|e| e.to_string());
     }
-    let lay = wordcraft_layout::layout(doc, &mut LayoutCache::new(), &pdf.layout_options());
+    let lay = letra_layout::layout(doc, &mut LayoutCache::new(), &pdf.layout_options());
     let report = strict_report(doc, &lay, &pdf.display_options(), None, StrictOutput::Pdf);
     if !report.passed() {
         return Err(report.refusal());
     }
-    wordcraft_pdf::export_layout(doc, &lay, &pdf).map_err(|e| e.to_string())
+    letra_pdf::export_layout(doc, &lay, &pdf).map_err(|e| e.to_string())
 }
 
 /// Is `path` a PDF or PNG output (the only outputs a strict export applies to)?

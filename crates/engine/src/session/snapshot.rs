@@ -235,7 +235,7 @@ impl Session {
         // The equation being edited must still be there (undo, edits elsewhere).
         if let Some(m) = &self.math {
             let eq = self.doc.para_at(&m.at).and_then(|p| match p.object_at(m.at.off) {
-                Some(wordcraft_doc::InlineObject::Equation { math, .. }) => Some(wordcraft_doc::math_edit::clamp(&math.nodes, &m.pos)),
+                Some(letra_doc::InlineObject::Equation { math, .. }) => Some(letra_doc::math_edit::clamp(&math.nodes, &m.pos)),
                 _ => None,
             });
             match eq {

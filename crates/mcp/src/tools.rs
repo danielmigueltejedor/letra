@@ -68,7 +68,7 @@ pub fn tool_definitions() -> Value {
         tool(
             "list_commands",
             "List commands",
-            "Every WordCraft command: id, label, ribbon location, shortcut and params. Filter with `query`.",
+            "Every Letra command: id, label, ribbon location, shortcut and params. Filter with `query`.",
             obj(json!({"query": s("Case-insensitive filter on id/label/location")}), &[]),
             true
         ),
@@ -129,7 +129,7 @@ pub fn tool_definitions() -> Value {
             "Type text",
             &format!(
                 "Type at the caret (replacing the selection). Use \\n... for line breaks inside text; use execute text.newParagraph for new paragraphs, or `paragraphs: true` to split lines into paragraphs (one undo step, at most {} lines).",
-                wordcraft_engine::cmd::text::MAX_TYPED_PARAGRAPHS
+                letra_engine::cmd::text::MAX_TYPED_PARAGRAPHS
             ),
             with_doc(obj(json!({"text": s("Text"), "paragraphs": {"type": "boolean"}}), &["text"])),
             false
@@ -163,8 +163,8 @@ pub fn tool_definitions() -> Value {
             obj(json!({}), &[]),
             true
         ),
-        tool("parity", "Feature parity", "WordCraft's command coverage of the word-processor feature catalog.", obj(json!({}), &[]), true),
-        tool("screenshot", "Screenshot app", "Screenshot of the whole WordCraft window (desktop app only).", obj(json!({}), &[]), true),
+        tool("parity", "Feature parity", "Letra's command coverage of the word-processor feature catalog.", obj(json!({}), &[]), true),
+        tool("screenshot", "Screenshot app", "Screenshot of the whole Letra window (desktop app only).", obj(json!({}), &[]), true),
         tool(
             "click",
             "Click",

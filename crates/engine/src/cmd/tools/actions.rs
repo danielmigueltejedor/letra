@@ -5,7 +5,7 @@ use super::{Arc, CmdError, CmdResult, Document, Pos, Selection, Session, StoryRe
 /// document, the selection, the undo history and the modified flag are left alone.
 pub(super) fn preferred_language(s: &mut Session, v: &Value) -> CmdResult {
     let t = p::str(v, "lang").ok_or_else(|| CmdError::Params("`lang` is required".into()))?;
-    let l = wordcraft_proof::lang::normalize_tag(t)
+    let l = letra_proof::lang::normalize_tag(t)
         .ok_or_else(|| CmdError::Params(format!("`lang` must be a language tag such as pl-PL or en-US, not {t:?}")))?;
     s.prefs.default_language = Some(l.clone());
     Ok(json!({"preferred": l}))
@@ -18,7 +18,7 @@ pub(super) fn preferred_language(s: &mut Session, v: &Value) -> CmdResult {
 pub(super) fn language(s: &mut Session, v: &Value) -> CmdResult {
     let lang = match p::str(v, "lang") {
         Some(t) => Some(
-            wordcraft_proof::lang::normalize_tag(t)
+            letra_proof::lang::normalize_tag(t)
                 .ok_or_else(|| CmdError::Params(format!("`lang` must be a language tag such as pl-PL or en-US, not {t:?}")))?,
         ),
         None => None,
@@ -104,10 +104,10 @@ pub(super) fn quick_parts(s: &mut Session, v: &Value, gallery: &str) -> CmdResul
             if name.trim().is_empty() {
                 return Err(CmdError::Params("a building block needs a name".into()));
             }
-            let blocks: wordcraft_doc::Blocks = frag.blocks.into_iter().map(Arc::new).collect();
+            let blocks: letra_doc::Blocks = frag.blocks.into_iter().map(Arc::new).collect();
             match s.doc.glossary.iter_mut().find(|e| e.name == name && e.gallery == gallery) {
                 Some(e) => e.blocks = blocks,
-                None => s.doc.glossary.push(wordcraft_doc::BuildingBlock {
+                None => s.doc.glossary.push(letra_doc::BuildingBlock {
                     name: name.to_string(),
                     gallery: gallery.to_string(),
                     category: "General".into(),
@@ -131,7 +131,7 @@ pub(super) fn quick_parts(s: &mut Session, v: &Value, gallery: &str) -> CmdResul
             None => {
                 let e = document_entry(&s.doc, name, gallery).and_then(|i| s.doc.glossary.get(i));
                 let e = e.ok_or_else(|| CmdError::Params(format!("no Quick Part `{name}`")))?;
-                wordcraft_doc::edit::Fragment { blocks: e.blocks.iter().map(|b| (**b).clone()).collect(), parts: Default::default() }
+                letra_doc::edit::Fragment { blocks: e.blocks.iter().map(|b| (**b).clone()).collect(), parts: Default::default() }
             }
         };
         let at = delete_selection(s)?;
