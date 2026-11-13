@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   gate:
-    uses: getnodalia/foundation/.github/workflows/rust-gate.yml@16528aa5fba5abff2971c29ca9c4765cb15d1392 # foundation main
+    uses: getnodalia/foundation/.github/workflows/rust-gate.yml@976581262c95c0d95c0184149c0e1ba55485ccb3 # foundation main
     with:
       # Same craft-fonts commit as release.yml.
       fonts-repository: getnodalia/foundation
@@ -31,5 +31,5 @@ jobs:
   # Every git dependency in Cargo.lock comes from getnodalia or nodalia-design.
   git-sources:
     name: git-sources
-    uses: getnodalia/foundation/.github/workflows/git-sources.yml@16528aa5fba5abff2971c29ca9c4765cb15d1392 # foundation main
+    uses: getnodalia/foundation/.github/workflows/git-sources.yml@976581262c95c0d95c0184149c0e1ba55485ccb3 # foundation main
 
