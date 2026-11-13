@@ -82,7 +82,7 @@ impl WordApp {
 /// for Updates shows.
 #[cfg(not(target_arch = "wasm32"))]
 fn refused_check() -> craft_update::updater::CheckSource {
-    let why = tl!("Updates are off in this window: WordCraft was started with another program's AppImage settings. Start WordCraft from its own menu entry to update it.")
+    let why = tl!("Updates are off in this window: Letra was started with another program's AppImage settings. Start Letra from its own menu entry to update it.")
         .to_string();
     std::sync::Arc::new(move || Err(why.clone()))
 }
@@ -192,7 +192,7 @@ mod tests {
     /// command's own path) ends in the reason instead of a release to install (#5653).
     #[test]
     fn with_the_self_update_off_a_check_finds_nothing_and_says_why() {
-        let mut app = crate::WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+        let mut app = crate::WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
         app.set_startup_update_check(true);
         app.disable_self_update();
         assert!(!app.updates_rt.startup_check, "no check at start");
@@ -213,8 +213,8 @@ mod tests {
     /// window shows the check from the next frame on.
     #[test]
     fn a_check_asked_for_while_drawing_opens_the_result_window() {
-        let mut app = crate::WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
-        let pins = std::env::temp_dir().join(format!("wordcraft-no-pins-{}.toml", std::process::id()));
+        let mut app = crate::WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
+        let pins = std::env::temp_dir().join(format!("letra-no-pins-{}.toml", std::process::id()));
         app.updates_rt.updater = craft_update::updater::Updater::new(&crate::UPDATE_APP, env!("CARGO_PKG_VERSION"))
             .with_source(std::sync::Arc::new(|| Err("offline".into())))
             .with_pins_path(pins);
@@ -246,12 +246,12 @@ mod tests {
             ("data/logs/self-update-error.txt", "disk full", |s| matches!(s, Status::InstallFailed(why) if why == "disk full")),
         ];
         for (n, (file, text, expected)) in cases.into_iter().enumerate() {
-            let root = std::env::temp_dir().join(format!("wordcraft-last-update-{n}-{}", std::process::id()));
+            let root = std::env::temp_dir().join(format!("letra-last-update-{n}-{}", std::process::id()));
             let _ = std::fs::remove_dir_all(&root);
             let record = root.join(file);
             std::fs::create_dir_all(record.parent().unwrap()).unwrap();
             std::fs::write(&record, text).unwrap();
-            let mut app = crate::WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+            let mut app = crate::WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
             app.updates_rt.updater = craft_update::updater::Updater::new(&crate::UPDATE_APP, version)
                 .with_source(std::sync::Arc::new(|| Ok(None)))
                 .with_paths(craft_update::Paths::under(&root))

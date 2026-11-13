@@ -4,8 +4,8 @@
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::props::{LineSpacing, ParaProps};
-use wordcraft_doc::{Document, Paragraph, para_block};
+use letra_doc::props::{LineSpacing, ParaProps};
+use letra_doc::{Document, Paragraph, para_block};
 
 fn props(d: &Document) -> Vec<ParaProps> {
     d.body.iter().filter_map(|b| b.as_para()).map(|p| p.props.clone()).collect()
@@ -109,10 +109,10 @@ fn hostile_spacing_values_are_clamped() {
     assert_eq!((p[4].space_before, p[4].line_spacing), (None, None));
 }
 
-fn para(text: &str, props: ParaProps) -> std::sync::Arc<wordcraft_doc::Block> {
+fn para(text: &str, props: ParaProps) -> std::sync::Arc<letra_doc::Block> {
     let mut p = Paragraph::new();
     p.text = text.into();
-    p.runs = vec![wordcraft_doc::para::Run { len: text.len(), props: Default::default() }];
+    p.runs = vec![letra_doc::para::Run { len: text.len(), props: Default::default() }];
     p.props = props;
     para_block(p)
 }
@@ -161,7 +161,7 @@ fn the_list_paragraph_style_is_written() {
     let mut d = Document::new();
     let mut p = Paragraph::new();
     p.text = "item".into();
-    p.runs = vec![wordcraft_doc::para::Run { len: 4, props: Default::default() }];
+    p.runs = vec![letra_doc::para::Run { len: 4, props: Default::default() }];
     p.props = ParaProps { style: Some("ListParagraph".into()), ..Default::default() };
     d.body = vec![para_block(p)];
     if let Some(st) = std::sync::Arc::make_mut(&mut d.styles).get_mut("ListParagraph") {

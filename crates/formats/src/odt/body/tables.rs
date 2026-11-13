@@ -4,10 +4,10 @@ use super::{Borders, Cell, FTable};
 
 /// Give each edge two cells share the line either cell draws: LibreOffice gives a shared edge to
 /// one of them only (the left cell's right side is `none`, the right cell's left side draws it),
-/// while WordCraft's cells each draw their own four sides. The cell below is the one in the next
+/// while Letra's cells each draw their own four sides. The cell below is the one in the next
 /// row starting at the same column.
 pub(in crate::odt) fn share_edges(rows: &mut [Vec<Cell>]) {
-    let visible = |b: Option<wordcraft_doc::props::Border>| b.filter(|b| b.is_visible());
+    let visible = |b: Option<letra_doc::props::Border>| b.filter(|b| b.is_visible());
     for r in 0..rows.len() {
         let starts: Vec<usize> = rows
             .get(r)
@@ -82,10 +82,10 @@ pub(in crate::odt) struct TableB {
     /// Its alignment and width, and each row's height so far (see [`crate::model::TableExtra`]).
     pub(in crate::odt) extra: crate::model::TableExtra,
     /// The background of each column's default cell style (`table:default-cell-style-name`).
-    pub(in crate::odt) column_backgrounds: Vec<Option<wordcraft_doc::props::Rgb>>,
+    pub(in crate::odt) column_backgrounds: Vec<Option<letra_doc::props::Rgb>>,
     /// The table's background, and the row's being read.
-    pub(in crate::odt) background: Option<wordcraft_doc::props::Rgb>,
-    pub(in crate::odt) row_background: Option<wordcraft_doc::props::Rgb>,
+    pub(in crate::odt) background: Option<letra_doc::props::Rgb>,
+    pub(in crate::odt) row_background: Option<letra_doc::props::Rgb>,
 }
 
 /// The narrowest column the document model keeps (a narrower one would lose the table its grid).

@@ -5,9 +5,9 @@
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
-use wordcraft_doc::props::{BorderStyle, Rgb};
-use wordcraft_doc::section::{LineNumberRestart, NoteRestart, NumFormat};
+use letra_doc::Document;
+use letra_doc::props::{BorderStyle, Rgb};
+use letra_doc::section::{LineNumberRestart, NoteRestart, NumFormat};
 
 fn open() -> Document {
     let styles = format!(
@@ -60,7 +60,7 @@ fn page_settings_open() {
         (
             NumFormat::LowerRoman,
             Some(Rgb(0xff, 0xee, 0xcc)),
-            // At the margin, 1in from the edge (WordCraft measures from the edge).
+            // At the margin, 1in from the edge (Letra measures from the edge).
             Some((BorderStyle::Single, 0.5, Some(Rgb(255, 0, 0)), 72.0)),
             NumFormat::LowerLetter,
             // ODF counts from 0: start value 4 is the fifth.
@@ -99,7 +99,7 @@ fn hostile_page_settings_do_not_panic() {
     );
     let d = import(&package(&content, Some(&styles))).unwrap();
     let s = settings(&d);
-    assert!(s.4.is_none_or(|n| n <= wordcraft_doc::section::MAX_NOTE_START), "{s:?}");
+    assert!(s.4.is_none_or(|n| n <= letra_doc::section::MAX_NOTE_START), "{s:?}");
     assert!(s.7.as_ref().is_none_or(|l| l.0 >= 1 && l.1.is_finite() && l.1 <= 1584.0), "{s:?}");
     let _ = export(&d).unwrap();
 }
@@ -122,7 +122,7 @@ fn line_numbering_is_on_unless_it_says_otherwise() {
 #[test]
 fn a_page_layout_without_a_size_is_the_default_pages_size() {
     // LibreOffice's templates often state margins but no page size: it is the default paper's
-    // (the user's region's in WordCraft, as LibreOffice uses its own default).
+    // (the user's region's in Letra, as LibreOffice uses its own default).
     let styles = format!(
         r#"<office:document-styles {}><office:automatic-styles><style:page-layout style:name="pm1"><style:page-layout-properties fo:margin-top="1in" fo:margin-bottom="1in" fo:margin-left="1.25in" fo:margin-right="1.25in"/></style:page-layout></office:automatic-styles><office:master-styles><style:master-page style:name="Standard" style:page-layout-name="pm1"/></office:master-styles></office:document-styles>"#,
         crate::odt::tests::NS_T
@@ -132,7 +132,7 @@ fn a_page_layout_without_a_size_is_the_default_pages_size() {
         crate::odt::tests::NS_T
     );
     let bytes = crate::odt::tests::package(&content, Some(&styles));
-    let a4 = wordcraft_doc::SectionProps { page_w: 595.3, page_h: 841.9, ..Default::default() };
+    let a4 = letra_doc::SectionProps { page_w: 595.3, page_h: 841.9, ..Default::default() };
     let d = crate::import_on("odt", &bytes, &a4).unwrap().unwrap();
     assert_eq!((d.last_section.page_w, d.last_section.page_h), (595.3, 841.9));
     assert_eq!((d.last_section.margin_top, d.last_section.margin_left), (72.0, 90.0));
@@ -151,7 +151,7 @@ fn a_document_without_a_page_layout_has_the_default_paper_and_no_margins() {
         "<office:document-content {}><office:body><office:text><text:p>x</text:p></office:text></office:body></office:document-content>",
         crate::odt::tests::NS_T
     );
-    let a4 = wordcraft_doc::SectionProps { page_w: 595.3, page_h: 841.9, ..Default::default() };
+    let a4 = letra_doc::SectionProps { page_w: 595.3, page_h: 841.9, ..Default::default() };
     let d = crate::import_on("odt", &crate::odt::tests::package(&content, None), &a4).unwrap().unwrap();
     let s = &d.last_section;
     assert_eq!((s.page_w, s.page_h), (595.3, 841.9));
@@ -222,10 +222,10 @@ fn a_page_borders_padding_keeps_the_text_where_it_was() {
     // 45 pt of padding inside it (more than Word's 31 pt border spacing, which is measured
     // differently): the text stays 72 pt from the edge, written and read back.
     let mut d = Document::new();
-    d.body = vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text("x", Default::default()))];
-    let edge = wordcraft_doc::props::Border { style: BorderStyle::Single, width: 3.0, color: Some(Rgb(0x2f, 0x55, 0x97)), space: 24.0 };
+    d.body = vec![letra_doc::para_block(letra_doc::Paragraph::with_text("x", Default::default()))];
+    let edge = letra_doc::props::Border { style: BorderStyle::Single, width: 3.0, color: Some(Rgb(0x2f, 0x55, 0x97)), space: 24.0 };
     d.last_section.page_borders =
-        Some(wordcraft_doc::props::Borders { top: Some(edge), bottom: Some(edge), left: Some(edge), right: Some(edge), ..Default::default() });
+        Some(letra_doc::props::Borders { top: Some(edge), bottom: Some(edge), left: Some(edge), right: Some(edge), ..Default::default() });
     let back = crate::odt::import(&crate::odt::export(&d).unwrap()).unwrap();
     let s = &back.last_section;
     for m in [s.margin_top, s.margin_bottom, s.margin_left, s.margin_right] {

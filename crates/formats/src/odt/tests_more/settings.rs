@@ -1,10 +1,10 @@
 //! `settings.xml` (ODF 1.3 §3.10): LibreOffice's layout compatibility switches. A file's own are
 //! kept through a save; a document from elsewhere gets those LibreOffice uses for Word files, as
-//! WordCraft lays text out as Word does. Tabs are always written measured from the margin.
+//! Letra lays text out as Word does. Tabs are always written measured from the margin.
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
+use letra_doc::Document;
 
 fn settings_of(bytes: &[u8]) -> String {
     let mut z = zip::ZipArchive::new(std::io::Cursor::new(bytes)).unwrap();

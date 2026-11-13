@@ -296,7 +296,7 @@ pub(super) fn table_line(s: &Session, at: &Pos) -> Option<Vec<usize>> {
     let inner = text.strip_prefix('+')?.strip_suffix('+')?;
     let mut cols = Vec::new();
     for run in inner.split('+') {
-        if run.is_empty() || !run.bytes().all(|b| b == b'-') || cols.len() >= wordcraft_doc::table::MAX_COLS {
+        if run.is_empty() || !run.bytes().all(|b| b == b'-') || cols.len() >= letra_doc::table::MAX_COLS {
             return None;
         }
         cols.push(run.len());
@@ -318,7 +318,7 @@ pub(super) fn heading_line(s: &Session, at: &Pos) -> Option<u8> {
     let Some(Block::Para(prev)) = s.doc.block(at.story, &at.path.with_last(i - 1)) else { return None };
     // Normal and outside a list, also one the style sheet gives (a numbered Normal style), with
     // no outline level: resolving drops the body-text level 9 and above.
-    let plain = |p: &wordcraft_doc::Paragraph| {
+    let plain = |p: &letra_doc::Paragraph| {
         let r = s.doc.styles.resolve_para(&p.props);
         p.props.style.as_deref().is_none_or(|st| st == "Normal") && r.numbering.is_none_or(|n| n.num == 0) && r.outline_level.is_none()
     };
@@ -370,7 +370,7 @@ pub(super) fn apply_heading_line(s: &mut Session, at: &Pos, level: u8) -> Result
 /// at the top of a story). With Track Changes on, the characters are marked deleted (or
 /// removed, when this author typed them) and the border is a formatting revision.
 pub(super) fn apply_border_line(s: &mut Session, at: &Pos, line: Border) -> Result<(), CmdError> {
-    let set_bottom = |p: &mut wordcraft_doc::Paragraph| {
+    let set_bottom = |p: &mut letra_doc::Paragraph| {
         let mut b = p.props.borders.unwrap_or_default();
         b.bottom = Some(line);
         p.props.borders = Some(b);

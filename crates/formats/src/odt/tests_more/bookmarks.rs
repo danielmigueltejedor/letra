@@ -1,11 +1,11 @@
 //! Bookmarks (ODF 1.3 §6.2.1 `text:bookmark`, `text:bookmark-start`/`-end`): a point or the text
-//! between its start and end, in one paragraph or across several, kept as a WordCraft bookmark
+//! between its start and end, in one paragraph or across several, kept as a Letra bookmark
 //! over that text (what a reference to it shows) and written back the same way.
 
 use crate::odt::tests::{NS_T, content_of, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
-use wordcraft_doc::para::{InlineObject, OBJ};
+use letra_doc::Document;
+use letra_doc::para::{InlineObject, OBJ};
 
 /// Each bookmark: (name, the text it covers, paragraphs joined by '|').
 fn bookmarks(d: &Document) -> Vec<(String, String)> {

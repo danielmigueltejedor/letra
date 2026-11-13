@@ -6,13 +6,13 @@ use super::{CharProps, Document, Paragraph, ResolvedChar};
 #[derive(Clone, Debug, PartialEq)]
 pub struct ProofRun {
     pub range: std::ops::Range<usize>,
-    pub lang: wordcraft_proof::ProofLang,
+    pub lang: letra_proof::ProofLang,
     pub skip: bool,
 }
 
 impl ProofRun {
     pub(super) fn of(range: std::ops::Range<usize>, rc: &ResolvedChar) -> ProofRun {
-        ProofRun { range, lang: wordcraft_proof::ProofLang::from_tag(rc.lang.as_deref()), skip: rc.no_proof || rc.hidden || rc.link.is_some() }
+        ProofRun { range, lang: letra_proof::ProofLang::from_tag(rc.lang.as_deref()), skip: rc.no_proof || rc.hidden || rc.link.is_some() }
     }
 }
 
@@ -24,30 +24,30 @@ pub fn proof_runs(doc: &Document, p: &Paragraph, table: Option<&CharProps>) -> V
 }
 
 /// The language of the run holding byte `off` (English past the last run).
-pub(super) fn lang_at(runs: &[ProofRun], off: usize) -> wordcraft_proof::ProofLang {
+pub(super) fn lang_at(runs: &[ProofRun], off: usize) -> letra_proof::ProofLang {
     let k = runs.partition_point(|r| r.range.end <= off);
     runs.get(k).filter(|r| r.range.start <= off).map(|r| r.lang).unwrap_or_default()
 }
 
 /// Spelling and grammar issues in a paragraph, in order: each word in its run's language
-/// ([`wordcraft_proof::check_text_with`]: what spelling skips, and grammar only with `grammar`),
+/// ([`letra_proof::check_text_with`]: what spelling skips, and grammar only with `grammar`),
 /// and none touching a run left unchecked.
 ///
 /// `list_item` (see [`is_list_item`]) turns off the capital-first-word grammar rule.
 pub fn paragraph_issues(
     p: &Paragraph,
     runs: &[ProofRun],
-    spelling: &wordcraft_proof::Options,
+    spelling: &letra_proof::Options,
     grammar: bool,
     list_item: bool,
-) -> Vec<wordcraft_proof::Issue> {
+) -> Vec<letra_proof::Issue> {
     if p.text.trim().is_empty() || p.text.len() > 100_000 {
         return Vec::new();
     }
     let text = proof_text(p);
-    let spans: Vec<(std::ops::Range<usize>, wordcraft_proof::ProofLang)> = runs.iter().map(|r| (r.range.clone(), r.lang)).collect();
+    let spans: Vec<(std::ops::Range<usize>, letra_proof::ProofLang)> = runs.iter().map(|r| (r.range.clone(), r.lang)).collect();
     let skipped = skipped_ranges(runs);
-    let issues = wordcraft_proof::check_text_with(&text, &spans, spelling, grammar, list_item);
+    let issues = letra_proof::check_text_with(&text, &spans, spelling, grammar, list_item);
     if skipped.is_empty() {
         return issues;
     }
@@ -94,14 +94,14 @@ pub(super) fn proof_issues(
 ) -> Vec<(usize, usize, bool)> {
     paragraph_issues(p, runs, &opts.spelling, opts.grammar, list_item)
         .into_iter()
-        .map(|i| (i.start, i.end, i.kind == wordcraft_proof::IssueKind::Grammar))
+        .map(|i| (i.start, i.end, i.kind == letra_proof::IssueKind::Grammar))
         .filter(|&(a, b, grammar)| grammar || !typing.is_some_and(|(s, e)| a < e && s < b))
         .collect()
 }
 
 /// Text for proofing with the same byte offsets: inline objects and tracked deletions become
 /// U+0001 bytes (neither words nor spaces).
-pub fn proof_text(p: &wordcraft_doc::Paragraph) -> String {
+pub fn proof_text(p: &letra_doc::Paragraph) -> String {
     let mut out = String::with_capacity(p.text.len());
     // The run holding each character ([`Paragraph::props_of_char`]), found by walking the runs
     // along with the text rather than from the first run for every character.
@@ -119,7 +119,7 @@ pub fn proof_text(p: &wordcraft_doc::Paragraph) -> String {
             crate::work::steps(usize::from(run.is_some()));
         }
         let props = run.map_or(&p.mark, |r| &r.props);
-        let deleted = c == wordcraft_doc::para::OBJ || props.del.is_some();
+        let deleted = c == letra_doc::para::OBJ || props.del.is_some();
         if deleted {
             for _ in 0..c.len_utf8() {
                 out.push('\u{1}');

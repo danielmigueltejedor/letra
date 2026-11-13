@@ -7,8 +7,8 @@
 //! closes the shown one, and quitting asks about every document with unsaved changes, one after
 //! another, each in its window.
 
+use letra_engine::DocInfo;
 use serde_json::{Value, json};
-use wordcraft_engine::DocInfo;
 
 use crate::{WordApp, panes};
 
@@ -28,7 +28,7 @@ impl WordApp {
     /// alone leaves the window showing the old document, so the first frame took the change for
     /// a switch and dropped the dialog a command line file had just asked for, a password box
     /// among them (#5299).
-    pub fn replace_startup_document(&mut self, doc: wordcraft_doc::Document) {
+    pub fn replace_startup_document(&mut self, doc: letra_doc::Document) {
         self.session.set_document(doc);
         self.sync_document();
     }
@@ -220,7 +220,7 @@ impl WordApp {
 }
 
 /// Is `path` a Word template by its extension (`.dotx`, `.dotm`, `.dot`, in any case)? These are
-/// the template types WordCraft registers with the platform.
+/// the template types Letra registers with the platform.
 pub fn is_word_template(path: &str) -> bool {
     std::path::Path::new(path)
         .extension()
@@ -276,14 +276,14 @@ pub(crate) fn switch_windows_menu(ui: &mut egui::Ui, app: &mut WordApp) {
 
 #[cfg(test)]
 mod tests {
+    use letra_doc::StoryRef;
+    use letra_engine::Session;
     use serde_json::json;
-    use wordcraft_doc::StoryRef;
-    use wordcraft_engine::Session;
 
     use crate::{Services, WordApp};
 
     fn app() -> WordApp {
-        WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default())
+        WordApp::new(Session::new(letra_doc::Document::new()), Services::default())
     }
 
     fn harness(a: WordApp) -> egui_kittest::Harness<'static, WordApp> {

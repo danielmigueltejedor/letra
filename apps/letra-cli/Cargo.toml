@@ -1,0 +1,28 @@
+[package]
+name = "letra-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Letra command line: convert, inspect, render, run commands, MCP server"
+
+[[bin]]
+name = "letra-cli"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+letra-doc = { workspace = true }
+letra-engine = { workspace = true }
+letra-render = { workspace = true }
+letra-mcp = { workspace = true }
+letra-zotero = { workspace = true }
+serde_json = { workspace = true }
+sys-locale = "0.3"
+
+[dev-dependencies]
+letra-fonts = { workspace = true }
+image = { workspace = true }
+zip = { workspace = true }

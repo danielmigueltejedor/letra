@@ -59,8 +59,8 @@ impl PdfOptions {
     /// What a page shows when drawn into the PDF: no marks or dimming, tracked changes as markup
     /// only with `include_markup`. The one place that says so; strict export (#6005) checks the
     /// same display list.
-    pub fn display_options(&self) -> wordcraft_layout::display::DisplayOptions {
-        wordcraft_layout::display::DisplayOptions {
+    pub fn display_options(&self) -> letra_layout::display::DisplayOptions {
+        letra_layout::display::DisplayOptions {
             marks: false,
             dim_header: false,
             dim_body: false,
@@ -71,8 +71,8 @@ impl PdfOptions {
     }
 
     /// How [`crate::export`] lays a document out for these options.
-    pub fn layout_options(&self) -> wordcraft_layout::LayoutOptions {
-        wordcraft_layout::LayoutOptions {
+    pub fn layout_options(&self) -> letra_layout::LayoutOptions {
+        letra_layout::LayoutOptions {
             hide_deleted: !self.include_markup,
             comment_balloons: self.comments,
             numeral: self.numeral,

@@ -28,7 +28,7 @@ pub(in crate::odt) fn read_formula(xml: &[u8]) -> Option<(String, bool)> {
                 if stack.is_empty() && (local(&q) != "math" || q.starts_with("office:")) {
                     return;
                 }
-                if stack.len() < wordcraft_doc::math::MAX_DEPTH {
+                if stack.len() < letra_doc::math::MAX_DEPTH {
                     stack.push(El { name: q, attrs: a, children: Vec::new() });
                 } else {
                     over += 1;
@@ -104,7 +104,7 @@ impl Body<'_> {
             }
             // Kept when it floats, or turns or mirrors the object in line.
             let float =
-                float.filter(|f| f.wrap != wordcraft_doc::para::Wrap::Inline || crate::odt::frames::turned(f) || f.flip_h || f.flip_v || f.y != 0.0);
+                float.filter(|f| f.wrap != letra_doc::para::Wrap::Inline || crate::odt::frames::turned(f) || f.flip_h || f.flip_v || f.y != 0.0);
             if let Some(blocks) = &boxed
                 && self.take_watermark(blocks)
             {
@@ -116,23 +116,23 @@ impl Body<'_> {
             let room = self.sec.text_width();
             let says = |v: Option<f32>| v.is_some_and(|v| v.is_finite() && v > 0.0);
             // (Still in line when raised, turned or mirrored.)
-            let in_line = float.as_ref().is_none_or(|f| f.wrap == wordcraft_doc::para::Wrap::Inline);
+            let in_line = float.as_ref().is_none_or(|f| f.wrap == letra_doc::para::Wrap::Inline);
             let fit = (!says(w) && !says(h) && in_line && room.is_finite() && room > 0.0).then_some(room);
             let inline = match (boxed, eq) {
                 (Some(blocks), _) => {
                     let mut look = std::mem::take(&mut self.frame_look);
                     // Without a height it grows from nothing to its text.
-                    let kind = self.shape_kind.take().unwrap_or(wordcraft_doc::para::ShapeKind::TextBox);
+                    let kind = self.shape_kind.take().unwrap_or(letra_doc::para::ShapeKind::TextBox);
                     // A custom shape's geometry as read, kept with the path worked out from it.
                     let geometry = self.shape_geometry.take();
-                    if kind == wordcraft_doc::para::ShapeKind::Freeform || kind == wordcraft_doc::para::ShapeKind::Rectangle {
+                    if kind == letra_doc::para::ShapeKind::Freeform || kind == letra_doc::para::ShapeKind::Rectangle {
                         look.geometry = geometry;
                     }
                     // A shape whose paragraphs are all empty (LibreOffice writes `<text:p/>` in
                     // each) holds no text.
                     let empty = blocks.iter().all(|b| matches!(b, FBlock::Para(p) if p.inlines.is_empty()));
-                    let blocks = if kind != wordcraft_doc::para::ShapeKind::TextBox && empty { Vec::new() } else { blocks };
-                    let path = self.shape_path.take().filter(|_| kind == wordcraft_doc::para::ShapeKind::Freeform);
+                    let blocks = if kind != letra_doc::para::ShapeKind::TextBox && empty { Vec::new() } else { blocks };
+                    let path = self.shape_path.take().filter(|_| kind == letra_doc::para::ShapeKind::Freeform);
                     let (w, h) = (w.unwrap_or(72.0), h.unwrap_or(1.0));
                     self.note_place(kind, (w, h), &look, float.as_ref());
                     Some(Inline::Shape { kind, w, h, float: float.map(Box::new), blocks, look, path })
@@ -146,7 +146,7 @@ impl Body<'_> {
                     float: float.map(Box::new),
                     source: object.map(std::sync::Arc::new),
                 })),
-                // An object kept whole: shown by its replacement picture when WordCraft can show
+                // An object kept whole: shown by its replacement picture when Letra can show
                 // it, else by a placeholder.
                 (None, None) if let Some(mut o) = object => {
                     if o.replacement.is_none() {
@@ -174,7 +174,7 @@ impl Body<'_> {
             if let Some(inline) = inline {
                 // A group's member goes into the group, at its place in it.
                 if let Some(((x, y), g)) = self.member_at.take().zip(self.group.as_mut().filter(|_| self.note.is_none())) {
-                    if g.members.len() < wordcraft_doc::para::MAX_GROUP_CHILDREN {
+                    if g.members.len() < letra_doc::para::MAX_GROUP_CHILDREN {
                         g.members.push(model::Member { x, y, inline });
                     }
                 } else {
@@ -206,8 +206,8 @@ impl Body<'_> {
             return false;
         }
         let turned = rot.rem_euclid(360.0);
-        let base = wordcraft_doc::Watermark::default();
-        self.watermark = Some(wordcraft_doc::Watermark {
+        let base = letra_doc::Watermark::default();
+        self.watermark = Some(letra_doc::Watermark {
             text,
             font: font.unwrap_or(base.font),
             color: color.unwrap_or(base.color),
@@ -236,8 +236,8 @@ impl Body<'_> {
         let id = get(a, "xml:id").or_else(|| get(a, "draw:id")).map(str::trim).filter(|n| !n.is_empty()).map_or(0, &mut id_of);
         let mut end = |shape: &str, glue: &str| {
             let target = get(a, shape).map(str::trim).filter(|n| !n.is_empty()).map(&mut id_of).filter(|id| *id != 0)?;
-            let site = get(a, glue).and_then(|g| g.trim().parse::<u32>().ok()).filter(|g| *g <= wordcraft_doc::connector::MAX_SITE)?;
-            Some(wordcraft_doc::connector::ConnEnd { id: target, site })
+            let site = get(a, glue).and_then(|g| g.trim().parse::<u32>().ok()).filter(|g| *g <= letra_doc::connector::MAX_SITE)?;
+            Some(letra_doc::connector::ConnEnd { id: target, site })
         };
         let (start, finish) = (end("draw:start-shape", "draw:start-glue-point"), end("draw:end-shape", "draw:end-glue-point"));
         (id != 0 || start.is_some() || finish.is_some()).then_some(model::Conn { id, start, end: finish })
@@ -246,10 +246,10 @@ impl Body<'_> {
     /// Where a shape with a drawing id (`look`) sits, for connectors glued to it.
     pub(in crate::odt) fn note_place(
         &mut self,
-        kind: wordcraft_doc::para::ShapeKind,
+        kind: letra_doc::para::ShapeKind,
         (w, h): (f32, f32),
         look: &model::BoxLook,
-        float: Option<&wordcraft_doc::para::Float>,
+        float: Option<&letra_doc::para::Float>,
     ) {
         let Some(c) = look.conn.as_deref().filter(|c| c.id != 0) else { return };
         if self.shape_places.len() >= MAX_CONN_IDS {
@@ -263,7 +263,7 @@ impl Body<'_> {
     }
 
     /// The connectors of paragraph `p` glued to shapes (see [`Self::conn_of`]): each end's glue
-    /// point made WordCraft's site of the shape it is glued to (an end glued to a shape not read,
+    /// point made Letra's site of the shape it is glued to (an end glued to a shape not read,
     /// or to a glue point of the shape's own, is unglued); and a connector glued at both ends to
     /// shapes anchored in this paragraph, placed alike, runs between their sites. (A connector's
     /// own coordinates are in LibreOffice's drawing layer, not its anchor's.)
@@ -287,22 +287,22 @@ impl Body<'_> {
         }
         let Inline::Shape { kind, w, h, float, look, .. } = i else { return };
         let Some(c) = look.conn.as_deref_mut().filter(|_| kind.is_connector()) else { return };
-        let resolve = |e: Option<wordcraft_doc::connector::ConnEnd>| {
+        let resolve = |e: Option<letra_doc::connector::ConnEnd>| {
             let e = e?;
             let place = self.shape_places.get(&e.id)?;
-            site_of_glue(place.0, e.site).map(|site| (wordcraft_doc::connector::ConnEnd { id: e.id, site }, place))
+            site_of_glue(place.0, e.site).map(|site| (letra_doc::connector::ConnEnd { id: e.id, site }, place))
         };
         let (start, end) = (resolve(c.start), resolve(c.end));
         (c.start, c.end) = (start.map(|(e, _)| e), end.map(|(e, _)| e));
         let (Some((s, sp)), Some((e, ep)), Some(f)) = (start, end, float.as_deref_mut()) else { return };
-        let same = |pl: &(wordcraft_doc::para::ShapeKind, [f32; 4], wordcraft_doc::para::Float, usize)| {
+        let same = |pl: &(letra_doc::para::ShapeKind, [f32; 4], letra_doc::para::Float, usize)| {
             pl.3 == self.para_seq && pl.2.h_rel == f.h_rel && pl.2.v_rel == f.v_rel
         };
         if !(same(sp) && same(ep)) {
             return;
         }
-        let point = |pl: &(wordcraft_doc::para::ShapeKind, [f32; 4], wordcraft_doc::para::Float, usize), site| {
-            wordcraft_doc::connector::site_point(pl.0, pl.1, pl.2.spin(), site)
+        let point = |pl: &(letra_doc::para::ShapeKind, [f32; 4], letra_doc::para::Float, usize), site| {
+            letra_doc::connector::site_point(pl.0, pl.1, pl.2.spin(), site)
         };
         let (Some((x1, y1)), Some((x2, y2))) = (point(sp, s.site), point(ep, e.site)) else { return };
         (f.x, f.y, f.flip_h, f.flip_v) = (x1.min(x2), y1.min(y2), x2 < x1, y2 < y1);
@@ -353,7 +353,7 @@ impl Body<'_> {
         let mut float =
             crate::odt::frames::float_of(g.anchor.as_deref(), Some(&crate::odt::writer::pt(x0)), Some(&crate::odt::writer::pt(y0)), &graphic);
         float.page = crate::odt::frames::page_of(g.anchor.as_deref(), g.page.as_deref(), &graphic);
-        let float = (float.wrap != wordcraft_doc::para::Wrap::Inline).then(|| Box::new(float));
+        let float = (float.wrap != letra_doc::para::Wrap::Inline).then(|| Box::new(float));
         let fit = |v: f32| if v.is_finite() { v.clamp(1.0, MAX_LEN) } else { 1.0 };
         self.push_inline(Inline::Group { w: fit(x1 - x0), h: fit(y1 - y0), float, members });
     }
@@ -400,9 +400,9 @@ impl Body<'_> {
     }
 }
 
-/// Whether WordCraft can show these bytes as a picture (see the function below).
+/// Whether Letra can show these bytes as a picture (see the function below).
 pub(in crate::odt) fn readable_picture(data: &[u8]) -> bool {
-    wordcraft_metafile::is_metafile(data) || model::sniff_image(data).is_some()
+    letra_metafile::is_metafile(data) || model::sniff_image(data).is_some()
 }
 
 /// A picture from a package's bytes: a raster image, or a Windows metafile (WMF, EMF: LibreOffice
@@ -411,7 +411,7 @@ pub(in crate::odt) fn picture(data: Vec<u8>, w: Option<f32>, h: Option<f32>, alt
     // What the frame states, if it could be a size (far past any page, kept from overflowing).
     let stated = |v: Option<f32>| v.filter(|v| v.is_finite() && *v > 0.0).map(|v| v.min(1e6));
     let (w, h) = (stated(w), stated(h));
-    let mut img = if wordcraft_metafile::is_metafile(&data) {
+    let mut img = if letra_metafile::is_metafile(&data) {
         // An EMF starts with its header record, type 1.
         let ext = if data.get(..4) == Some(&[1, 0, 0, 0]) { "emf" } else { "wmf" };
         // Its own size, when the frame gives none: a placeable WMF's or an EMF's frame, points.
@@ -450,7 +450,7 @@ fn fit_to(img: &mut model::Img, room: Option<f32>) {
 /// A picture's height for each point of its width, by its own size, before anything caps it (1
 /// when it doesn't say).
 fn height_per_width(data: &[u8]) -> f32 {
-    let own = if wordcraft_metafile::is_metafile(data) { metafile_size(data) } else { model::image_px(data).map(|(w, h)| (w as f32, h as f32)) };
+    let own = if letra_metafile::is_metafile(data) { metafile_size(data) } else { model::image_px(data).map(|(w, h)| (w as f32, h as f32)) };
     own.filter(|(w, h)| w.is_finite() && h.is_finite() && *w > 0.0 && *h > 0.0).map_or(1.0, |(w, h)| h / w)
 }
 

@@ -13,7 +13,7 @@ use super::{
     Arc, Block, Counters, DocLayout, Document, FieldCtx, HashMap, InlineObject, LayoutOptions, Page, Paragraph, Path, SectionProps, SectionStart,
     StoryRef, TextDirection, ViewMode, balloons, para, vertical,
 };
-use wordcraft_doc::legacy_form::LegacyForm;
+use letra_doc::legacy_form::LegacyForm;
 
 /// How the view lays the document out: `web` for the continuous views, `reflow` for those and
 /// the reading view, which both ignore the sections' page geometry.
@@ -44,7 +44,7 @@ struct Tops {
 struct Sec<'p> {
     si: usize,
     sect: &'p SectionProps,
-    page_format: wordcraft_doc::section::NumFormat,
+    page_format: letra_doc::section::NumFormat,
     start: SectionStart,
     tops: Tops,
 }
@@ -94,7 +94,7 @@ fn new_ctx<'a>(
         notes_hash,
         numbers: HashMap::new(),
         eq_count: 0,
-        boxes: wordcraft_doc::BoxBudget::default(),
+        boxes: letra_doc::BoxBudget::default(),
         chains: Default::default(),
         grid: para::Grid::default(),
         uses_totals: false,
@@ -173,13 +173,13 @@ fn reflow_sect(first: &SectionProps, opts: &LayoutOptions) -> SectionProps {
     s.margin_top = 18.0;
     s.gutter = 0.0;
     s.columns = Default::default();
-    s.valign = wordcraft_doc::section::PageVAlign::Top;
+    s.valign = letra_doc::section::PageVAlign::Top;
     s
 }
 
 fn new_page_builder<'p>(
     sect: &'p SectionProps,
-    page_format: wordcraft_doc::section::NumFormat,
+    page_format: letra_doc::section::NumFormat,
     early: &'p EarlyFloats,
     web: bool,
     settle: bool,
@@ -209,7 +209,7 @@ fn new_page_builder<'p>(
         line_no: 0,
         page_items_start: 0,
         block_marks: Vec::new(),
-        page_valign: wordcraft_doc::section::PageVAlign::Top,
+        page_valign: letra_doc::section::PageVAlign::Top,
         seps: NoteSeps::default(),
         para_end: None,
         behind: Vec::new(),
@@ -234,7 +234,7 @@ fn endnote_queue(ctx: &Ctx) -> VecDeque<(u32, usize)> {
         .fields
         .notes
         .iter()
-        .filter(|(id, _)| ctx.doc.parts.get(id).is_some_and(|p| p.kind == wordcraft_doc::PartKind::Endnote))
+        .filter(|(id, _)| ctx.doc.parts.get(id).is_some_and(|p| p.kind == letra_doc::PartKind::Endnote))
         .map(|(id, n)| (n.order, *id, n.section))
         .collect();
     ids.sort();
@@ -277,14 +277,14 @@ fn begin_section_state<'p>(ctx: &mut Ctx, pb: &mut PageBuilder<'p>, sec: &Sec<'p
     pb.page_format = sec.page_format;
     ctx.fields.page_format = sec.page_format;
     pb.sect_idx = si;
-    pb.sect_beneath = doc.note_options(sect, false).pos == wordcraft_doc::section::NotePos::BeneathText;
+    pb.sect_beneath = doc.note_options(sect, false).pos == letra_doc::section::NotePos::BeneathText;
     if !web && !doc.footnote_separators.is_empty() {
         pb.seps = NoteSeps::new(ctx, &doc.footnote_separators, sect.text_width());
     }
     ctx.fields.section = u32::try_from(si).unwrap_or(u32::MAX).saturating_add(1);
     ctx.fields.section_pages = totals.section(si);
     ctx.grid = para::Grid::of(doc, sect);
-    if sect.line_numbers.as_ref().is_some_and(|l| l.restart == wordcraft_doc::section::LineNumberRestart::Section) {
+    if sect.line_numbers.as_ref().is_some_and(|l| l.restart == letra_doc::section::LineNumberRestart::Section) {
         pb.line_no = 0;
     }
 }
@@ -347,7 +347,7 @@ fn prepare_section_end(pb: &mut PageBuilder, sections: &[(usize, &SectionProps)]
         Some(true) => next.is_none() || next == Some(SectionStart::Continuous),
         Some(false) => false,
     };
-    let balance = !web && pb.cols.len() > 1 && pb.sect.valign == wordcraft_doc::section::PageVAlign::Top && follows;
+    let balance = !web && pb.cols.len() > 1 && pb.sect.valign == letra_doc::section::PageVAlign::Top && follows;
     pb.col_break_page = None;
     pb.next_starts_page = !web && next.is_some_and(|s| s != SectionStart::Continuous);
     balance
@@ -390,7 +390,7 @@ fn place_section_blocks<'p>(
 
 /// Endnotes at the end of the section: those referenced so far.
 fn section_endnotes(ctx: &mut Ctx, pb: &mut PageBuilder, endnotes: &mut VecDeque<(u32, usize)>, (sect, si, block): (&SectionProps, usize, usize)) {
-    if ctx.doc.note_options(sect, true).pos != wordcraft_doc::section::NotePos::SectEnd || pb.pages.is_empty() {
+    if ctx.doc.note_options(sect, true).pos != letra_doc::section::NotePos::SectEnd || pb.pages.is_empty() {
         return;
     }
     let mut here = Vec::new();

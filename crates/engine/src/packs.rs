@@ -147,7 +147,7 @@ pub fn set_backend(backend: Option<Arc<dyn Backend>>) {
     AUTO_REFRESHED.store(false, Ordering::Relaxed);
     WANTED.lock().unwrap_or_else(PoisonError::into_inner).clear();
     jobs().errors.clear();
-    wordcraft_proof::packs::set_packs_dir(dir);
+    letra_proof::packs::set_packs_dir(dir);
 }
 
 /// Use the suite's font store for packs (`<font store>/language-packs`), as the person in the app
@@ -178,7 +178,7 @@ pub fn backend() -> Option<Arc<dyn Backend>> {
 }
 
 fn installed_from_proof() -> Vec<Installed> {
-    wordcraft_proof::packs::installed().into_iter().map(|p| Installed { locale: p.locale, name: p.name, licence: p.licence, path: p.path }).collect()
+    letra_proof::packs::installed().into_iter().map(|p| Installed { locale: p.locale, name: p.name, licence: p.licence, path: p.path }).collect()
 }
 
 /// The test source packs come from instead of the pinned index (`CRAFT_LANGUAGE_PACK_INDEX`):
@@ -266,7 +266,7 @@ fn no_store() -> String {
 }
 
 fn network_off() -> String {
-    "downloading is turned off: turn it on in WordCraft (File › Options › Language, or an Install button there)".into()
+    "downloading is turned off: turn it on in Letra (File › Options › Language, or an Install button there)".into()
 }
 
 /// The pack for `locale` in the index.
@@ -557,20 +557,20 @@ fn spawn(_: impl FnOnce() + Send + 'static) -> Result<(), String> {
 
 /// Have proofing look at the packs folder again (its dictionaries are reloaded).
 fn reload(b: &Arc<dyn Backend>) {
-    if wordcraft_proof::packs::packs_dir() == b.packs_dir() {
-        wordcraft_proof::packs::reload();
+    if letra_proof::packs::packs_dir() == b.packs_dir() {
+        letra_proof::packs::reload();
     } else {
-        wordcraft_proof::packs::set_packs_dir(b.packs_dir());
+        letra_proof::packs::set_packs_dir(b.packs_dir());
     }
 }
 
 /// The full licence texts for About › Language data: the embedded English data, then each
 /// installed pack.
 pub fn licence_texts() -> Vec<(String, String)> {
-    let mut texts = wordcraft_proof::packs::licence_texts();
+    let mut texts = letra_proof::packs::licence_texts();
     // SCOWL's notices (with the Ispell BSD licence of its affix files), when English spells from
     // the embedded SCOWL data; after the Moby and supplement entries.
-    if let Some(notice) = wordcraft_proof::scowl::notice() {
+    if let Some(notice) = letra_proof::scowl::notice() {
         let at = texts.len().min(2);
         texts.insert(at, (SCOWL_TITLE.into(), notice.into()));
     }
@@ -629,8 +629,8 @@ fn pack_candidates(tag: &str) -> Vec<String> {
 /// The languages (`w:lang`, resolved through the styles) of the body text, in first-seen order.
 pub fn document_languages(s: &Session) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
-    for path in s.doc.para_paths(wordcraft_doc::StoryRef::Body).into_iter().take(MAX_PARAGRAPHS_SCANNED) {
-        let Some(p) = s.doc.para(wordcraft_doc::StoryRef::Body, &path) else { continue };
+    for path in s.doc.para_paths(letra_doc::StoryRef::Body).into_iter().take(MAX_PARAGRAPHS_SCANNED) {
+        let Some(p) = s.doc.para(letra_doc::StoryRef::Body, &path) else { continue };
         if p.text.trim().is_empty() {
             continue;
         }
@@ -660,16 +660,16 @@ pub fn document_languages(s: &Session) -> Vec<String> {
 /// (Polish…) and any other (`ProofLang::Pack`, read from the pack alone); not `und`, `zxx` or a
 /// malformed tag. The one place the bar's language rule lives.
 pub fn proofable(tag: &str) -> bool {
-    wordcraft_proof::ProofLang::from_tag(Some(tag)) != wordcraft_proof::ProofLang::Other
+    letra_proof::ProofLang::from_tag(Some(tag)) != letra_proof::ProofLang::Other
 }
 
 /// The Hunspell dictionary `tag`'s language needs and doesn't have, for the status bar's
-/// "(no dictionary)": craft-proof's [`wordcraft_proof::missing_dictionary`], except for a
+/// "(no dictionary)": craft-proof's [`letra_proof::missing_dictionary`], except for a
 /// language craft-proof has no rules of its own for (`ProofLang::Pack`: Japanese, Chinese,
 /// Thai…) when no pack for it is available either, as no Hunspell dictionary may exist at all.
 pub fn missing_dictionary(tag: Option<&str>) -> Option<&'static str> {
-    let name = wordcraft_proof::missing_dictionary(tag)?;
-    let lang = wordcraft_proof::ProofLang::from_tag(tag);
+    let name = letra_proof::missing_dictionary(tag)?;
+    let lang = letra_proof::ProofLang::from_tag(tag);
     if lang.pack_locale().is_some() && !has_pack_for_tag(tag.unwrap_or("")) {
         return None;
     }
@@ -815,11 +815,11 @@ pub fn your_languages(s: &Session) -> Vec<LanguageRow> {
 /// The Hunspell `.dic` file proofing reads for `tag`'s language now (a built-in-rules language's
 /// own, or a pack language's), if any.
 fn dictionary_file(tag: &str) -> Option<PathBuf> {
-    let lang = wordcraft_proof::ProofLang::from_tag(Some(tag));
-    if let Some((_, f)) = wordcraft_proof::installed_dictionaries().into_iter().find(|(l, _)| *l == lang) {
+    let lang = letra_proof::ProofLang::from_tag(Some(tag));
+    if let Some((_, f)) = letra_proof::installed_dictionaries().into_iter().find(|(l, _)| *l == lang) {
         return f;
     }
-    wordcraft_proof::pack_dictionary_file(lang)
+    letra_proof::pack_dictionary_file(lang)
 }
 
 /// Options › Language › Your languages (unsorted; the window names and sorts them): each English
@@ -847,7 +847,7 @@ pub fn your_languages_with(s: &Session, folder: Option<&str>, dictionary: &dyn F
     }
     let mut rows: Vec<LanguageRow> = Vec::new();
     let mut add = |tag: Option<&str>, locale: Option<String>| {
-        let english = tag.is_some_and(|t| wordcraft_proof::ProofLang::from_tag(Some(t)).is_english());
+        let english = tag.is_some_and(|t| letra_proof::ProofLang::from_tag(Some(t)).is_english());
         // English variants stay apart (en-GB and en-US are two rows); a pack's tags share one.
         let existing = rows.iter().position(|r| match (&locale, &r.pack) {
             (Some(l), Some(p)) if !english => l == p,
@@ -889,7 +889,7 @@ pub fn your_languages_with(s: &Session, folder: Option<&str>, dictionary: &dyn F
         row.size = offered.map_or(0, |p| p.size);
         row.default = row.is_tag(&default_tag);
         let tag = row.tags.first().cloned().or_else(|| row.pack.clone()).unwrap_or_default();
-        let lang = wordcraft_proof::ProofLang::from_tag(Some(&tag));
+        let lang = letra_proof::ProofLang::from_tag(Some(&tag));
         let file = if lang.is_english() { None } else { dictionary(&tag) };
         let own = file.as_ref().is_some_and(|f| folder.is_some_and(|d| !d.trim().is_empty() && f.starts_with(d.trim())));
         row.proofing = if lang.is_english() {
@@ -901,7 +901,7 @@ pub fn your_languages_with(s: &Session, folder: Option<&str>, dictionary: &dyn F
         } else if file.is_some() {
             Proofing::SystemDictionary
         } else if offered.is_some() {
-            if matches!(lang, wordcraft_proof::ProofLang::Pack(_)) { Proofing::Install } else { Proofing::GrammarBuiltIn }
+            if matches!(lang, letra_proof::ProofLang::Pack(_)) { Proofing::Install } else { Proofing::GrammarBuiltIn }
         } else {
             Proofing::NotAvailable
         };
@@ -933,15 +933,15 @@ pub fn unlisted(s: &Session) -> Vec<String> {
         return Vec::new();
     }
     let installed = installed();
-    let mut seen: Vec<wordcraft_proof::ProofLang> = Vec::new();
+    let mut seen: Vec<letra_proof::ProofLang> = Vec::new();
     let mut out = Vec::new();
     for tag in wanted_languages(s) {
         let base = tag.split(['-', '_']).next().unwrap_or("").to_ascii_lowercase();
-        let lang = wordcraft_proof::ProofLang::from_tag(Some(&tag));
+        let lang = letra_proof::ProofLang::from_tag(Some(&tag));
         if base.is_empty()
             || base == "en"
             || !proofable(&tag)
-            || wordcraft_proof::missing_dictionary(Some(&tag)).is_none()
+            || letra_proof::missing_dictionary(Some(&tag)).is_none()
             || seen.contains(&lang)
             || installed.iter().any(|i| i.locale == base || tag.eq_ignore_ascii_case(&i.locale))
         {
@@ -1113,7 +1113,7 @@ mod tests {
     #[test]
     fn about_shows_the_scowl_notice_when_scowl_is_embedded() {
         let texts = super::licence_texts();
-        match wordcraft_proof::scowl::notice() {
+        match letra_proof::scowl::notice() {
             Some(notice) => {
                 let entry = texts.iter().find(|(t, _)| t == super::SCOWL_TITLE).map(|(_, x)| x.as_str());
                 assert_eq!(entry, Some(notice));
@@ -1156,7 +1156,7 @@ mod tests {
             .filter(|l| !l.is_empty())
             .collect();
         let allowed = |base: &str| base == "en" || if named.is_empty() { CARRY_OVER.contains(&base) } else { named.iter().any(|n| n == base) };
-        let embedded = wordcraft_proof::packs::embedded_locales();
+        let embedded = letra_proof::packs::embedded_locales();
         let extra: Vec<&&str> = embedded.iter().filter(|l| !allowed(l.split('-').next().unwrap_or(l))).collect();
         assert!(extra.is_empty(), "embedded beyond English and {named:?} (or the carry-over by default): {extra:?}");
     }

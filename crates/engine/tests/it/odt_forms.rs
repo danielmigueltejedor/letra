@@ -4,9 +4,9 @@
 
 use std::io::{Read, Write};
 
-use wordcraft_doc::control::ControlKind;
-use wordcraft_doc::para::InlineObject;
-use wordcraft_engine::io;
+use letra_doc::control::ControlKind;
+use letra_doc::para::InlineObject;
+use letra_engine::io;
 
 fn odt() -> Vec<u8> {
     let content = r#"<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:form="urn:oasis:names:tc:opendocument:xmlns:form:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"><office:body><office:text><office:forms><form:form form:name="Form"><form:listbox form:name="Colour" form:id="c1" form:dropdown="true"><form:option form:label="Red"/><form:option form:label="Green" form:current-selected="true"/></form:listbox><form:checkbox form:name="Agree" form:id="c2" form:current-state="unchecked"/></form:form></office:forms><text:p>Colour: <draw:control draw:control="c1"/> Agree: <draw:control draw:control="c2"/></text:p></office:text></office:body></office:document-content>"#;
@@ -19,7 +19,7 @@ fn odt() -> Vec<u8> {
     z.finish().unwrap().into_inner()
 }
 
-fn kinds(doc: &wordcraft_doc::Document) -> Vec<&'static str> {
+fn kinds(doc: &letra_doc::Document) -> Vec<&'static str> {
     doc.body
         .iter()
         .filter_map(|b| b.as_para())
@@ -32,7 +32,7 @@ fn kinds(doc: &wordcraft_doc::Document) -> Vec<&'static str> {
 fn odt_form_controls_become_content_controls_everywhere() {
     let doc = io::open_bytes("form.odt", &odt()).unwrap();
     assert_eq!(kinds(&doc), ["dropDown", "checkBox"]);
-    let text: String = doc.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(wordcraft_doc::para::OBJ, "")).collect();
+    let text: String = doc.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(letra_doc::para::OBJ, "")).collect();
     assert_eq!(text, "Colour: Green Agree: \u{2610}");
     // DOCX: Word content controls.
     let docx = io::save_bytes("form.docx", &doc).unwrap();

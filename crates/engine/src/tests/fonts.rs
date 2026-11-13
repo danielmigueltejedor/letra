@@ -1,7 +1,7 @@
 //! Fonts added at run time (#582): `font.add`, `font.list`, `font.remove`.
 
+use letra_doc::Pos;
 use serde_json::json;
-use wordcraft_doc::Pos;
 
 use crate::Session;
 use crate::cmd::insert::base64_encode;
@@ -38,7 +38,7 @@ fn an_added_font_is_listed_and_lays_out_text_already_set_in_it() {
     const FAMILY: &str = "Cmdfont Face 4";
     // Narrow letters: set monospaced they take far more room than in any proportional font.
     const TEXT: &str = "illicit little lilies fill tiny jill";
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     let mono = text_end_x(&mut s, "JetBrains Mono", TEXT);
     // Not installed yet: the text falls back to another font.
     let missing = text_end_x(&mut s, FAMILY, TEXT);
@@ -86,7 +86,7 @@ fn adding_a_font_never_changes_text_that_does_not_use_it() {
 
 #[test]
 fn bad_font_input_is_an_error() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     for p in [
         json!({"data": base64_encode(b"definitely not a font")}),
         json!({"data": "%%% not base64"}),
@@ -208,29 +208,29 @@ fn missing_list(s: &mut Session) -> Vec<String> {
 }
 
 /// The missing fonts of `doc` as laid out.
-fn missing_in(doc: wordcraft_doc::Document) -> Vec<crate::cmd::font::MissingFont> {
+fn missing_in(doc: letra_doc::Document) -> Vec<crate::cmd::font::MissingFont> {
     let mut s = Session::new(doc);
     let layout = s.layout();
     crate::cmd::font::missing_fonts(&s.doc, &layout)
 }
 
 /// A paragraph of `text` set in `font`.
-fn para_in(text: &str, font: &str) -> wordcraft_doc::Paragraph {
-    wordcraft_doc::Paragraph::with_text(text, wordcraft_doc::CharProps { font: Some(font.into()), ..Default::default() })
+fn para_in(text: &str, font: &str) -> letra_doc::Paragraph {
+    letra_doc::Paragraph::with_text(text, letra_doc::CharProps { font: Some(font.into()), ..Default::default() })
 }
 
 /// A document of these paragraphs.
-fn doc_of(paras: Vec<wordcraft_doc::Paragraph>) -> wordcraft_doc::Document {
-    let mut doc = wordcraft_doc::Document::new();
-    doc.body = paras.into_iter().map(wordcraft_doc::para_block).collect();
+fn doc_of(paras: Vec<letra_doc::Paragraph>) -> letra_doc::Document {
+    let mut doc = letra_doc::Document::new();
+    doc.body = paras.into_iter().map(letra_doc::para_block).collect();
     doc
 }
 
 #[test]
 fn fonts_that_are_not_installed_are_reported_with_the_font_shown_instead() {
     // A family no system has, with no Serif/Mono in its name: it's drawn in a sans substitute.
-    const MISSING: &str = "Wordcraft Nowhere Face";
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    const MISSING: &str = "Letra Nowhere Face";
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("document.setText", &json!({"text": "Bundled\nMissing"})).unwrap();
     s.run("select.all", &json!({})).unwrap();
     s.run("format.font", &json!({"name": "JetBrains Mono"})).unwrap();
@@ -252,67 +252,67 @@ fn fonts_that_are_not_installed_are_reported_with_the_font_shown_instead() {
 
 #[test]
 fn a_font_only_a_style_names_is_not_reported_missing() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("document.setText", &json!({"text": "Body"})).unwrap();
     s.run("styles.create", &json!({"name": "Unused Look"})).unwrap();
-    s.run("styles.modify", &json!({"style": "Unused Look", "chr": {"font": "Wordcraft Style Only Face"}})).unwrap();
+    s.run("styles.modify", &json!({"style": "Unused Look", "chr": {"font": "Letra Style Only Face"}})).unwrap();
     // Creating a style applies it, as in Word: put the text back in Normal.
     s.run("para.style", &json!({"style": "Normal"})).unwrap();
     s.run("select.all", &json!({})).unwrap();
     s.run("format.font", &json!({"name": "JetBrains Mono"})).unwrap();
     assert_eq!(missing_list(&mut s), Vec::<String>::new(), "no text uses the style");
     // Text in the style, with no font of its own, is.
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("document.setText", &json!({"text": "Body"})).unwrap();
     s.run("styles.create", &json!({"name": "Used Look"})).unwrap();
-    s.run("styles.modify", &json!({"style": "Used Look", "chr": {"font": "Wordcraft Style Only Face"}})).unwrap();
+    s.run("styles.modify", &json!({"style": "Used Look", "chr": {"font": "Letra Style Only Face"}})).unwrap();
     s.run("para.style", &json!({"style": "Used Look"})).unwrap();
     let list = missing_list(&mut s);
-    assert!(list.iter().any(|f| f.starts_with("Wordcraft Style Only Face>")), "{list:?}");
+    assert!(list.iter().any(|f| f.starts_with("Letra Style Only Face>")), "{list:?}");
 }
 
 #[test]
 fn missing_fonts_are_what_layout_drew_in_shown_text() {
     let mut doc = doc_of(vec![
-        para_in("one", "Wordcraft Nowhere Face"),
-        para_in("two", "wordcraft nowhere face"),
+        para_in("one", "Letra Nowhere Face"),
+        para_in("two", "letra nowhere face"),
         para_in("three", "JetBrains Mono"),
         // Spaces, a picture's placeholder and zero-width characters show no font.
-        para_in(" \u{FFFC}\t\u{200B}\u{FEFF}\u{FE0F}\u{3164}\u{034F}", "Wordcraft Blank Face"),
+        para_in(" \u{FFFC}\t\u{200B}\u{FEFF}\u{FE0F}\u{3164}\u{034F}", "Letra Blank Face"),
     ]);
     // Hidden text isn't laid out.
-    doc.body.push(wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text(
+    doc.body.push(letra_doc::para_block(letra_doc::Paragraph::with_text(
         "secret",
-        wordcraft_doc::CharProps { font: Some("Wordcraft Hidden Face".into()), hidden: Some(true), ..Default::default() },
+        letra_doc::CharProps { font: Some("Letra Hidden Face".into()), hidden: Some(true), ..Default::default() },
     )));
     // A text box story nothing shows any more (deleted, not yet pruned).
     doc.parts.insert(
         77,
-        wordcraft_doc::Part {
-            kind: wordcraft_doc::PartKind::TextBox,
-            blocks: vec![wordcraft_doc::para_block(para_in("gone", "Wordcraft Orphan Face"))],
+        letra_doc::Part {
+            kind: letra_doc::PartKind::TextBox,
+            blocks: vec![letra_doc::para_block(para_in("gone", "Letra Orphan Face"))],
             body: Default::default(),
         },
     );
     let names: Vec<String> = missing_in(doc).into_iter().map(|f| f.font).collect();
     assert_eq!(names.len(), 1, "one font whatever its case, and nothing else: {names:?}");
-    assert!(names[0].eq_ignore_ascii_case("Wordcraft Nowhere Face"));
+    assert!(names[0].eq_ignore_ascii_case("Letra Nowhere Face"));
 }
 
 #[test]
 fn metric_twins_are_listed_but_flagged_compatible() {
     // A twin by name, installed or not here: "Liberation Sans" stands in for Arial wherever it's
     // the substitute; a made-up family's substitute is never its twin.
-    let m = missing_in(doc_of(vec![para_in("Text 😀", "Arial"), para_in("Text", "Wordcraft Nowhere Face")]));
-    let nowhere = m.iter().find(|f| f.font == "Wordcraft Nowhere Face").expect("listed");
+    let m = missing_in(doc_of(vec![para_in("Text 😀", "Arial"), para_in("Text", "Letra Nowhere Face")]));
+    let nowhere = m.iter().find(|f| f.font == "Letra Nowhere Face").expect("listed");
     assert!(!nowhere.metric_compatible, "{nowhere:?}");
-    match crate::cmd::font::shown_as(&wordcraft_doc::Document::new(), "Arial") {
+    match crate::cmd::font::shown_as(&letra_doc::Document::new(), "Arial") {
         // Arial is installed: not listed.
         None => assert!(!m.iter().any(|f| f.font == "Arial"), "{m:?}"),
         Some(sub) => {
             let arial = m.iter().find(|f| f.font == "Arial").expect("listed");
             // An emoji drawn in a fallback face doesn't change the verdict on the substitute.
-            assert_eq!(arial.metric_compatible, wordcraft_fonts::word::metric_compatible("Arial", &sub), "{arial:?}");
+            assert_eq!(arial.metric_compatible, letra_fonts::word::metric_compatible("Arial", &sub), "{arial:?}");
         }
     }
 }
@@ -321,14 +321,14 @@ fn metric_twins_are_listed_but_flagged_compatible() {
 fn a_missing_roman_font_drawn_in_cambria_is_reported() {
     // Word draws a missing font the font table classes as roman in Cambria (#1613): installed or
     // not, Cambria isn't the font the document asks for.
-    const ROMAN: &str = "Wordcraft Roman Gone";
+    const ROMAN: &str = "Letra Roman Gone";
     let mut doc = doc_of(vec![para_in("Text", ROMAN)]);
     doc.settings.roman_fonts = vec![ROMAN.into()];
     let m = missing_in(doc.clone());
     assert_eq!(m.iter().map(|f| f.font.as_str()).collect::<Vec<_>>(), [ROMAN], "{m:?}");
     assert!(!m[0].metric_compatible, "{m:?}");
     // The font box names the face layout draws, not the generic substitute.
-    let cambria = wordcraft_fonts::word::resolve("Cambria", false, false).face.get().family.clone();
+    let cambria = letra_fonts::word::resolve("Cambria", false, false).face.get().family.clone();
     assert_eq!(m[0].shown_as, std::slice::from_ref(&cambria));
     let mut s = Session::new(doc);
     s.run("select.all", &json!({})).unwrap();
@@ -337,24 +337,23 @@ fn a_missing_roman_font_drawn_in_cambria_is_reported() {
 
 #[test]
 fn a_missing_east_asian_font_is_reported_for_cjk_text_only() {
-    let props =
-        wordcraft_doc::CharProps { font: Some("JetBrains Mono".into()), font_ea: Some("Wordcraft Nowhere Mincho".into()), ..Default::default() };
-    let m = missing_in(doc_of(vec![wordcraft_doc::Paragraph::with_text("abc 日本語", props.clone())]));
+    let props = letra_doc::CharProps { font: Some("JetBrains Mono".into()), font_ea: Some("Letra Nowhere Mincho".into()), ..Default::default() };
+    let m = missing_in(doc_of(vec![letra_doc::Paragraph::with_text("abc 日本語", props.clone())]));
     assert_eq!(m.len(), 1, "{m:?}");
-    assert_eq!(m[0].font, "Wordcraft Nowhere Mincho");
+    assert_eq!(m[0].font, "Letra Nowhere Mincho");
     assert!(!m[0].shown_as.is_empty() && !m[0].metric_compatible, "{m:?}");
     // Without CJK text the East Asian font draws nothing.
-    assert!(missing_in(doc_of(vec![wordcraft_doc::Paragraph::with_text("abc", props)])).is_empty());
+    assert!(missing_in(doc_of(vec![letra_doc::Paragraph::with_text("abc", props)])).is_empty());
 }
 
 #[test]
 fn symbol_fonts_are_shown_as_unicode_without_a_missing_font() {
-    let mut s = Session::new(wordcraft_doc::Document::new());
+    let mut s = Session::new(letra_doc::Document::new());
     s.run("document.setText", &json!({"text": "\u{F0FC}"})).unwrap();
     s.run("select.all", &json!({})).unwrap();
     s.run("format.font", &json!({"name": "Wingdings"})).unwrap();
     // Not installed, so it's drawn in another face, but on purpose: nothing to report.
-    if wordcraft_fonts::word::resolve("Wingdings", false, false).substituted {
+    if letra_fonts::word::resolve("Wingdings", false, false).substituted {
         assert!(s.run("format.state", &json!({})).unwrap()["fontShownAs"].is_string());
     }
     let layout = s.layout();
@@ -363,18 +362,18 @@ fn symbol_fonts_are_shown_as_unicode_without_a_missing_font() {
 
 #[test]
 fn missing_fonts_from_command_search_say_so_in_the_status_line() {
-    let mut s = Session::new(doc_of(vec![para_in("Text", "Wordcraft Nowhere Face")]));
+    let mut s = Session::new(doc_of(vec![para_in("Text", "Letra Nowhere Face")]));
     s.run("font.missing", &json!({})).unwrap();
-    assert!(s.status.contains("Wordcraft Nowhere Face"), "{}", s.status);
+    assert!(s.status.contains("Letra Nowhere Face"), "{}", s.status);
     // Thousands of missing fonts: a few named, the rest counted.
-    let mut s = Session::new(doc_of((0..40).map(|i| para_in("x", &format!("Wordcraft Many Face {i}"))).collect()));
+    let mut s = Session::new(doc_of((0..40).map(|i| para_in("x", &format!("Letra Many Face {i}"))).collect()));
     s.run("font.missing", &json!({})).unwrap();
     assert!(s.status.ends_with(" and 35 more") && s.status.len() < 300, "{}", s.status);
 }
 
 #[test]
 fn a_huge_font_name_is_kept_short() {
-    let name = format!("Wordcraft {}", "é".repeat(100_000));
+    let name = format!("Letra {}", "é".repeat(100_000));
     let m = missing_in(doc_of(vec![para_in("Text", &name)]));
     assert_eq!(m.len(), 1);
     assert!(m[0].font.chars().count() <= 256, "{}", m[0].font.len());
@@ -382,43 +381,42 @@ fn a_huge_font_name_is_kept_short() {
 
 #[test]
 fn symbol_fonts_drawn_as_unicode_are_not_reported() {
-    // Word's bullets are Symbol characters; WordCraft draws them as their Unicode equivalents.
+    // Word's bullets are Symbol characters; Letra draws them as their Unicode equivalents.
     let m = missing_in(doc_of(vec![para_in("\u{F0B7}", "Symbol"), para_in("\u{F0FC}", "Wingdings")]));
     assert!(m.is_empty(), "{m:?}");
 }
 
 #[test]
 fn cjk_text_is_reported_under_its_east_asian_font_not_the_latin_one() {
-    let props =
-        wordcraft_doc::CharProps { font: Some("Wordcraft Latin Gone".into()), font_ea: Some("Wordcraft Asian Gone".into()), ..Default::default() };
+    let props = letra_doc::CharProps { font: Some("Letra Latin Gone".into()), font_ea: Some("Letra Asian Gone".into()), ..Default::default() };
     let names = |text: &str| -> Vec<String> {
-        missing_in(doc_of(vec![wordcraft_doc::Paragraph::with_text(text, props.clone())])).into_iter().map(|f| f.font).collect()
+        missing_in(doc_of(vec![letra_doc::Paragraph::with_text(text, props.clone())])).into_iter().map(|f| f.font).collect()
     };
-    assert_eq!(names("日本語"), ["Wordcraft Asian Gone"], "no character asks for the Latin font");
-    assert_eq!(names("abc 日本語"), ["Wordcraft Asian Gone", "Wordcraft Latin Gone"]);
+    assert_eq!(names("日本語"), ["Letra Asian Gone"], "no character asks for the Latin font");
+    assert_eq!(names("abc 日本語"), ["Letra Asian Gone", "Letra Latin Gone"]);
     // Without an East Asian font the CJK text asks for the Latin one.
-    let latin_only = wordcraft_doc::CharProps { font: Some("Wordcraft Latin Gone".into()), ..Default::default() };
-    let m = missing_in(doc_of(vec![wordcraft_doc::Paragraph::with_text("日本語", latin_only)]));
-    assert_eq!(m.iter().map(|f| f.font.as_str()).collect::<Vec<_>>(), ["Wordcraft Latin Gone"]);
+    let latin_only = letra_doc::CharProps { font: Some("Letra Latin Gone".into()), ..Default::default() };
+    let m = missing_in(doc_of(vec![letra_doc::Paragraph::with_text("日本語", latin_only)]));
+    assert_eq!(m.iter().map(|f| f.font.as_str()).collect::<Vec<_>>(), ["Letra Latin Gone"]);
 }
 
 #[test]
 fn a_symbol_font_named_for_complex_script_text_is_not_reported() {
-    let props = wordcraft_doc::CharProps { font: Some("JetBrains Mono".into()), font_cs: Some("Symbol".into()), ..Default::default() };
-    assert!(missing_in(doc_of(vec![wordcraft_doc::Paragraph::with_text("سلام", props)])).is_empty());
+    let props = letra_doc::CharProps { font: Some("JetBrains Mono".into()), font_cs: Some("Symbol".into()), ..Default::default() };
+    assert!(missing_in(doc_of(vec![letra_doc::Paragraph::with_text("سلام", props)])).is_empty());
 }
 
 #[test]
 fn a_hostile_number_of_missing_fonts_stays_bounded() {
-    let paras = (0..3000).map(|i| para_in("x", &format!("Wordcraft Hostile Face {i}"))).collect();
+    let paras = (0..3000).map(|i| para_in("x", &format!("Letra Hostile Face {i}"))).collect();
     let m = missing_in(doc_of(paras));
-    assert!(!m.is_empty() && m.len() <= wordcraft_layout::MAX_SUBSTITUTED, "{}", m.len());
+    assert!(!m.is_empty() && m.len() <= letra_layout::MAX_SUBSTITUTED, "{}", m.len());
 }
 
 #[test]
 fn a_font_key_matches_the_listed_name_however_long_or_padded() {
     // Leading spaces and more than 256 characters: layout keeps 256, the list trims them.
-    let name = format!("   Wordcraft {}", "x".repeat(400));
+    let name = format!("   Letra {}", "x".repeat(400));
     let m = missing_in(doc_of(vec![para_in("Text", &name)]));
     assert_eq!(m.len(), 1);
     assert_eq!(crate::cmd::font::font_key(&name), crate::cmd::font::font_key(&m[0].font));
@@ -430,7 +428,7 @@ fn a_font_key_matches_the_listed_name_however_long_or_padded() {
 
 #[test]
 fn only_characters_that_draw_count() {
-    use wordcraft_layout::para::draws_something;
+    use letra_layout::para::draws_something;
     for c in ['a', '日', '€', '\u{1F600}'] {
         assert!(draws_something(c), "{c:?}");
     }
@@ -452,16 +450,16 @@ fn a_padded_name_is_judged_by_the_face_its_text_is_drawn_in() {
     let m = missing_in(doc_of(vec![para_in("Text", "Arial ")]));
     let Some(arial) = m.iter().find(|f| f.font == "Arial") else { return };
     let drawn = arial.shown_as.first().expect("drawn in a face");
-    assert_eq!(arial.metric_compatible, wordcraft_fonts::word::metric_compatible("Arial", drawn), "{arial:?}");
+    assert_eq!(arial.metric_compatible, letra_fonts::word::metric_compatible("Arial", drawn), "{arial:?}");
 }
 
 #[test]
 fn an_east_asian_font_is_shown_as_the_face_its_text_is_drawn_in() {
     // MS Mincho is roman in many font tables, but Cambria is the run's font's substitute: an
     // East Asian font's text goes to the run's font or a fallback face, as the list says.
-    const MINCHO: &str = "Wordcraft Mincho Gone";
-    let props = wordcraft_doc::CharProps { font: Some("JetBrains Mono".into()), font_ea: Some(MINCHO.into()), ..Default::default() };
-    let mut doc = doc_of(vec![wordcraft_doc::Paragraph::with_text("日", props)]);
+    const MINCHO: &str = "Letra Mincho Gone";
+    let props = letra_doc::CharProps { font: Some("JetBrains Mono".into()), font_ea: Some(MINCHO.into()), ..Default::default() };
+    let mut doc = doc_of(vec![letra_doc::Paragraph::with_text("日", props)]);
     doc.settings.roman_fonts = vec![MINCHO.into()];
     let shown = crate::cmd::font::east_asian_shown_as(&doc, MINCHO, "JetBrains Mono").expect("not installed");
     let m = missing_in(doc.clone());
@@ -474,7 +472,7 @@ fn an_east_asian_font_is_shown_as_the_face_its_text_is_drawn_in() {
 /// candidate is installed, and substitutes by candidate family when none is.
 #[test]
 fn libreoffice_font_fallback_lists_are_not_reported_as_missing_when_installed() {
-    let db = wordcraft_fonts::FontDb::global();
+    let db = letra_fonts::FontDb::global();
     let doc = doc_of(vec![para_in("Text", "Liberation Sans;Arial")]);
     if db.has_family("Liberation Sans") || db.has_family("Arial") {
         let m = missing_in(doc.clone());
@@ -485,7 +483,7 @@ fn libreoffice_font_fallback_lists_are_not_reported_as_missing_when_installed() 
 
     // Roundtrip through DOCX export and import:
     let docx_bytes = crate::io::save_bytes("out.docx", &doc).unwrap();
-    let loaded = wordcraft_docx::read(&docx_bytes).unwrap();
+    let loaded = letra_docx::read(&docx_bytes).unwrap();
     assert_eq!(loaded.body[0].as_para().unwrap().runs[0].props.font.as_deref(), Some("Liberation Sans;Arial"));
     if db.has_family("Liberation Sans") || db.has_family("Arial") {
         let m = missing_in(loaded);

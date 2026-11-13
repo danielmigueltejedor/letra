@@ -274,10 +274,10 @@ fn cell_clip(clips: &Clips, story: StoryRef, path: &[u32]) -> Option<Rect> {
 
 /// The text boxes among `items` whose text is warped (Text Effects › Transform, drawn bent): their
 /// story, frame and warp. Empty, without a walk of the document, when none is.
-fn warped_boxes(doc: &Document, items: &[Placed]) -> Vec<(u32, Rect, wordcraft_doc::wordart::TextWarp)> {
+fn warped_boxes(doc: &Document, items: &[Placed]) -> Vec<(u32, Rect, letra_doc::wordart::TextWarp)> {
     // Keep only requested offsets. A page may show a few boxes from a much longer paragraph,
     // and several placements may share an offset or a text-box story.
-    let mut needed: HashMap<_, HashMap<_, Option<&wordcraft_doc::wordart::TextWarp>>> = HashMap::new();
+    let mut needed: HashMap<_, HashMap<_, Option<&letra_doc::wordart::TextWarp>>> = HashMap::new();
     for it in items {
         if let Placed::Object { story, path, off, text_box: Some(_), .. } = it {
             needed.entry((*story, path)).or_default().insert(*off, None);
@@ -285,11 +285,11 @@ fn warped_boxes(doc: &Document, items: &[Placed]) -> Vec<(u32, Rect, wordcraft_d
     }
     for ((story, path), offsets) in &mut needed {
         let Some(p) = doc.para(*story, path) else { continue };
-        offsets.retain(|off, _| p.text.get(*off..).is_some_and(|tail| tail.starts_with(wordcraft_doc::para::OBJ)));
+        offsets.retain(|off, _| p.text.get(*off..).is_some_and(|tail| tail.starts_with(letra_doc::para::OBJ)));
         let Some(last) = offsets.keys().max().copied() else { continue };
         // Stop at the last requested byte offset, including when it precedes a long run of
         // ordinary text. Pair markers and objects exactly as Paragraph::objects_with_offsets.
-        let markers = p.text.char_indices().take_while(|(off, _)| *off <= last).filter(|(_, c)| *c == wordcraft_doc::para::OBJ);
+        let markers = p.text.char_indices().take_while(|(off, _)| *off <= last).filter(|(_, c)| *c == letra_doc::para::OBJ);
         for ((off, _), object) in markers.zip(&p.objects) {
             if let Some(warp) = offsets.get_mut(&off)
                 && let InlineObject::Shape { extra, .. } = object
@@ -315,7 +315,7 @@ struct WarpedText<'doc, 'opts, 'lines, 'placed, 'authors, 'author_doc> {
     doc: &'doc Document,
     lines: &'lines [&'placed Placed],
     rect: Rect,
-    warp: &'lines wordcraft_doc::wordart::TextWarp,
+    warp: &'lines letra_doc::wordart::TextWarp,
     opts: &'opts DisplayOptions,
     authors: &'authors Authors<'author_doc>,
     alpha: f32,
@@ -328,7 +328,7 @@ fn warped_text(input: WarpedText<'_, '_, '_, '_, '_, '_>, out: &mut Vec<Draw>) {
         item(doc, it, opts, authors, alpha, &mut raw);
     }
     // The letters: runs with effects as they are, plain runs from their glyphs.
-    let mut arts: Vec<(BezPath, Box<wordcraft_doc::wordart::TextEffects>, Rgb, f32)> = Vec::new();
+    let mut arts: Vec<(BezPath, Box<letra_doc::wordart::TextEffects>, Rgb, f32)> = Vec::new();
     let mut hidden = Vec::new();
     for d in &raw {
         match d {
@@ -531,7 +531,7 @@ fn item_in(doc: &Document, it: &Placed, opts: &DisplayOptions, authors: &Authors
 #[cfg(test)]
 mod tests_clips {
     use super::*;
-    use wordcraft_doc::Path as DocPath;
+    use letra_doc::Path as DocPath;
 
     /// A cell whose area is told apart by `x`.
     fn cell(story: StoryRef, table: Vec<u32>, row: usize, cell: usize, clip: bool, x: f32) -> Placed {
@@ -581,9 +581,9 @@ mod tests_clips {
 #[cfg(test)]
 mod tests_warp_lookups {
     use super::*;
-    use wordcraft_doc::para::{OBJ, ShapeKind};
-    use wordcraft_doc::wordart::TextWarp;
-    use wordcraft_doc::{Block, CharProps, Paragraph, Path};
+    use letra_doc::para::{OBJ, ShapeKind};
+    use letra_doc::wordart::TextWarp;
+    use letra_doc::{Block, CharProps, Paragraph, Path};
 
     fn shape(warp: Option<TextWarp>) -> InlineObject {
         InlineObject::Shape {
@@ -597,7 +597,7 @@ mod tests_warp_lookups {
             story: Some(7),
             freeform: None,
             effects: Default::default(),
-            extra: wordcraft_doc::connector::ShapeExtra { warp, ..Default::default() },
+            extra: letra_doc::connector::ShapeExtra { warp, ..Default::default() },
         }
     }
 
@@ -628,7 +628,7 @@ mod tests_warp_lookups {
         ];
         let mut p = Paragraph::new();
         p.text = format!("é{}λ", OBJ.to_string().repeat(objects.len() + 1));
-        p.runs = vec![wordcraft_doc::para::Run { len: p.text.len(), props: CharProps::default() }];
+        p.runs = vec![letra_doc::para::Run { len: p.text.len(), props: CharProps::default() }];
         p.objects = objects;
         let mut d = Document::from_text("");
         d.body = vec![Block::Para(p).into()];
@@ -669,16 +669,16 @@ mod tests_warp_lookups {
         let para = |preset| {
             let mut p = Paragraph::new();
             p.text = OBJ.to_string();
-            p.runs = vec![wordcraft_doc::para::Run { len: p.text.len(), props: CharProps::default() }];
+            p.runs = vec![letra_doc::para::Run { len: p.text.len(), props: CharProps::default() }];
             p.objects = vec![shape(TextWarp::new(preset))];
             p
         };
         let mut d = Document::from_text("");
         d.body = vec![Block::Para(para(presets[0])).into(), Block::Para(para(presets[1])).into()];
-        let mut table = wordcraft_doc::Table::new(1, 1, 100.0);
+        let mut table = letra_doc::Table::new(1, 1, 100.0);
         table.rows[0].cells[0].blocks = vec![Block::Para(para(presets[2])).into()];
         d.body.push(Block::Table(table).into());
-        let id = d.add_part(wordcraft_doc::PartKind::Header, vec![Block::Para(para(presets[3])).into()]);
+        let id = d.add_part(letra_doc::PartKind::Header, vec![Block::Para(para(presets[3])).into()]);
         let items = vec![
             placed(StoryRef::Body, Path::top(0), 0, Some(1)),
             placed(StoryRef::Body, Path::top(1), 0, Some(1)),
@@ -703,7 +703,7 @@ mod tests_warp_lookups {
             }
             let mut p = Paragraph::new();
             p.text = OBJ.to_string().repeat(objects.len());
-            p.runs = vec![wordcraft_doc::para::Run { len: p.text.len(), props: CharProps::default() }];
+            p.runs = vec![letra_doc::para::Run { len: p.text.len(), props: CharProps::default() }];
             p.objects = objects;
             let mut d = Document::from_text("");
             d.body = vec![Block::Para(p).into()];
@@ -723,7 +723,7 @@ mod tests_warp_lookups {
         let make = |suffix: usize| {
             let mut p = Paragraph::new();
             p.text = format!("{OBJ}{}", "x".repeat(suffix));
-            p.runs = vec![wordcraft_doc::para::Run { len: p.text.len(), props: CharProps::default() }];
+            p.runs = vec![letra_doc::para::Run { len: p.text.len(), props: CharProps::default() }];
             p.objects = vec![shape(TextWarp::new("textArchUp"))];
             let mut d = Document::from_text("");
             d.body = vec![Block::Para(p).into()];

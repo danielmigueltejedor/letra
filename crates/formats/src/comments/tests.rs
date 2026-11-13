@@ -1,5 +1,5 @@
 use super::*;
-use wordcraft_doc::{Block, CharProps, Comment, Paragraph, PartKind, Run, Table, para_block};
+use letra_doc::{Block, CharProps, Comment, Paragraph, PartKind, Run, Table, para_block};
 
 fn paragraph(text: String, objects: Vec<InlineObject>) -> Paragraph {
     let len = text.len();
@@ -70,12 +70,12 @@ fn comment_export_discovery_scales_with_unrelated_markers() {
     let expected = vec![Note { author: "Ada".into(), quote: "é漢 quote".into(), text: "Kept note".into(), replies: vec![] }];
     assert_eq!(notes(&small), expected);
     assert_eq!(notes(&big), expected);
-    // The characters the discovery walks (`wordcraft_doc::work`), not a timing: about 8x for 8x
+    // The characters the discovery walks (`letra_doc::work`), not a timing: about 8x for 8x
     // the markers when the walk is linear, about 64x when it is quadratic. Timed, this failed on
     // busy CI machines with a linear walk (58x for a 17 µs baseline).
-    let (s, b) = (wordcraft_doc::work::count(|| drop(notes(&small))), wordcraft_doc::work::count(|| drop(notes(&big))));
+    let (s, b) = (letra_doc::work::count(|| drop(notes(&small))), letra_doc::work::count(|| drop(notes(&big))));
     let ratio = b as f64 / s.max(1) as f64;
     eprintln!("comment discovery steps: {s} -> {b}, {ratio:.1}x for 8x markers");
-    assert!(s > 0, "no steps counted, so the walk this test watches no longer counts them (wordcraft_doc::work)");
+    assert!(s > 0, "no steps counted, so the walk this test watches no longer counts them (letra_doc::work)");
     assert!(ratio <= 12.0, "8x the markers cost {ratio:.1}x the steps ({s} -> {b})");
 }

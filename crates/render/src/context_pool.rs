@@ -63,11 +63,11 @@ impl ContextPool {
 mod tests {
     use super::*;
     use crate::{MAX_SIDE, RenderOptions, Rendered, render_page, render_region};
+    use letra_doc::props::{Highlight, Rgb};
+    use letra_doc::{Document, Pos};
+    use letra_layout::{LayoutCache, LayoutOptions, Page, layout};
     use vello_cpu::kurbo::{self, Affine, BezPath, Shape};
     use vello_cpu::{Resources, peniko};
-    use wordcraft_doc::props::{Highlight, Rgb};
-    use wordcraft_doc::{Document, Pos};
-    use wordcraft_layout::{LayoutCache, LayoutOptions, Page, layout};
 
     /// Draw a scene that uses what the renderer uses (fills, strokes, transforms, a gradient,
     /// both fill rules, opacity and clip layers) across a `w`×`h` context and rasterise it. It

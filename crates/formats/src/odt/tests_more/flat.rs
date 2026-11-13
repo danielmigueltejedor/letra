@@ -3,8 +3,8 @@
 //! `math:math` inside their object): opened and saved like a package.
 
 use crate::odt::{export_flat, import_flat};
-use wordcraft_doc::Document;
-use wordcraft_doc::para::InlineObject;
+use letra_doc::Document;
+use letra_doc::para::InlineObject;
 
 /// A 1×1 PNG, base64.
 const PNG_B64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
@@ -36,7 +36,7 @@ fn flat() -> String {
 #[allow(clippy::type_complexity)]
 fn summary(d: &Document) -> (String, f32, Vec<String>, Vec<String>, Option<String>, String, Vec<usize>, Vec<String>) {
     let paras: Vec<_> = d.body.iter().filter_map(|b| b.as_para()).collect();
-    let text = paras.iter().map(|p| p.text.replace(wordcraft_doc::para::OBJ, "#")).collect();
+    let text = paras.iter().map(|p| p.text.replace(letra_doc::para::OBJ, "#")).collect();
     let bold = paras
         .iter()
         .flat_map(|p| p.run_ranges().filter(|(_, c)| c.bold == Some(true)).map(|(r, _)| p.text.get(r).unwrap_or("").to_string()).collect::<Vec<_>>())
@@ -119,7 +119,7 @@ fn an_inline_sub_document_does_not_end_the_body() {
         r#"<?xml version="1.0"?><office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"><office:body><office:text><text:p>Before{chart}</text:p><text:p>After the chart.</text:p></office:text></office:body></office:document>"#
     );
     let d = import_flat(xml.as_bytes()).unwrap();
-    let text: Vec<String> = d.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(wordcraft_doc::para::OBJ, "")).collect();
+    let text: Vec<String> = d.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(letra_doc::para::OBJ, "")).collect();
     assert_eq!(text, ["Before", "After the chart."]);
     let deep = format!("<office:document><office:body>{}", "<office:body>".repeat(5000));
     let _ = import_flat(deep.as_bytes());

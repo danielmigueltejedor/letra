@@ -4,8 +4,8 @@
 
 use serde_json::{Value, json};
 
-use wordcraft_doc::para::LINE_BREAK;
-use wordcraft_doc::{Path, Pos, RevisionKind, StoryRef};
+use letra_doc::para::LINE_BREAK;
+use letra_doc::{Path, Pos, RevisionKind, StoryRef};
 
 use super::{CmdError, CmdResult, Session, p, sel_result};
 use crate::cmd::{has_next_para, new_revision, split_para, track_delete};
@@ -99,12 +99,12 @@ fn apply_deletions(s: &mut Session, story: StoryRef, path: &Path, mut ranges: Ve
 /// The characters of the paragraph that are not tracked-deleted, as (byte offset, char). Under
 /// Track Changes deleted text stays in `para.text`, so every scan that decides what to delete or
 /// count goes through this.
-fn live_chars(para: &wordcraft_doc::Paragraph) -> impl Iterator<Item = (usize, char)> + '_ {
+fn live_chars(para: &letra_doc::Paragraph) -> impl Iterator<Item = (usize, char)> + '_ {
     para.run_ranges().filter(|(_, c)| c.del.is_none()).flat_map(|(r, _)| para.text[r.clone()].char_indices().map(move |(i, c)| (r.start + i, c)))
 }
 
 /// The byte ranges of every manual line break in the paragraph that is not already deleted.
-fn break_ranges(para: &wordcraft_doc::Paragraph) -> Vec<(usize, usize)> {
+fn break_ranges(para: &letra_doc::Paragraph) -> Vec<(usize, usize)> {
     live_chars(para).filter(|(_, c)| *c == LINE_BREAK).map(|(i, _)| (i, i + 1)).collect()
 }
 
@@ -187,12 +187,12 @@ pub(super) fn remove_blank(s: &mut Session, v: &Value) -> CmdResult {
 
 /// The number of leading spaces in the paragraph's text, deleted ones included (the range
 /// `trimLeadingSpaces` deletes).
-fn leading_spaces(para: &wordcraft_doc::Paragraph) -> usize {
+fn leading_spaces(para: &letra_doc::Paragraph) -> usize {
     para.text.chars().take_while(|c| *c == ' ').count()
 }
 
 /// The byte offsets of the paragraph's leading spaces that are not tracked-deleted.
-fn live_leading_spaces(para: &wordcraft_doc::Paragraph) -> Vec<usize> {
+fn live_leading_spaces(para: &letra_doc::Paragraph) -> Vec<usize> {
     live_chars(para).take_while(|(_, c)| *c == ' ').map(|(i, _)| i).collect()
 }
 

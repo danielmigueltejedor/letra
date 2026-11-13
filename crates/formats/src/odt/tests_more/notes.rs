@@ -2,8 +2,8 @@
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::para::{InlineObject, NoteKind, OBJ};
-use wordcraft_doc::{Document, PartKind};
+use letra_doc::para::{InlineObject, NoteKind, OBJ};
+use letra_doc::{Document, PartKind};
 
 fn body(xml: &str) -> Vec<u8> {
     package(
@@ -73,7 +73,7 @@ fn notes_round_trip() {
 #[test]
 fn a_note_starting_with_a_tab_keeps_it() {
     // ONLYOFFICE's notes start with a tab after the number: written back with it, and only the
-    // space WordCraft puts after the mark is left out.
+    // space Letra puts after the mark is left out.
     let xml = r#"<text:p>A<text:note text:id="n1" text:note-class="footnote"><text:note-citation>1</text:note-citation><text:note-body><text:p><text:span/><text:tab/>Lorem</text:p></text:note-body></text:note> and<text:note text:id="n2" text:note-class="footnote"><text:note-citation>2</text:note-citation><text:note-body><text:p>Plain</text:p></text:note-body></text:note>.</text:p>"#;
     let d = import(&body(xml)).unwrap();
     let c = crate::odt::tests::content_of(&export(&d).unwrap());
@@ -159,13 +159,13 @@ fn a_footnote_keeps_its_text_beside_a_footer() {
     let text = |id: u32| {
         d.parts
             .get(&id)
-            .map(|p| p.blocks.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(wordcraft_doc::para::OBJ, "")).collect::<String>())
+            .map(|p| p.blocks.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(letra_doc::para::OBJ, "")).collect::<String>())
             .unwrap_or_default()
             .trim()
             .to_string()
     };
     let note = d.body[0].as_para().unwrap().objects.iter().find_map(|o| match o {
-        wordcraft_doc::para::InlineObject::NoteRef { id, .. } => Some(*id),
+        letra_doc::para::InlineObject::NoteRef { id, .. } => Some(*id),
         _ => None,
     });
     assert_eq!(note.map(text).as_deref(), Some("The note."));
@@ -185,9 +185,9 @@ fn citations_are_numbered_as_the_document_numbers_its_notes() {
     assert_eq!(citations(&d, true), ["1", "2", "i"]);
     // Unedited, the file's own (as read).
     assert_eq!(citations(&d, false), ["x", "x", "x"]);
-    d.settings.footnote_format = wordcraft_doc::section::NumFormat::UpperLetter;
+    d.settings.footnote_format = letra_doc::section::NumFormat::UpperLetter;
     d.settings.footnote_pr.num_start = Some(3);
-    d.settings.endnote_format = wordcraft_doc::section::NumFormat::Decimal;
+    d.settings.endnote_format = letra_doc::section::NumFormat::Decimal;
     // The numbering changed: its notes' paragraph written from the model, numbered anew.
     assert_eq!(citations(&d, false), ["C", "D", "1"]);
 }

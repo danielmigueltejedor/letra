@@ -1,4 +1,4 @@
-//! WordCraft layout: turns a [`Document`] into pages.
+//! Letra layout: turns a [`Document`] into pages.
 //!
 //! - [`para`]: one paragraph → lines (shaping, first-fit line breaking, tabs, list labels,
 //!   alignment). Results are memoised per paragraph revision in a [`LayoutCache`].
@@ -17,7 +17,7 @@
 /// test threads.
 #[cfg(test)]
 fn test_fonts() {
-    assert!(wordcraft_fonts::FontDb::init_test_fonts(), "layout tests must initialize fixed fonts before any global font lookup");
+    assert!(letra_fonts::FontDb::init_test_fonts(), "layout tests must initialize fixed fonts before any global font lookup");
 }
 
 pub mod balloons;
@@ -40,12 +40,12 @@ use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use wordcraft_doc::numbering::{Counters, Level};
-use wordcraft_doc::para::{Anchor, Float, FloatAlign, InlineObject, Wrap, WrapText};
-use wordcraft_doc::props::{Border, CharProps, HeightRule, Rgb, TableFloat, TextDirection};
-use wordcraft_doc::section::{HeaderSet, SectionProps, SectionStart};
-use wordcraft_doc::{Block, Blocks, Document, Paragraph, Path, StoryRef};
-use wordcraft_geom::{Point, Rect, Spin};
+use letra_doc::numbering::{Counters, Level};
+use letra_doc::para::{Anchor, Float, FloatAlign, InlineObject, Wrap, WrapText};
+use letra_doc::props::{Border, CharProps, HeightRule, Rgb, TableFloat, TextDirection};
+use letra_doc::section::{HeaderSet, SectionProps, SectionStart};
+use letra_doc::{Block, Blocks, Document, Paragraph, Path, StoryRef};
+use letra_geom::{Point, Rect, Spin};
 
 pub use fields::FieldCtx;
 pub use hit::VisualStep;
@@ -247,12 +247,12 @@ pub struct TypingWord {
 pub struct ProofOptions {
     /// Mark grammar errors as you type.
     pub grammar: bool,
-    pub spelling: wordcraft_proof::Options,
+    pub spelling: letra_proof::Options,
 }
 
 impl Default for ProofOptions {
     fn default() -> Self {
-        ProofOptions { grammar: true, spelling: wordcraft_proof::Options::default() }
+        ProofOptions { grammar: true, spelling: letra_proof::Options::default() }
     }
 }
 
@@ -335,7 +335,7 @@ pub fn layout(doc: &Document, cache: &mut LayoutCache, opts: &LayoutOptions) -> 
     // paginating: lay out again with the totals found until they hold (bounded). Footnotes
     // numbered again on each page likewise settle over a few more passes.
     let per_page = opts.view == ViewMode::Print
-        && doc.sections().iter().any(|(_, s)| doc.note_options(s, false).num_restart == wordcraft_doc::section::NoteRestart::EachPage);
+        && doc.sections().iter().any(|(_, s)| doc.note_options(s, false).num_restart == letra_doc::section::NoteRestart::EachPage);
     let mut note_pages = HashMap::new();
     let mut note_passes = 1;
     let mut totals = Totals::first_guess(doc.sections().len());

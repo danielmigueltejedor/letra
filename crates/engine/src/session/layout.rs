@@ -12,7 +12,7 @@ impl Session {
     }
 
     /// [`Session::layout`] with `typing` as the word being typed.
-    fn layout_with(&mut self, typing: Option<wordcraft_layout::TypingWord>) -> Arc<DocLayout> {
+    fn layout_with(&mut self, typing: Option<letra_layout::TypingWord>) -> Arc<DocLayout> {
         let mode = if self.view.read_mode { ViewMode::Read } else { self.view.mode };
         let width = match mode {
             ViewMode::Read => self.view.read_width,
@@ -29,7 +29,7 @@ impl Session {
         let shown = (self.view.marks || self.prefs.marks.hidden, self.view.field_codes);
         // A dictionary or Language pack installed, removed or edited (in this document's window or
         // any other) proofs it again, open or parked.
-        let rev = (self.rev, wordcraft_proof::dictionary_generation());
+        let rev = (self.rev, letra_proof::dictionary_generation());
         let (proofing, numeral) = (self.view.proofing, self.view.numeral);
         let fits = |e: &Option<LayoutEntry>| {
             e.as_ref().is_some_and(|(r, w, h, m, sp, _, pf, o, hd, n, t, sh)| {
@@ -70,12 +70,12 @@ impl Session {
             comment_balloons: false,
             field_codes: shown.1,
             outline: outline.clone(),
-            proof: wordcraft_layout::ProofOptions { grammar: self.prefs.mark_grammar, spelling: self.prefs.spelling() },
+            proof: letra_layout::ProofOptions { grammar: self.prefs.mark_grammar, spelling: self.prefs.spelling() },
             typing_word: typing,
             filename: filename.clone(),
             filepath: filepath.clone(),
         };
-        let l = Arc::new(wordcraft_layout::layout(&self.doc, &mut self.cache, &opts));
+        let l = Arc::new(letra_layout::layout(&self.doc, &mut self.cache, &opts));
         let [newest, _] = std::mem::take(&mut self.layout);
         self.layout =
             [Some((rev, width, height, mode, spacing, l.clone(), self.view.proofing, outline, deleted, self.view.numeral, typing, shown)), newest];
@@ -83,12 +83,12 @@ impl Session {
     }
 
     /// The recorded word while the caret and the word are as typing left them; else drops it.
-    fn typing_word(&mut self) -> Option<wordcraft_layout::TypingWord> {
+    fn typing_word(&mut self) -> Option<letra_layout::TypingWord> {
         let t = self.typing.as_ref()?;
         let p = if self.sel.is_collapsed() && self.sel.focus == t.at { self.doc.para_at(&t.at) } else { None };
         match p {
             Some(p) if typed_range(&p.text, t.at.off) == Some((t.start, t.end)) => {
-                Some(wordcraft_layout::TypingWord { rev: p.rev, start: t.start, end: t.end })
+                Some(letra_layout::TypingWord { rev: p.rev, start: t.start, end: t.end })
             }
             _ => {
                 self.typing = None;
@@ -147,7 +147,7 @@ impl Session {
         let layout = copy.run(id, params).is_ok().then(|| {
             let typing = typing.and_then(|t| {
                 let p = copy.doc.para_at(&at)?;
-                (t.end <= p.len()).then_some(wordcraft_layout::TypingWord { rev: p.rev, ..t })
+                (t.end <= p.len()).then_some(letra_layout::TypingWord { rev: p.rev, ..t })
             });
             copy.layout_with(typing)
         });
@@ -179,7 +179,7 @@ impl Session {
             filepath: Some(Arc::from(fn_path.as_str())),
             ..Default::default()
         };
-        Arc::new(wordcraft_layout::layout(doc, &mut LayoutCache::new(), &opts))
+        Arc::new(letra_layout::layout(doc, &mut LayoutCache::new(), &opts))
     }
 
     /// Invalidate the cached layout (fonts changed etc.).
@@ -198,8 +198,8 @@ impl Session {
             .prefs
             .default_language
             .as_deref()
-            .and_then(wordcraft_proof::lang::normalize_tag)
-            .or_else(|| tag.and_then(wordcraft_proof::lang::normalize_tag));
+            .and_then(letra_proof::lang::normalize_tag)
+            .or_else(|| tag.and_then(letra_proof::lang::normalize_tag));
         if self.editing_lang == tag {
             return;
         }

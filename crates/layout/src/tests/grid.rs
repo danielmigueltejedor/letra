@@ -3,8 +3,8 @@
 
 #[allow(unused_imports)]
 use crate::*;
-use wordcraft_doc::props::LineSpacing;
-use wordcraft_doc::section::{DocGrid, DocGridType};
+use letra_doc::props::LineSpacing;
+use letra_doc::section::{DocGrid, DocGridType};
 
 fn lay(doc: &Document) -> DocLayout {
     layout(doc, &mut LayoutCache::new(), &LayoutOptions::default())
@@ -69,7 +69,7 @@ fn character_grid_places_east_asian_text_on_the_pitch() {
     crate::test_fonts();
     let text = "日本語の文書abc";
     // The default font size plus 2.5 pt: a pitch unlike any font's advance.
-    let lines = wordcraft_doc::SectionProps { doc_grid: Some(DocGrid { kind: DocGridType::Lines, ..Default::default() }), ..Default::default() };
+    let lines = letra_doc::SectionProps { doc_grid: Some(DocGrid { kind: DocGridType::Lines, ..Default::default() }), ..Default::default() };
     let size = para::Grid::of(&Document::from_text(""), &lines).font_size;
     let cs = DocGrid::char_space_for(size + 2.5, size);
     let d = with_grid(text, DocGridType::LinesAndChars, cs);

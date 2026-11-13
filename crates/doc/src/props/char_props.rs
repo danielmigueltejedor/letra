@@ -295,7 +295,7 @@ pub struct CharProps {
     /// stresses words; `Some(EmphasisMark::None)` turns off one a style sets.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub emphasis: Option<EmphasisMark>,
-    /// OpenType ligatures (`w14:ligatures`). `None` leaves WordCraft's default: standard and
+    /// OpenType ligatures (`w14:ligatures`). `None` leaves Letra's default: standard and
     /// contextual ligatures.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ligatures: Option<Ligatures>,

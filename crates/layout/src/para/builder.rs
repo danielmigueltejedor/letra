@@ -6,7 +6,7 @@ use super::chars::{
 use super::grid::east_asian;
 use super::model::{ClKind, Cluster, Enclosed, Glyph, ParaEnv, RubyLayout, StyleRun, SymbolRun};
 use super::{Arc, Document, FaceRef, NumeralMode, ResolvedChar, RubyAlign, SOFT_HYPHEN};
-use wordcraft_fonts::ShapeContext;
+use letra_fonts::ShapeContext;
 
 pub(super) struct Builder<'a> {
     pub(super) env: &'a ParaEnv<'a>,
@@ -87,7 +87,7 @@ impl<'a> Builder<'a> {
                 _ if !complex && ea_face.is_some() && crate::kinsoku::is_east_asian(c) => ea_face,
                 _ => {
                     let (bold, italic) = if complex { (rc.bold_cs, rc.italic_cs) } else { (rc.bold, rc.italic) };
-                    wordcraft_fonts::FontDb::global().fallback_styled(dc, primary.id(), bold, italic).map(|f| FaceRef::of(&f))
+                    letra_fonts::FontDb::global().fallback_styled(dc, primary.id(), bold, italic).map(|f| FaceRef::of(&f))
                 }
             };
             let key = SegKey { face, small: rc.small_caps && !rc.caps && c.is_lowercase(), complex, rtl };
@@ -109,7 +109,7 @@ impl<'a> Builder<'a> {
 
     /// Style index for a resolved char in `face` (caps-scaled `size` override for small caps).
     pub(super) fn style(&mut self, rc: &Arc<ResolvedChar>, face_override: Option<FaceRef>, small: bool) -> u32 {
-        let r = wordcraft_fonts::word::resolve(lookup_family(self.env.doc, &rc.font), rc.bold, rc.italic);
+        let r = letra_fonts::word::resolve(lookup_family(self.env.doc, &rc.font), rc.bold, rc.italic);
         let face = face_override.unwrap_or(r.face);
         // The display list reads every run's format (link target, strike kind, underline colour,
         // baseline shift…) from its StyleRun, so runs share one only when their formats are equal.
@@ -137,9 +137,9 @@ impl<'a> Builder<'a> {
         let size = rc.draw_size() * if small { 0.8 } else { 1.0 };
         // A symbol font that isn't installed, or is installed one em tall (Apple's Symbol), takes
         // the height Word gives it.
-        let (a, d) = match wordcraft_fonts::word::symbol_line(&rc.font, &r) {
+        let (a, d) = match letra_fonts::word::symbol_line(&rc.font, &r) {
             Some((a, d)) => (a * face.upem, d * face.upem),
-            None => wordcraft_fonts::word::line_metrics(&face),
+            None => letra_fonts::word::line_metrics(&face),
         };
         let k = size as f64 / face.upem.max(1.0);
         // A fallback face (letters the requested font lacks) is emboldened or slanted when it has
@@ -172,7 +172,7 @@ impl<'a> Builder<'a> {
     /// reporting (most Word bullets would be). A blank name (a file's `w:ascii=" "`) names no font
     /// to report.
     fn note_substituted(&mut self, font: &str, drawn: FaceRef) {
-        if font.trim().is_empty() || wordcraft_doc::symbol_fonts::is_symbol_font(font) {
+        if font.trim().is_empty() || letra_doc::symbol_fonts::is_symbol_font(font) {
             return;
         }
         let font = reported_font_name(font);
@@ -247,7 +247,7 @@ impl<'a> Builder<'a> {
         // bold and italic.
         let rc_cs: Option<Arc<ResolvedChar>> = text.chars().any(|c| rc.uses_complex(c)).then(|| Arc::new(rc.complex()));
         let family = lookup_family(self.env.doc, &rc.font);
-        let resolved = wordcraft_fonts::word::resolve(family, rc.bold, rc.italic);
+        let resolved = letra_fonts::word::resolve(family, rc.bold, rc.italic);
         let primary = resolved.face;
         // Symbol-font characters are laid out as their Unicode equivalents.
         let sym = SymbolRun::of(&rc.font, &resolved);
@@ -255,7 +255,7 @@ impl<'a> Builder<'a> {
         // A font isn't installed when it was substituted, or looked up as a missing roman font.
         let resolved_cs = rc_cs.as_ref().map(|r| {
             let family = lookup_family(self.env.doc, &r.font);
-            let resolved = wordcraft_fonts::word::resolve(family, r.bold, r.italic);
+            let resolved = letra_fonts::word::resolve(family, r.bold, r.italic);
             (resolved.face, resolved.substituted || family != r.font)
         });
         let primary_cs = resolved_cs.map(|(face, _)| face);
@@ -265,7 +265,7 @@ impl<'a> Builder<'a> {
             .font_ea
             .as_deref()
             .filter(|f| !f.eq_ignore_ascii_case(&rc.font) && text.chars().any(east_asian))
-            .map(|f| (f, wordcraft_fonts::word::resolve(f, rc.bold, rc.italic)));
+            .map(|f| (f, letra_fonts::word::resolve(f, rc.bold, rc.italic)));
         let primary_ea = wanted_ea.filter(|(_, r)| !r.substituted).map(|(_, r)| r.face);
         // The levels by byte of `text`, from `lbase` on.
         let (levels, lbase): (&[u8], usize) = match dir {
@@ -295,7 +295,7 @@ impl<'a> Builder<'a> {
             if ea.is_empty() {
                 None
             } else {
-                wordcraft_fonts::FontDb::global().fallback_for_run(&ea, primary.id(), rc.bold, rc.italic).map(|f| FaceRef::of(&f))
+                letra_fonts::FontDb::global().fallback_for_run(&ea, primary.id(), rc.bold, rc.italic).map(|f| FaceRef::of(&f))
             }
         };
         let segs = self.segment_keys(SegmentInput {
@@ -320,7 +320,7 @@ impl<'a> Builder<'a> {
             names_east_asian: wanted_ea.is_some(),
         };
         self.note_missing_fonts(text, &segs, (primary, primary_cs, primary_ea), &missing);
-        let no_kern = [wordcraft_fonts::feature_value(b"kern", 0)];
+        let no_kern = [letra_fonts::feature_value(b"kern", 0)];
         for (a, b, key) in segs {
             let Some(sub) = text.get(a..b) else { continue };
             let rc = match (&rc_cs, key.complex) {
@@ -387,23 +387,23 @@ impl<'a> Builder<'a> {
             };
             let from = usize::from(rc.kerned());
             let to = if ligatures.is_some() { all.len() } else { 1 };
-            let features: &[wordcraft_fonts::Feature] = all.get(from..to).unwrap_or_default();
+            let features: &[letra_fonts::Feature] = all.get(from..to).unwrap_or_default();
             // Letters join across a change of font or direction inside the run too.
             let around = ShapeContext {
                 before: if a == 0 { around.before } else { text.get(..a).unwrap_or("") },
                 after: if b == text.len() { around.after } else { text.get(b..).unwrap_or("") },
             };
             let shaped = if use_levels {
-                wordcraft_fonts::shape_run_in(&st.face, shape_text, features, map, key.rtl, around)
+                letra_fonts::shape_run_in(&st.face, shape_text, features, map, key.rtl, around)
             } else {
-                wordcraft_fonts::shape_in(&st.face, shape_text, features, map, around)
+                letra_fonts::shape_in(&st.face, shape_text, features, map, around)
             };
             let k = st.size / st.face.upem.max(1.0) as f32;
             let hscale = rc.scale / 100.0;
             // Group glyphs by cluster byte offset; graphemes may span several shaper clusters.
             // Complex-script syllables the graphemes split (Myanmar vowel signs, stacked
             // consonants) stay one cluster: the caret never stops inside them.
-            let mut bounds: Vec<usize> = wordcraft_doc::cluster::cluster_starts(shape_text);
+            let mut bounds: Vec<usize> = letra_doc::cluster::cluster_starts(shape_text);
             if expands {
                 // The capitals drawn for one character (the two S of ß) are one cluster: the
                 // caret, selection and line breaking never stop inside the character.
@@ -563,10 +563,10 @@ impl<'a> Builder<'a> {
         texts: &[&str],
         (start, end): (usize, usize),
         rc: &Arc<ResolvedChar>,
-        align: wordcraft_doc::eq::OAlign,
+        align: letra_doc::eq::OAlign,
         (width, dy): (f32, f32),
     ) -> Option<usize> {
-        use wordcraft_doc::eq::OAlign;
+        use letra_doc::eq::OAlign;
         let (c0, s0) = (self.clusters.len(), self.shown.len());
         for t in texts {
             self.shape_atomic(t, start, end, rc);
@@ -610,20 +610,20 @@ impl<'a> Builder<'a> {
 
 /// Lay out an `EQ \o` field (ECMA-376 Part 1 §17.16.5.20): its arguments drawn on top of one
 /// another, as one cluster. An enclosure symbol among them (○ □ △ ◇, see
-/// [`wordcraft_doc::eq::EncloseShape`]) is drawn as a shape around the text rather than as a
+/// [`letra_doc::eq::EncloseShape`]) is drawn as a shape around the text rather than as a
 /// glyph, so it never depends on the font: "shrink text" scales the text to fit inside a shape
 /// one em high, "enlarge symbol" grows the shape around text at its own size.
 pub(super) fn overstrike(
     b: &mut Builder,
-    o: &wordcraft_doc::eq::Overstrike,
+    o: &letra_doc::eq::Overstrike,
     instr: &str,
     start: usize,
     end: usize,
     rc: &Arc<ResolvedChar>,
     enclosures: &mut Vec<(usize, Enclosed)>,
 ) {
-    use wordcraft_doc::eq::{EncloseShape, EncloseStyle, Enclosure};
-    use wordcraft_doc::para::ShapeKind;
+    use letra_doc::eq::{EncloseShape, EncloseStyle, Enclosure};
+    use letra_doc::para::ShapeKind;
     let shapes: Vec<EncloseShape> = o.args.iter().filter_map(|a| EncloseShape::from_symbol(a)).collect();
     let texts: Vec<&str> = o.args.iter().filter(|a| !a.is_empty() && EncloseShape::from_symbol(a).is_none()).map(String::as_str).collect();
     let Some(shape) = shapes.first().copied() else {

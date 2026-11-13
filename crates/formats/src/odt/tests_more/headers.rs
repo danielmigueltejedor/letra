@@ -2,26 +2,26 @@
 //! that already opens them.
 
 use crate::odt::{export, import};
-use wordcraft_doc::para::InlineObject;
-use wordcraft_doc::props::CharProps;
-use wordcraft_doc::{Document, Paragraph, Part, PartKind, para_block};
+use letra_doc::para::InlineObject;
+use letra_doc::props::CharProps;
+use letra_doc::{Document, Paragraph, Part, PartKind, para_block};
 
-fn text_para(s: &str, props: CharProps) -> std::sync::Arc<wordcraft_doc::Block> {
+fn text_para(s: &str, props: CharProps) -> std::sync::Arc<letra_doc::Block> {
     let mut p = Paragraph::new();
     p.text = s.into();
-    p.runs = vec![wordcraft_doc::para::Run { len: s.len(), props }];
+    p.runs = vec![letra_doc::para::Run { len: s.len(), props }];
     para_block(p)
 }
 
-fn page_field_para(before: &str) -> std::sync::Arc<wordcraft_doc::Block> {
+fn page_field_para(before: &str) -> std::sync::Arc<letra_doc::Block> {
     let mut p = Paragraph::new();
-    p.text = format!("{before}{}", wordcraft_doc::para::OBJ);
+    p.text = format!("{before}{}", letra_doc::para::OBJ);
     p.objects.push(InlineObject::Field { instr: "PAGE".into(), result: "1".into(), locked: false, dirty: false, code: false, form: String::new() });
-    p.runs = vec![wordcraft_doc::para::Run { len: p.text.len(), props: Default::default() }];
+    p.runs = vec![letra_doc::para::Run { len: p.text.len(), props: Default::default() }];
     para_block(p)
 }
 
-fn part(kind: PartKind, blocks: Vec<std::sync::Arc<wordcraft_doc::Block>>) -> Part {
+fn part(kind: PartKind, blocks: Vec<std::sync::Arc<letra_doc::Block>>) -> Part {
     Part { kind, blocks, body: Default::default() }
 }
 
@@ -47,7 +47,7 @@ fn headers_and_footers_are_written_and_read_back() {
     assert_eq!(part_text(&back, s.headers.default), "Bold header");
     assert_eq!(part_text(&back, s.headers.first), "First page header");
     assert!(s.title_page);
-    assert_eq!(part_text(&back, s.footers.default).replace(wordcraft_doc::para::OBJ, "#"), "Page #");
+    assert_eq!(part_text(&back, s.footers.default).replace(letra_doc::para::OBJ, "#"), "Page #");
     // The header's text keeps its formatting; the footer its page field.
     let h = back.parts.get(&s.headers.default.unwrap()).unwrap().blocks[0].as_para().unwrap();
     assert_eq!(h.runs[0].props.bold, Some(true));
@@ -75,7 +75,7 @@ fn each_section_keeps_its_own_header() {
     let mut d = Document::new();
     let mut first = Paragraph::new();
     first.text = "One".into();
-    first.runs = vec![wordcraft_doc::para::Run { len: 3, props: Default::default() }];
+    first.runs = vec![letra_doc::para::Run { len: 3, props: Default::default() }];
     let mut sec = d.last_section.clone();
     sec.headers.default = Some(1);
     first.section = Some(Box::new(sec));
@@ -120,7 +120,7 @@ fn cm(v: f32) -> f32 {
 fn a_header_starts_at_the_page_margin_and_the_text_after_it() {
     // ODF puts the header at the page margin and the text below the header's band; Word measures
     // both from the page edge. Whether the band's height takes in its spacing the standard
-    // doesn't say: WordCraft adds it (a 2 cm header with 1 cm spacing puts the text 3 cm below
+    // doesn't say: Letra adds it (a 2 cm header with 1 cm spacing puts the text 3 cm below
     // the margin).
     let content = format!(
         r#"<office:document-content {}><office:body><office:text><text:p>x</text:p></office:text></office:body></office:document-content>"#,
@@ -264,7 +264,7 @@ fn a_watermark_is_a_shape_in_the_header_and_reads_back_as_one() {
     // header, here one made for it), and read back as the watermark, not a shape.
     let mut d = Document::new();
     d.body = vec![para_block(Paragraph::with_text("Body", CharProps::default()))];
-    d.settings.watermark = Some(wordcraft_doc::Watermark { text: "CONFIDENTIAL".into(), ..Default::default() });
+    d.settings.watermark = Some(letra_doc::Watermark { text: "CONFIDENTIAL".into(), ..Default::default() });
     let saved = export(&d).unwrap();
     let styles = crate::odt::tests::entry(&saved, "styles.xml");
     assert!(styles.contains("draw:name=\"PowerPlusWaterMarkObject\"") && styles.contains("draw:text-path=\"true\""), "{styles}");
@@ -287,11 +287,11 @@ fn a_watermark_is_a_shape_in_the_header_and_reads_back_as_one() {
     );
 }
 
-/// A watermark added, changed or removed in WordCraft reaches a file's page definitions.
+/// A watermark added, changed or removed in Letra reaches a file's page definitions.
 #[test]
 fn a_watermark_change_to_a_file_is_saved() {
     // A file's own page definitions were written back whatever happened to its watermark, so one
-    // added, changed or removed in WordCraft was gone from the saved file.
+    // added, changed or removed in Letra was gone from the saved file.
     let ns = crate::odt::tests::NS_T;
     let styles = format!(
         r#"<office:document-styles {ns}><office:automatic-styles><style:page-layout style:name="pm1" style:page-usage="mirrored"><style:page-layout-properties fo:page-width="21cm" fo:page-height="29.7cm" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm"/></style:page-layout></office:automatic-styles><office:master-styles><style:master-page style:name="Standard" style:page-layout-name="pm1"/></office:master-styles></office:document-styles>"#
@@ -304,7 +304,7 @@ fn a_watermark_change_to_a_file_is_saved() {
 
     // Added.
     let mut d = import(&plain).unwrap();
-    d.settings.watermark = Some(wordcraft_doc::Watermark { text: "DRAFT".into(), ..Default::default() });
+    d.settings.watermark = Some(letra_doc::Watermark { text: "DRAFT".into(), ..Default::default() });
     let saved = export(&d).unwrap();
     let s = crate::odt::tests::entry(&saved, "styles.xml");
     assert!(s.contains(shape) && s.contains("DRAFT"), "added: {s}");
@@ -331,12 +331,12 @@ fn a_watermark_change_to_a_file_is_saved() {
 
     // One with no text isn't written, so it's no change to the file's page definitions.
     let mut d = import(&plain).unwrap();
-    d.settings.watermark = Some(wordcraft_doc::Watermark { text: "  ".into(), ..Default::default() });
+    d.settings.watermark = Some(letra_doc::Watermark { text: "  ".into(), ..Default::default() });
     let s = styles_of(&d);
     assert!(s.contains(r#"style:page-usage="mirrored""#) && !s.contains(shape), "no text: {s}");
 }
 
-/// Different Odd & Even Pages turned on or off in WordCraft reaches a file's page definitions.
+/// Different Odd & Even Pages turned on or off in Letra reaches a file's page definitions.
 #[test]
 fn different_odd_and_even_pages_changed_in_a_file_is_saved() {
     // A file's own page definitions were written back whatever happened to this setting, so the
@@ -391,7 +391,7 @@ fn libreoffices_watermark_reads_as_the_watermark() {
         format!("<office:document-content {ns}><office:body><office:text><text:p>x</text:p></office:text></office:body></office:document-content>");
     let d = import(&crate::odt::tests::package(&content, Some(&styles))).unwrap();
     let wm = d.settings.watermark.expect("the watermark");
-    assert_eq!((wm.text.as_str(), wm.color, wm.diagonal, wm.semitransparent), ("DRAFT", wordcraft_doc::Rgb(0xc0, 0xc0, 0xc0), true, true));
+    assert_eq!((wm.text.as_str(), wm.color, wm.diagonal, wm.semitransparent), ("DRAFT", letra_doc::Rgb(0xc0, 0xc0, 0xc0), true, true));
     let [w, h] = wm.size.unwrap();
     assert!((w - 6.69 * 72.0).abs() < 0.5 && (h - 2.24 * 72.0).abs() < 0.5);
 }

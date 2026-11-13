@@ -1,4 +1,4 @@
-//! Text fields (ODF 1.3 §7.3–7.7) and the Word field codes WordCraft keeps them as.
+//! Text fields (ODF 1.3 §7.3–7.7) and the Word field codes Letra keeps them as.
 //!
 //! Read: a field element becomes a field with that code and the element's text as its result:
 //! a date or time with its date style as a `\@` picture, a sequence numbering figures or
@@ -99,7 +99,7 @@ fn with_fixed(el: &str, fixed: bool) -> String {
 }
 
 /// The Word field code for the `text:` field element `local` with attributes `a`, or `None`
-/// when it is no field WordCraft keeps (then its text is read as text).
+/// when it is no field Letra keeps (then its text is read as text).
 pub(super) fn instr_of(local: &str, a: &Attrs, picture: impl Fn(&str) -> Option<String>) -> Option<String> {
     // Fixed, unless it holds no value to be fixed at (LibreOffice's templates: a date that shows
     // the day the document is made from them).
@@ -173,7 +173,7 @@ pub(super) fn instr_of(local: &str, a: &Attrs, picture: impl Fn(&str) -> Option<
                 _ => format!("REF {name} \\h"),
             })
         }
-        // The sender's details (§7.3.6–7.3.7), from the application's user data: WordCraft's
+        // The sender's details (§7.3.6–7.3.7), from the application's user data: Letra's
         // own `SENDER` field code, shown as its last result.
         _ if local.strip_prefix("sender-").is_some_and(|p| SENDER_PARTS.contains(&p)) => local.strip_prefix("sender-").map(|p| format!("SENDER {p}")),
         _ => {
@@ -285,7 +285,7 @@ const MAX_PROP_VALUE: usize = 4096;
 
 /// A custom property of ODF value type `t` (`office:value-type`, `meta:value-type`) and value
 /// `v`: as a document's custom property (OOXML variant type, value).
-pub(super) fn custom_prop(name: &str, t: Option<&str>, v: &str) -> Option<wordcraft_doc::CustomProp> {
+pub(super) fn custom_prop(name: &str, t: Option<&str>, v: &str) -> Option<letra_doc::CustomProp> {
     let name = clean_prop_name(name)?;
     let kind = match t.map(str::trim) {
         Some("float" | "percentage" | "currency") => "r8",
@@ -312,12 +312,12 @@ pub(super) fn custom_prop(name: &str, t: Option<&str>, v: &str) -> Option<wordcr
             }
         };
     }
-    Some(wordcraft_doc::CustomProp { name, kind: kind.into(), value, link_target: None, odf_user_field: false })
+    Some(letra_doc::CustomProp { name, kind: kind.into(), value, link_target: None, odf_user_field: false })
 }
 
 /// The custom properties of a package's `meta.xml` (§4.3.2.14 `meta:user-defined`).
-pub(super) fn meta_props(xml: &[u8]) -> Vec<wordcraft_doc::CustomProp> {
-    let mut out: Vec<wordcraft_doc::CustomProp> = Vec::new();
+pub(super) fn meta_props(xml: &[u8]) -> Vec<letra_doc::CustomProp> {
+    let mut out: Vec<letra_doc::CustomProp> = Vec::new();
     let mut open: Option<(String, Option<String>, String)> = None;
     super::events(xml, |ev| match ev {
         super::Ev::Start(q, a) if q == "meta:user-defined" => {
@@ -346,8 +346,8 @@ pub(super) fn meta_props(xml: &[u8]) -> Vec<wordcraft_doc::CustomProp> {
 
 /// The user fields a package's `content.xml` declares (§7.4.7 `text:user-field-decl`), as custom
 /// properties.
-pub(super) fn user_fields(xml: &[u8]) -> Vec<wordcraft_doc::CustomProp> {
-    let mut out: Vec<wordcraft_doc::CustomProp> = Vec::new();
+pub(super) fn user_fields(xml: &[u8]) -> Vec<letra_doc::CustomProp> {
+    let mut out: Vec<letra_doc::CustomProp> = Vec::new();
     super::events(xml, |ev| {
         if let super::Ev::Start(q, a) = ev
             && q == "text:user-field-decl"
@@ -364,7 +364,7 @@ pub(super) fn user_fields(xml: &[u8]) -> Vec<wordcraft_doc::CustomProp> {
             if let Some(p) = get(&a, "text:name").and_then(|n| custom_prop(n, t, v))
                 && !out.iter().any(|o| o.name == p.name)
             {
-                out.push(wordcraft_doc::CustomProp { odf_user_field: true, ..p });
+                out.push(letra_doc::CustomProp { odf_user_field: true, ..p });
             }
         }
     });
@@ -379,7 +379,7 @@ pub(super) fn bib_tag(id: &str) -> Option<String> {
     (!t.is_empty()).then_some(t)
 }
 
-/// ODF bibliography types (§19.817 `text:bibliography-type`) and WordCraft's source kinds.
+/// ODF bibliography types (§19.817 `text:bibliography-type`) and Letra's source kinds.
 const BIB_KINDS: [(&str, &str); 10] = [
     ("book", "book"),
     ("inbook", "bookSection"),
@@ -396,12 +396,12 @@ const BIB_KINDS: [(&str, &str); 10] = [
 /// The source a `text:bibliography-mark` carries: its identifier as the tag, its type as the
 /// kind, and its author, title, year, publisher, address, journal, volume, pages, URL, editor,
 /// edition, number (issue) and month. `None` without an identifier.
-pub(super) fn bib_source(a: &Attrs) -> Option<wordcraft_doc::Source> {
+pub(super) fn bib_source(a: &Attrs) -> Option<letra_doc::Source> {
     let tag = bib_tag(get(a, "text:identifier")?)?;
     let v = |k: &str| get(a, k).map(|s| s.chars().filter(|c| !c.is_control()).take(1024).collect::<String>()).unwrap_or_default();
     let t = get(a, "text:bibliography-type").map(str::trim).unwrap_or("");
     let kind = BIB_KINDS.iter().find(|(o, _)| *o == t).map_or("other", |(_, k)| k).to_string();
-    Some(wordcraft_doc::Source {
+    Some(letra_doc::Source {
         tag,
         kind,
         author: v("text:author"),
@@ -422,7 +422,7 @@ pub(super) fn bib_source(a: &Attrs) -> Option<wordcraft_doc::Source> {
 }
 
 /// A source as a `text:bibliography-mark` around `result` (already escaped).
-pub(super) fn bib_mark(s: &wordcraft_doc::Source, result: &str) -> String {
+pub(super) fn bib_mark(s: &letra_doc::Source, result: &str) -> String {
     let t = BIB_KINDS.iter().find(|(_, k)| *k == s.kind).map_or("misc", |(o, _)| o);
     let author = if s.corporate.is_empty() { &s.author } else { &s.corporate };
     let mut a = format!(" text:identifier=\"{}\" text:bibliography-type=\"{t}\"", x(&s.tag));

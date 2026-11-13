@@ -1,7 +1,7 @@
 //! A row of a nested table marked "can't split" moves on with its outer row, as in Word
 //! (docxide-pdf `nested-first-row-*-cant1`): the outer row splits only above it.
 use crate::*;
-use wordcraft_doc::{Table, para_block};
+use letra_doc::{Table, para_block};
 
 fn one_line_paras(what: &str, n: usize) -> Vec<Arc<Block>> {
     (0..n)
@@ -159,7 +159,7 @@ fn a_bottom_aligned_cell_keeps_its_nested_cant_split_row_whole() {
     // where its nested row (lines 2 to 32) runs through the room of about 22 lines.
     let mut outer = Table::new(1, 2, 440.0);
     outer.rows[0].cells[0].blocks = one_line_paras("Tall", 50);
-    outer.rows[0].cells[1].props.valign = Some(wordcraft_doc::props::VAlign::Bottom);
+    outer.rows[0].cells[1].props.valign = Some(letra_doc::props::VAlign::Bottom);
     let mut blocks = one_line_paras("Prefix", 2);
     blocks.extend([kept_nested(30), empty()]);
     outer.rows[0].cells[1].blocks = blocks;
@@ -200,8 +200,8 @@ fn a_merged_cell_doesnt_stretch_its_cant_split_row() {
     // the room. The cut stays in row 1.
     let mut nested = Table::new(2, 2, 300.0);
     nested.rows[0].props.cant_split = true;
-    nested.rows[0].cells[0].props.vmerge = wordcraft_doc::props::VMerge::Restart;
-    nested.rows[1].cells[0].props.vmerge = wordcraft_doc::props::VMerge::Continue;
+    nested.rows[0].cells[0].props.vmerge = letra_doc::props::VMerge::Restart;
+    nested.rows[1].cells[0].props.vmerge = letra_doc::props::VMerge::Continue;
     nested.rows[0].cells[0].blocks = one_line_paras("Merged", 1);
     nested.rows[0].cells[1].blocks = one_line_paras("Short", 1);
     nested.rows[1].cells[1].blocks = one_line_paras("Long", 20);

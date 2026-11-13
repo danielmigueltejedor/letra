@@ -1,6 +1,6 @@
 //! Tables of contents and other generated indexes read (ODF 1.3 §8): their entries as last
 //! generated, with the Word field they stand for — in the title paragraph when there is one,
-//! as WordCraft inserts a table, or around the entries — so Update Table finds them.
+//! as Letra inserts a table, or around the entries — so Update Table finds them.
 
 use super::{Attrs, Body, FBlock, Fmt, Inline, get};
 use crate::odt::writer::{IndexKind, index_instr};

@@ -1,10 +1,10 @@
-//! WordCraft's choices where the standard leaves something open (`docs/odf-interpretation.md`)
+//! Letra's choices where the standard leaves something open (`docs/odf-interpretation.md`)
 //! fill in only what a file leaves unsaid: a value the file states is the file's.
 
 use crate::odt::import;
 use crate::odt::tests::NS_T;
-use wordcraft_doc::para::InlineObject;
-use wordcraft_doc::props::Rgb;
+use letra_doc::para::InlineObject;
+use letra_doc::props::Rgb;
 
 const NS_D: &str =
     r#"xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0""#;
@@ -15,7 +15,7 @@ fn cm(v: f32) -> f32 {
 
 #[test]
 fn values_a_file_states_are_kept() {
-    // A file that states every value WordCraft could fill in: header height and spacing and
+    // A file that states every value Letra could fill in: header height and spacing and
     // whether it is dynamic, page columns and their gap, tabs from the indent, a shape's fill and
     // line.
     let styles = format!(
@@ -68,7 +68,7 @@ fn a_sections_column_balance_is_its_own_and_is_written() {
     assert_eq!(balance(r#"text:dont-balance-text-columns="true""#), Some(false));
     assert_eq!(balance(r#"text:dont-balance-text-columns="false""#), Some(true));
     assert_eq!(balance(""), None);
-    // Written as WordCraft lays it out, so every reader balances it the same.
+    // Written as Letra lays it out, so every reader balances it the same.
     for (props, written) in [("", "true"), (r#"text:dont-balance-text-columns="false""#, "false")] {
         let d = import(&doc(props)).unwrap();
         let saved = crate::odt::export(&d).unwrap();
@@ -81,7 +81,7 @@ fn a_sections_column_balance_is_its_own_and_is_written() {
 fn paragraph_spacing_adds_up_as_the_document_says_else_takes_the_larger() {
     // LibreOffice's `AddParaTableSpacing` (settings.xml; false: the larger of the two, observed)
     // says how the space between paragraphs adds up; without it, the larger, as Word. Written back
-    // as WordCraft lays the document out, in a set LibreOffice reads (the `ooo` namespace declared).
+    // as Letra lays the document out, in a set LibreOffice reads (the `ooo` namespace declared).
     let content =
         format!("<office:document-content {NS_T}><office:body><office:text><text:p>a</text:p></office:text></office:body></office:document-content>");
     let with = |add: Option<bool>| {

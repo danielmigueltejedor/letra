@@ -24,7 +24,7 @@ use super::xml::{Ev, events, get};
 pub enum CryptError {
     /// The password doesn't decrypt it (the checksums don't match).
     WrongPassword,
-    /// An encryption WordCraft doesn't support, or a broken package.
+    /// An encryption Letra doesn't support, or a broken package.
     Unsupported(String),
 }
 
@@ -46,7 +46,7 @@ const MAX_ITERATIONS: u32 = 10_000_000;
 /// Most files in a package decrypted.
 const MAX_FILES: usize = 10_000;
 /// Most PBKDF2 work (iterations times the key's 20-byte blocks) for a whole package: a thousand
-/// files as LibreOffice and WordCraft write them (100,000 iterations, a 32-byte key), so many
+/// files as LibreOffice and Letra write them (100,000 iterations, a 32-byte key), so many
 /// files at the per-file cap can't add up to a hang.
 const MAX_WORK: u64 = 200_000_000;
 
@@ -130,7 +130,7 @@ fn read_manifest(xml: &[u8]) -> Vec<(String, Params)> {
 /// Does this package hold encrypted files?
 pub fn is_encrypted(bytes: &[u8]) -> bool {
     // A package with too many entries isn't parsed here: opening it refuses it (`zip_guard`).
-    if wordcraft_doc::zip_guard::check(bytes, crate::MAX_ZIP_ENTRIES).is_err() {
+    if letra_doc::zip_guard::check(bytes, crate::MAX_ZIP_ENTRIES).is_err() {
         return false;
     }
     let Ok(mut z) = zip::ZipArchive::new(Cursor::new(bytes)) else { return false };
@@ -227,7 +227,7 @@ fn checksum(kind: &str, deflated: &[u8]) -> Result<Vec<u8>, CryptError> {
 fn decrypt_file(data: &[u8], p: &Params, password: &str) -> Result<Vec<u8>, CryptError> {
     if p.algorithm != AES256_CBC {
         let what = if p.algorithm.to_ascii_lowercase().contains("blowfish") { "Blowfish".to_string() } else { format!("{:?}", p.algorithm) };
-        return Err(CryptError::Unsupported(format!("this file is encrypted with {what}, which WordCraft can't open")));
+        return Err(CryptError::Unsupported(format!("this file is encrypted with {what}, which Letra can't open")));
     }
     let key = file_key(p, password)?;
     let plain = Zeroizing::new(cbc(&key, &p.iv, data, false)?);
@@ -259,7 +259,7 @@ fn plain_manifest(xml: &str) -> String {
 /// A password-protected package decrypted into a plain one.
 pub fn decrypt(bytes: &[u8], password: &str) -> Result<Vec<u8>, CryptError> {
     let broken = |e: zip::result::ZipError| CryptError::Unsupported(format!("not a valid package ({e})"));
-    wordcraft_doc::zip_guard::check(bytes, crate::MAX_ZIP_ENTRIES).map_err(CryptError::Unsupported)?;
+    letra_doc::zip_guard::check(bytes, crate::MAX_ZIP_ENTRIES).map_err(CryptError::Unsupported)?;
     let mut z = zip::ZipArchive::new(Cursor::new(bytes)).map_err(broken)?;
     let manifest = super::import::read_entry(&mut z, "META-INF/manifest.xml").unwrap_or_default();
     let encrypted = read_manifest(&manifest);

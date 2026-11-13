@@ -1,8 +1,8 @@
 use super::xml::{Attrs, Ev, events, get, length, local};
 use super::{Align, Arc, Columns, Fmt, HashMap, Kind, Rgb, VAlign, model};
 use crate::model::Spacing;
-use wordcraft_doc::props::{Border, BorderStyle, Borders, LineSpacing, TabAlign, TabLeader, TabStop, Underline};
-use wordcraft_doc::section::NumFormat;
+use letra_doc::props::{Border, BorderStyle, Borders, LineSpacing, TabAlign, TabLeader, TabStop, Underline};
+use letra_doc::section::NumFormat;
 
 // ---------------------------------------------------------------------------------------------
 // Import
@@ -23,7 +23,7 @@ struct FmtDelta {
     font: Option<Arc<str>>,
     code: Option<bool>,
     /// What [`Fmt::extra`] holds, as set here (unset fields leave the inherited ones).
-    extra: wordcraft_doc::props::CharProps,
+    extra: letra_doc::props::CharProps,
     /// `style:text-position` raising or lowering text at full size: percent of its height.
     raise: Option<f32>,
 }
@@ -42,7 +42,7 @@ impl FmtDelta {
         // What this turns off stays said on the text, or the style of its paragraph or span would
         // show through; turned back on, it no longer is.
         if self.bold.is_some() || self.italic.is_some() || self.underline.is_some() || self.strike.is_some() {
-            use wordcraft_doc::props::Underline;
+            use letra_doc::props::Underline;
             let mut x = f.extra.take().map(|b| *b).unwrap_or_default();
             if self.strike == Some(false) {
                 x.double_strike = None;
@@ -57,7 +57,7 @@ impl FmtDelta {
                 Some(true) if x.underline == Some(Underline::None) => x.underline = None,
                 _ => {}
             }
-            f.extra = (x != wordcraft_doc::props::CharProps::default()).then(|| Box::new(x));
+            f.extra = (x != letra_doc::props::CharProps::default()).then(|| Box::new(x));
         }
         if self.color.is_some() {
             f.color = self.color;
@@ -74,7 +74,7 @@ impl FmtDelta {
         if let Some(fam) = &self.font {
             f.font = Some(fam.clone());
         }
-        if self.extra != wordcraft_doc::props::CharProps::default() || self.raise.is_some() {
+        if self.extra != letra_doc::props::CharProps::default() || self.raise.is_some() {
             let mut x = f.extra.take().map(|b| *b).unwrap_or_default();
             x.overlay(&self.extra);
             if let Some(r) = self.raise {
@@ -93,7 +93,7 @@ impl FmtDelta {
             }
             x.spacing = x.spacing.filter(|s| *s != 0.0);
             x.scale = x.scale.filter(|s| *s != 100.0);
-            f.extra = (x != wordcraft_doc::props::CharProps::default()).then(|| Box::new(x));
+            f.extra = (x != letra_doc::props::CharProps::default()).then(|| Box::new(x));
         }
     }
 }
@@ -123,7 +123,7 @@ fn underline_kind(a: &Attrs) -> Underline {
 /// The Asian and complex-script fonts, complex-script size, weight and posture and both
 /// languages of a `style:text-properties` element (ODF 1.3 §20.2xx `-asian`/`-complex`
 /// attributes), into `x`.
-fn script_properties(a: &Attrs, x: &mut wordcraft_doc::props::CharProps, faces: &HashMap<String, String>) {
+fn script_properties(a: &Attrs, x: &mut letra_doc::props::CharProps, faces: &HashMap<String, String>) {
     let family = |fam: &str, name: &str| {
         let v = get(a, fam).or_else(|| get(a, name).map(|n| faces.get(n).map_or(n, String::as_str)))?;
         let v = v.split(',').next().unwrap_or("").trim().trim_matches(['\'', '"']);
@@ -201,7 +201,7 @@ fn extra_text_properties(a: &Attrs, d: &mut FmtDelta) {
     // Emphasis marks (§20.370 `style:text-emphasize`): Word's dot, comma (an accent), circle
     // (a disc is a dot) and dot below.
     if let Some(v) = get(a, "style:text-emphasize") {
-        use wordcraft_doc::props::EmphasisMark as E;
+        use letra_doc::props::EmphasisMark as E;
         let mut words = v.split_whitespace();
         let below = v.split_whitespace().nth(1) == Some("below");
         x.emphasis = Some(match words.next() {
@@ -264,7 +264,7 @@ struct StyleInfo {
     cell_picture: Option<(String, String, String)>,
     /// `style:vertical-align` of a table-cell style's `style:table-cell-properties`.
     cell_valign: Option<VAlign>,
-    cell_direction: Option<wordcraft_doc::props::TextDirection>,
+    cell_direction: Option<letra_doc::props::TextDirection>,
     /// `fo:border*` of a table-cell style: each side as stated (`none` an explicit no line).
     cell_borders: Option<Borders>,
     /// `fo:padding*` of a table-cell style (top, left, bottom, right), each as stated.
@@ -392,7 +392,7 @@ fn paragraph_spacing(a: &Attrs, sp: &mut Spacing) {
         sp.line = Some(LineSpacing::AtLeast(h.clamp(0.7, MAX_LEN)));
     }
     // Leading (§20.336: extra space between lines, above each line as LibreOffice draws it) has
-    // no WordCraft mode: at least a 12 pt line and the leading, which also puts the extra space
+    // no Letra mode: at least a 12 pt line and the leading, which also puts the extra space
     // above the text.
     // LibreOffice also leaves the leading after the last line: space after the paragraph.
     if let Some(l) = len("style:line-spacing").filter(|l| *l >= 0.0) {
@@ -566,7 +566,7 @@ const MAX_STYLE_ID: usize = 64;
 /// The document style id for an ODF style: its name's letters and digits (LibreOffice's
 /// `Text_20_body` is `Textbody`), at most [`MAX_STYLE_ID`] of them.
 pub(super) fn style_id(odt: &str) -> String {
-    // LibreOffice's index styles are WordCraft's TOC styles.
+    // LibreOffice's index styles are Letra's TOC styles.
     if let Some((id, _)) = super::writer::generating_style(odt) {
         return id;
     }
@@ -726,8 +726,8 @@ fn style_child(name: &str, q: &str, a: &Attrs, s: &mut StyleInfo) -> bool {
 
 /// The text direction a `style:writing-mode` names: top to bottom turned down, bottom to top
 /// turned up, the rest across.
-pub(super) fn writing_direction(m: &str) -> wordcraft_doc::props::TextDirection {
-    use wordcraft_doc::props::TextDirection;
+pub(super) fn writing_direction(m: &str) -> letra_doc::props::TextDirection {
+    use letra_doc::props::TextDirection;
     match m.trim() {
         "tb-rl" | "tb-lr" | "tb" => TextDirection::Down,
         "bt-lr" => TextDirection::Up,
@@ -1011,7 +1011,7 @@ pub(super) struct ListLevel {
     pub(super) start: u32,
 }
 
-/// ODF number format (`style:num-format`, ODF 1.3 §19.500) → WordCraft's; an empty format shows
+/// ODF number format (`style:num-format`, ODF 1.3 §19.500) → Letra's; an empty format shows
 /// no number.
 pub(super) fn num_format(f: &str) -> NumFormat {
     match f.trim() {
@@ -1104,7 +1104,7 @@ pub(super) struct Styles {
     /// The default tab interval (`style:tab-stop-distance` of the default style), points.
     pub(super) default_tab: Option<f32>,
     /// The Asian and complex-script fonts and languages of `style:default-style` for paragraphs.
-    pub(super) default_scripts: wordcraft_doc::props::CharProps,
+    pub(super) default_scripts: letra_doc::props::CharProps,
     /// The language the default paragraph style states.
     pub(super) default_lang: Option<String>,
     /// Pair kerning of `style:default-style` for paragraphs (`style:letter-kerning`, §20.317;
@@ -1113,7 +1113,7 @@ pub(super) struct Styles {
     /// Widow and orphan control `style:default-style` for paragraphs states, if it does.
     default_widows: Option<bool>,
     /// The text colour of `style:default-style` for paragraphs (`fo:color`), if it gives one.
-    default_color: Option<wordcraft_doc::props::Rgb>,
+    default_color: Option<letra_doc::props::Rgb>,
     /// `style:default-style` for graphics: what every drawing shape's style falls back on.
     default_graphic: super::frames::Graphic,
     /// `style:default-style` for table columns: the share of a column whose style gives none.
@@ -1268,7 +1268,7 @@ impl Styles {
     /// defaults, as for [`Styles::doc_font`]), else the default style's.
     /// The document's default text colour: the Standard paragraph style's, else the default
     /// style's.
-    pub(super) fn doc_color(&self) -> Option<wordcraft_doc::props::Rgb> {
+    pub(super) fn doc_color(&self) -> Option<letra_doc::props::Rgb> {
         self.map.get("Standard").filter(|s| !s.auto).and_then(|s| s.fmt.color).or(self.default_color)
     }
 
@@ -1374,7 +1374,7 @@ impl Styles {
     }
 
     /// Whether paragraph style `name`'s named styles state a size. Those that don't leave the size
-    /// to WordCraft's style for its kind, so text of any size isn't known to be the style's.
+    /// to Letra's style for its kind, so text of any size isn't known to be the style's.
     pub(super) fn states_size(&self, name: &str) -> bool {
         self.chain(name).iter().any(|(_, s)| !s.auto && (s.fmt.size.is_some() || s.fmt.size_pct.is_some()))
     }
@@ -1386,7 +1386,7 @@ impl Styles {
         // What the span's character style says is its own: its paragraph turning that off doesn't
         // reach past it (ODF: the span's style wins).
         if let Some(x) = f.extra.as_deref_mut() {
-            use wordcraft_doc::props::Underline;
+            use letra_doc::props::Underline;
             for (_, s) in chain.iter().skip(at) {
                 let (d, e) = (&s.fmt, &s.fmt.extra);
                 if d.bold.is_some() && x.bold == Some(false) {
@@ -1540,7 +1540,7 @@ impl Styles {
     }
 
     /// Which way a table-cell style's text runs (whole chain).
-    pub(super) fn cell_direction(&self, name: &str) -> wordcraft_doc::props::TextDirection {
+    pub(super) fn cell_direction(&self, name: &str) -> letra_doc::props::TextDirection {
         self.chain(name).iter().find_map(|(_, s)| s.cell_direction).unwrap_or_default()
     }
 
@@ -1590,7 +1590,7 @@ impl Styles {
     pub(super) fn is_named(&self, odt: &str) -> bool {
         let Some(s) = self.map.get(odt).filter(|s| !s.auto && !s.declared_auto && odt != "Standard") else { return false };
         let lower = |n: &str| n.to_ascii_lowercase().replace("_20_", " ");
-        // The kinds' styles, and the note text styles (WordCraft's Footnote Text and Endnote
+        // The kinds' styles, and the note text styles (Letra's Footnote Text and Endnote
         // Text stand for them), are no custom styles.
         let special = |n: &str| kind_named(n).is_some() || matches!(n, "footnote" | "endnote");
         !(special(&lower(odt)) || s.display.as_deref().is_some_and(|d| special(&lower(d))))
@@ -1689,7 +1689,7 @@ impl Styles {
         // the paragraph's own.
         let named_at = chain.iter().take(kind_at).position(|(n, _)| self.is_named(n));
         let named = named_at.and_then(|i| chain.get(i)).map(|(n, _)| n.to_string()).or_else(|| {
-            // An index style the file names but doesn't define (WordCraft has its own).
+            // An index style the file names but doesn't define (Letra has its own).
             let undefined = chain.last().map_or(Some(name), |(_, s)| s.parent.as_deref());
             undefined.filter(|n| super::writer::generating_style(n).is_some()).map(String::from)
         });

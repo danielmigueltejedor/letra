@@ -1,14 +1,14 @@
 //! Dialogs with real tabs: a click on a tab shows its page.
 
 use egui_kittest::kittest::Queryable;
+use letra_engine::Session;
 use serde_json::json;
-use wordcraft_engine::Session;
 
 use crate::WordApp;
 use crate::dialogs::Dialog;
 
 fn harness(name: &str) -> egui_kittest::Harness<'static, WordApp> {
-    let mut app = WordApp::new(Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut app = WordApp::new(Session::new(letra_doc::Document::new()), crate::Services::default());
     let _ = app.run("ui.language", json!({"value": "en"}));
     let _ = app.run("document.setText", json!({"text": "Some text"}));
     let _ = app.run("select.all", json!({}));

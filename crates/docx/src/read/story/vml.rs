@@ -17,7 +17,7 @@ impl Reader<'_> {
     pub(super) fn read_vml_all(&mut self, sc: &mut StoryCtx, pict: &El, rels: &Rels) -> Vec<InlineObject> {
         let mut out = Vec::new();
         for e in pict.els().filter(|e| e.name.starts_with("v:") && e.local() != "shapetype") {
-            if out.len() >= wordcraft_doc::para::MAX_GROUP_CHILDREN {
+            if out.len() >= letra_doc::para::MAX_GROUP_CHILDREN {
                 break;
             }
             if sc.in_hf
@@ -70,21 +70,21 @@ impl Reader<'_> {
         g: &El,
         rels: &Rels,
         space: VmlGroupSpace,
-        out: &mut Vec<wordcraft_doc::para::GroupChild>,
+        out: &mut Vec<letra_doc::para::GroupChild>,
     ) {
         let (x0, y0) = space.origin;
         let (sx, sy) = space.scale;
         let max = crate::units::MAX_LEN_PT;
-        let fit = |v: f32, lo: f32| wordcraft_geom::finite(v).clamp(lo, max);
+        let fit = |v: f32, lo: f32| letra_geom::finite(v).clamp(lo, max);
         for e in g.els() {
-            if out.len() >= wordcraft_doc::para::MAX_GROUP_CHILDREN {
+            if out.len() >= letra_doc::para::MAX_GROUP_CHILDREN {
                 return;
             }
             if !e.name.starts_with("v:") || e.local() == "shapetype" {
                 continue;
             }
             let style = e.attr("style").unwrap_or("");
-            let num = |k: &str| vml_style(style, k).and_then(|v| measure(v, 1.0)).map_or(0.0, wordcraft_geom::finite);
+            let num = |k: &str| vml_style(style, k).and_then(|v| measure(v, 1.0)).map_or(0.0, letra_geom::finite);
             let ((ox, oy), (ew, eh)) = ((num("left"), num("top")), (num("width"), num("height")));
             if e.local() == "group" {
                 if space.depth >= MAX_VML_GROUP_DEPTH {
@@ -108,7 +108,7 @@ impl Reader<'_> {
                 }
                 None => (0.0, 0.0),
             };
-            out.push(wordcraft_doc::para::GroupChild { x: fit(x0 + (ox + dx) * sx, -max), y: fit(y0 + (oy + dy) * sy, -max), obj });
+            out.push(letra_doc::para::GroupChild { x: fit(x0 + (ox + dx) * sx, -max), y: fit(y0 + (oy + dy) * sy, -max), obj });
         }
     }
 
@@ -135,7 +135,7 @@ impl Reader<'_> {
                 // `r:href` names a file outside the package: never fetched.
                 if let Some(href) = img.attr("r:href") {
                     let target = rels.by_id(href).map_or_else(|| href.to_string(), |r| r.target.clone());
-                    self.note_missing_picture(&target, wordcraft_doc::MissingPictureReason::LinkOnly);
+                    self.note_missing_picture(&target, letra_doc::MissingPictureReason::LinkOnly);
                 }
                 return None;
             };
@@ -143,7 +143,7 @@ impl Reader<'_> {
             let alt = shape.attr("alt").or_else(|| img.attr("o:title")).unwrap_or("").to_string();
             // Brightness and contrast (Word's picture watermark "Washout" sets them, #1711).
             let frac = |k: &str| img.attr(k).and_then(crate::units::vml_number);
-            let fx = wordcraft_doc::picfx::PicFx::from_vml(frac("gain").unwrap_or(1.0), frac("blacklevel").unwrap_or(0.0));
+            let fx = letra_doc::picfx::PicFx::from_vml(frac("gain").unwrap_or(1.0), frac("blacklevel").unwrap_or(0.0));
             return Some(InlineObject::Image { media, w, h, alt, float, crop: [0.0; 4], fx, ole: None });
         }
         // The shapetype the shape is drawn from (its `type`, ECMA-376 Part 4 VML), when written in
@@ -165,9 +165,9 @@ impl Reader<'_> {
             .and_then(|s| s.attr("endcap"))
             .or_else(|| shapetype.and_then(|t| t.child("v:stroke")).and_then(|s| s.attr("endcap")));
         let cap = match endcap {
-            Some("square") => wordcraft_doc::connector::LineCap::Square,
-            Some("round") => wordcraft_doc::connector::LineCap::Round,
-            _ => wordcraft_doc::connector::LineCap::Flat,
+            Some("square") => letra_doc::connector::LineCap::Square,
+            Some("round") => letra_doc::connector::LineCap::Round,
+            _ => letra_doc::connector::LineCap::Flat,
         };
         let kind = match shape.local() {
             "line" => Some(ShapeKind::Line),
@@ -209,7 +209,7 @@ impl Reader<'_> {
             };
             let id = self.doc.add_part(PartKind::TextBox, vec![para_block(Paragraph::with_text(&text, props))]);
             if let Some(part) = self.doc.parts.get_mut(&id) {
-                part.body.anchor = wordcraft_doc::props::VAlign::Center;
+                part.body.anchor = letra_doc::props::VAlign::Center;
                 part.body.inset = Some([0; 4]);
             }
             return Some(InlineObject::Shape {
@@ -236,21 +236,21 @@ impl Reader<'_> {
                 // `vertical-ideographic`, our `eaVert`) is `vert`, and anything else horizontal.
                 let tb_style = tb.attr("style").unwrap_or("");
                 if vml_style(tb_style, "mso-layout-flow-alt").is_some_and(|v| v.eq_ignore_ascii_case("bottom-to-top")) {
-                    part.body.vert = wordcraft_doc::props::TextVert::Vert270;
+                    part.body.vert = letra_doc::props::TextVert::Vert270;
                 } else if vml_style(tb_style, "layout-flow").is_some_and(|v| v.to_ascii_lowercase().starts_with("vertical")) {
-                    part.body.vert = wordcraft_doc::props::TextVert::Vert;
+                    part.body.vert = letra_doc::props::TextVert::Vert;
                 }
                 // Internal margins `inset="l,t,r,b"` (ECMA-376 Part 4 §19.1.2.22), each one left
                 // out keeping Word's default; a bare number is in EMUs, VML's base unit.
                 // `o:insetmode="auto"` leaves them to the application.
-                let mut inset = wordcraft_doc::TEXT_BOX_INSET;
+                let mut inset = letra_doc::TEXT_BOX_INSET;
                 let custom = tb.attr("o:insetmode").is_none_or(|m| !m.eq_ignore_ascii_case("auto"));
                 for (slot, v) in inset.iter_mut().zip(tb.attr("inset").filter(|_| custom).unwrap_or("").split(',')) {
                     if let Some(pt) = measure(v, 12_700.0) {
-                        *slot = (pt.max(0.0) * 12_700.0).round().min(wordcraft_doc::MAX_TEXT_BOX_INSET as f32) as u32;
+                        *slot = (pt.max(0.0) * 12_700.0).round().min(letra_doc::MAX_TEXT_BOX_INSET as f32) as u32;
                     }
                 }
-                part.body.inset = (inset != wordcraft_doc::TEXT_BOX_INSET).then_some(inset);
+                part.body.inset = (inset != letra_doc::TEXT_BOX_INSET).then_some(inset);
                 // Resize shape to fit text (DrawingML's `a:spAutoFit`).
                 let fit = vml_style(tb.attr("style").unwrap_or(""), "mso-fit-shape-to-text").or_else(|| vml_style(style, "mso-fit-shape-to-text"));
                 part.body.auto_fit = fit.is_some_and(|v| v.eq_ignore_ascii_case("t") || v.eq_ignore_ascii_case("true"));
@@ -258,11 +258,11 @@ impl Reader<'_> {
                 if let Some(a) = vml_style(tb.attr("style").unwrap_or(""), "v-text-anchor").or_else(|| vml_style(style, "v-text-anchor")) {
                     let al = a.trim().to_ascii_lowercase();
                     part.body.anchor = if al.starts_with("middle") || al == "center" {
-                        wordcraft_doc::props::VAlign::Center
+                        letra_doc::props::VAlign::Center
                     } else if al.starts_with("bottom") {
-                        wordcraft_doc::props::VAlign::Bottom
+                        letra_doc::props::VAlign::Bottom
                     } else {
-                        wordcraft_doc::props::VAlign::Top
+                        letra_doc::props::VAlign::Top
                     };
                 }
             }
@@ -323,17 +323,17 @@ impl Reader<'_> {
             let tenths = attr("o:hrpct").and_then(|v| v.trim().parse::<f32>().ok()).filter(|p| p.is_finite() && *p > 0.0);
             let pct = tenths.map_or(if w > 0.0 { 0.0 } else { 100.0 }, |t| (t / 10.0).min(100.0));
             let align = match attr("o:hralign").map(|a| a.trim().to_ascii_lowercase()).as_deref() {
-                Some("center") => wordcraft_doc::props::Align::Center,
-                Some("right") => wordcraft_doc::props::Align::Right,
-                _ => wordcraft_doc::props::Align::Left,
+                Some("center") => letra_doc::props::Align::Center,
+                Some("right") => letra_doc::props::Align::Right,
+                _ => letra_doc::props::Align::Left,
             };
             let standard = attr("o:hrstd").is_some_and(|v| matches!(v.trim(), "t" | "true" | "1"));
-            extra.hr = Some(wordcraft_doc::connector::HorizontalRule { pct, align, standard });
+            extra.hr = Some(letra_doc::connector::HorizontalRule { pct, align, standard });
         }
         if kind == ShapeKind::Line {
             // Arrowheads (`v:stroke` startarrow / endarrow, with their width and length): any but
             // `none` is drawn.
-            use wordcraft_doc::connector::{ArrowKind, ArrowSize, ArrowStyle};
+            use letra_doc::connector::{ArrowKind, ArrowSize, ArrowStyle};
             let stroke = shape.child("v:stroke");
             let arrow = |end: &str| {
                 let s = stroke?;
@@ -356,7 +356,7 @@ impl Reader<'_> {
             let pt = |name: &str| -> (f32, f32) {
                 let v = shape.attr(name).unwrap_or("0,0");
                 let (x, y) = v.split_once(',').unwrap_or((v, "0"));
-                let m = |s: &str| measure(s, 1.0).map_or(0.0, wordcraft_geom::finite).clamp(-crate::units::MAX_LEN_PT, crate::units::MAX_LEN_PT);
+                let m = |s: &str| measure(s, 1.0).map_or(0.0, letra_geom::finite).clamp(-crate::units::MAX_LEN_PT, crate::units::MAX_LEN_PT);
                 (m(x), m(y))
             };
             let ((x0, y0), (x1, y1)) = (pt("from"), pt("to"));
@@ -484,7 +484,7 @@ fn vml_spt(shape: &El, shapetype: Option<&El>, type_id: Option<&str>) -> Option<
 fn vml_coordpair(e: &El, name: &str) -> Option<(f32, f32)> {
     let v = e.attr(name)?;
     let (x, y) = v.split_once(',')?;
-    let n = |s: &str| measure(s.trim(), 1.0).map(wordcraft_geom::finite);
+    let n = |s: &str| measure(s.trim(), 1.0).map(letra_geom::finite);
     Some((n(x)?, n(y)?))
 }
 
@@ -555,7 +555,7 @@ fn vml_float(shape: &El, style: &str, in_hf: bool) -> Float {
     let get = |k: &str| vml_style(style, k);
     let hidden = get("visibility").is_some_and(|v| v.eq_ignore_ascii_case("hidden"));
     if !get("position").is_some_and(|p| p.eq_ignore_ascii_case("absolute")) {
-        // Inline: only the turn (an OLE object turned in WordCraft is saved so, #319).
+        // Inline: only the turn (an OLE object turned in Letra is saved so, #319).
         let mut f = Float { hidden, ..Float::default() };
         f.set_spin(vml_spin(style));
         return f;
@@ -573,7 +573,7 @@ fn vml_float(shape: &El, style: &str, in_hf: bool) -> Float {
         _ if behind => Wrap::BehindText,
         _ => Wrap::InFrontOfText,
     };
-    let wrap_text = wrap_el.and_then(|w| w.attr("side")).and_then(wordcraft_doc::para::WrapText::from_ooxml).unwrap_or_default();
+    let wrap_text = wrap_el.and_then(|w| w.attr("side")).and_then(letra_doc::para::WrapText::from_ooxml).unwrap_or_default();
     let h_rel_str = get("mso-position-horizontal-relative").unwrap_or("text");
     let h_rel = match h_rel_str {
         s if s.eq_ignore_ascii_case("page") => Anchor::Page,
@@ -624,7 +624,7 @@ fn vml_float(shape: &El, style: &str, in_hf: bool) -> Float {
 /// with the shape's `fillcolor`, semitransparent when its `v:fill` has an `opacity` below 1, and
 /// diagonal when the shape is turned. Only Word's watermark shape counts (its `id`), or text
 /// placed absolutely and centred both ways; other header WordArt (a logo or a title) is None.
-fn vml_watermark(shape: &El) -> Option<wordcraft_doc::Watermark> {
+fn vml_watermark(shape: &El) -> Option<letra_doc::Watermark> {
     let tp = shape.child("v:textpath")?;
     if tp.attr("on").is_some_and(|v| matches!(v, "f" | "false" | "0")) {
         return None;
@@ -642,7 +642,7 @@ fn vml_watermark(shape: &El) -> Option<wordcraft_doc::Watermark> {
     if text.trim().is_empty() {
         return None;
     }
-    let default = wordcraft_doc::Watermark::default();
+    let default = letra_doc::Watermark::default();
     let font = tp
         .attr("style")
         .and_then(|s| vml_style(s, "font-family"))
@@ -654,7 +654,7 @@ fn vml_watermark(shape: &El) -> Option<wordcraft_doc::Watermark> {
     // The box the text is stretched to (`fitshape`).
     let len = |k: &str| vml_style(style, k).and_then(|v| measure(v, 1.0)).filter(|v| v.is_finite() && *v > 0.0).map(|v| v.min(4000.0));
     let size = len("width").zip(len("height")).map(|(w, h)| [w, h]);
-    Some(wordcraft_doc::Watermark { text, font, color, diagonal: vml_spin(style).deg != 0.0, semitransparent: opacity < 1.0, size })
+    Some(letra_doc::Watermark { text, font, color, diagonal: vml_spin(style).deg != 0.0, semitransparent: opacity < 1.0, size })
 }
 
 /// A VML `opacity`, 0..=1.
@@ -664,12 +664,12 @@ fn vml_opacity(v: &str) -> Option<f32> {
 
 /// A VML shape's turn: `rotation` in degrees, or 65536ths of one with an `fd` suffix; `flip`: `x`
 /// and/or `y`.
-fn vml_spin(style: &str) -> wordcraft_geom::Spin {
+fn vml_spin(style: &str) -> letra_geom::Spin {
     let get = |k: &str| vml_style(style, k);
     let rot = get("rotation").and_then(|v| match v.strip_suffix("fd") {
         Some(fd) => fd.trim().parse::<f32>().ok().map(|f| f / 65_536.0),
         None => v.trim().parse::<f32>().ok(),
     });
     let flip = get("flip").unwrap_or("");
-    wordcraft_geom::Spin::new(rot.unwrap_or(0.0), flip.contains('x'), flip.contains('y'))
+    letra_geom::Spin::new(rot.unwrap_or(0.0), flip.contains('x'), flip.contains('y'))
 }

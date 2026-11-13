@@ -5,9 +5,9 @@
 //! engine itself.
 
 use egui::{Align2, Rect, Sense, Stroke, Ui, pos2, vec2};
+use letra_doc::math::parse_linear;
+use letra_engine::math_gallery::{BUILT_INS, STRUCTURES, SYMBOL_SETS, Template};
 use serde_json::json;
-use wordcraft_doc::math::parse_linear;
-use wordcraft_engine::math_gallery::{BUILT_INS, STRUCTURES, SYMBOL_SETS, Template};
 
 use crate::WordApp;
 use crate::theme::{Tokens, regular, semibold};
@@ -36,7 +36,7 @@ struct MathPreview<'a> {
     rect: Rect,
     key: &'a str,
     linear: &'a str,
-    nodes: Option<wordcraft_doc::math::Arg>,
+    nodes: Option<letra_doc::math::Arg>,
     display: bool,
     points: f32,
 }
@@ -75,7 +75,7 @@ pub(crate) fn math_placeholder_with(linear: &str, covered: impl Fn(char) -> bool
     for c in linear.chars() {
         if c.is_whitespace() || covered(c) {
             result.push(c);
-        } else if let Some(name) = wordcraft_doc::math_symbols::name_of(c) {
+        } else if let Some(name) = letra_doc::math_symbols::name_of(c) {
             result.push('\\');
             result.push_str(name);
         } else {
@@ -94,7 +94,7 @@ const EQUATION_PICTURE: &str = "∑_(i=1)^n";
 #[cfg(test)]
 pub(crate) fn placeholder_linears() -> impl Iterator<Item = String> {
     let pictures = STRUCTURES.iter().map(|g| button_picture(g.id).to_string());
-    let templates = wordcraft_engine::math_gallery::templates().map(|t| t.linear.to_string());
+    let templates = letra_engine::math_gallery::templates().map(|t| t.linear.to_string());
     let symbols = SYMBOL_SETS.iter().flat_map(|(_, chars)| chars.chars()).map(|c| c.to_string());
     std::iter::once(EQUATION_PICTURE.to_string())
         .chain(pictures)
@@ -322,7 +322,7 @@ fn symbol_button(ui: &mut Ui, app: &mut WordApp, c: char, t: &Tokens) -> bool {
         ui.painter().rect_stroke(r, 2.0, Stroke::new(1.0, t.accent), egui::StrokeKind::Inside);
     }
     let s = c.to_string();
-    let nodes = vec![wordcraft_doc::math::MNode::Run(wordcraft_doc::math::MRun { text: s.clone(), lit: true, ..Default::default() })];
+    let nodes = vec![letra_doc::math::MNode::Run(letra_doc::math::MRun { text: s.clone(), lit: true, ..Default::default() })];
     paint_math(app, ui, MathPreview { rect: r, key: &format!("sym:{s}"), linear: &s, nodes: Some(nodes), display: false, points: 11.0 });
     let display = math_placeholder(ui, &s);
     resp.on_hover_text(symbol_tooltip(c, &display)).clicked()
@@ -334,7 +334,7 @@ fn symbol_tooltip(c: char, display: &str) -> String {
         // Missing glyphs already display their linear name or codepoint.
         return display.to_owned();
     }
-    wordcraft_doc::math_symbols::name_of(c).map(|n| format!("{display}  \\{n}")).unwrap_or_else(|| format!("{display}  U+{:04X}", c as u32))
+    letra_doc::math_symbols::name_of(c).map(|n| format!("{display}  \\{n}")).unwrap_or_else(|| format!("{display}  U+{:04X}", c as u32))
 }
 
 /// The Equation tab.

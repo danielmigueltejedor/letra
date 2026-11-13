@@ -13,7 +13,7 @@ fn vp() -> Rect {
 
 #[test]
 fn reading_mode_hides_formatting_even_with_an_existing_selection() {
-    let mut app = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), Default::default());
+    let mut app = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), Default::default());
     app.run("text.insert", json!({"text": "Selectable text"})).unwrap();
     app.run("select.all", json!({})).unwrap();
     assert!(!app.session.sel.is_collapsed());
@@ -129,8 +129,8 @@ fn a_viewport_narrower_than_the_bar_still_yields_a_rect() {
 /// controls (both rows end together).
 #[test]
 fn every_control_fits_inside_the_bar() {
-    use wordcraft_engine::Session;
-    let mut a = WordApp::new(Session::new(wordcraft_doc::Document::new()), Default::default());
+    use letra_engine::Session;
+    let mut a = WordApp::new(Session::new(letra_doc::Document::new()), Default::default());
     a.run("text.insert", json!({"text": "The quick brown fox jumps over the lazy dog"})).unwrap();
     a.run("select.text", json!({"text": "brown fox"})).unwrap();
     let mut h = egui_kittest::Harness::builder().with_size(Vec2::new(1440.0, 900.0)).build_ui_state(
@@ -160,7 +160,7 @@ fn every_control_fits_inside_the_bar() {
 
 /// The whole window over a document with `pick` selected, run until the bar is up.
 fn bar_over(pick: &str) -> egui_kittest::Harness<'static, WordApp> {
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), Default::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), Default::default());
     a.run("text.insert", json!({"text": "The quick brown fox jumps over the lazy dog"})).unwrap();
     a.run("select.text", json!({"text": pick})).unwrap();
     let mut h = egui_kittest::Harness::builder().with_size(Vec2::new(1440.0, 900.0)).build_ui_state(
@@ -411,7 +411,7 @@ fn context_menu_toolbar_formats_the_selection_and_opens_its_size_list() {
     use egui_kittest::kittest::Queryable;
     let mut h = bar_over("brown fox");
     let selection = h.state().session.sel.clone();
-    let caret = h.state_mut().session.layout().caret(&wordcraft_doc::Pos::body(0, 12)).unwrap();
+    let caret = h.state_mut().session.layout().caret(&letra_doc::Pos::body(0, 12)).unwrap();
     let at = crate::canvas::page_to_screen(h.state_mut(), caret.page, caret.x, caret.top + caret.height / 2.0).unwrap();
     h.event(egui::Event::PointerMoved(at));
     for pressed in [true, false] {
@@ -480,7 +480,7 @@ fn context_menu_toolbar_opens_at_a_caret_from_the_keyboard_and_dismisses() {
     assert!(!h.state().canvas.context_menu_open);
     h.event(egui::Event::Text(" typed".into()));
     steps(&mut h);
-    assert!(h.state().session.doc.plain_text(wordcraft_doc::StoryRef::Body).ends_with(" typed"), "typing resumes in the document");
+    assert!(h.state().session.doc.plain_text(letra_doc::StoryRef::Body).ends_with(" typed"), "typing resumes in the document");
 
     h.state_mut().run("ui.contextMenu", json!({})).unwrap();
     steps(&mut h);
@@ -739,7 +739,7 @@ fn no_color_becomes_the_highlight_buttons_choice() {
 #[test]
 fn the_font_colour_menus_automatic_returns_focus_to_the_document() {
     use egui_kittest::kittest::{By, Queryable};
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("Hello")), Default::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::from_text("Hello")), Default::default());
     a.run("select.all", json!({})).unwrap();
     let mut h = egui_kittest::Harness::builder().with_size(Vec2::new(400.0, 400.0)).build_ui_state(
         |ui, app: &mut WordApp| {
@@ -760,7 +760,7 @@ fn the_font_colour_menus_automatic_returns_focus_to_the_document() {
 /// like the No Color button beside the swatches (it ran through `run_from_ribbon` already).
 #[test]
 fn picking_a_highlight_swatch_returns_focus_to_the_document() {
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("Hello")), Default::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::from_text("Hello")), Default::default());
     a.run("select.all", json!({})).unwrap();
     let origin = egui::Id::unique("hl_swatch_origin");
     let mut h = egui_kittest::Harness::builder().with_size(Vec2::new(400.0, 300.0)).build_ui_state(
@@ -793,7 +793,7 @@ fn alignment_buttons_mark_the_alignment_seen_on_the_page_in_a_right_to_left_para
         (true, None, "Align Right", "Align Left"),
         (true, Some("para.alignLeft"), "Align Left", "Align Right"),
     ] {
-        let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("سلام دنیا")), Default::default());
+        let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::from_text("سلام دنیا")), Default::default());
         a.run("select.all", json!({})).unwrap();
         if rtl {
             a.run("para.rtl", json!({})).unwrap();
@@ -901,16 +901,16 @@ fn coming_back_to_a_toggle_previews_its_undo() {
 #[test]
 fn a_selected_paragraph_shows_its_own_alignment() {
     let mut h = bar_over("brown fox");
-    h.state_mut().session = wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("First paragraph\nSecond paragraph"));
-    h.state_mut().session.sel.anchor = wordcraft_doc::Pos::body(0, 2);
-    h.state_mut().session.sel.focus = wordcraft_doc::Pos::body(0, 2);
+    h.state_mut().session = letra_engine::Session::new(letra_doc::Document::from_text("First paragraph\nSecond paragraph"));
+    h.state_mut().session.sel.anchor = letra_doc::Pos::body(0, 2);
+    h.state_mut().session.sel.focus = letra_doc::Pos::body(0, 2);
     h.state_mut().run("para.alignRight", json!({})).unwrap();
-    h.state_mut().session.sel.anchor = wordcraft_doc::Pos::body(0, 0);
-    h.state_mut().session.sel.focus = wordcraft_doc::Pos::body(1, 0);
+    h.state_mut().session.sel.anchor = letra_doc::Pos::body(0, 0);
+    h.state_mut().session.sel.focus = letra_doc::Pos::body(1, 0);
     steps(&mut h);
     let s = &h.state().session;
     let focus_align = s.doc.para_at(&s.sel.focus).map(|p| s.doc.styles.resolve_para(&p.props).align);
-    assert_eq!(focus_align, Some(wordcraft_doc::Align::Left), "the next paragraph is left aligned");
-    let r = wordcraft_engine::cmd::para::selection_para(s);
-    assert_eq!(r.align, wordcraft_doc::Align::Right, "the buttons read the selected paragraph");
+    assert_eq!(focus_align, Some(letra_doc::Align::Left), "the next paragraph is left aligned");
+    let r = letra_engine::cmd::para::selection_para(s);
+    assert_eq!(r.align, letra_doc::Align::Right, "the buttons read the selected paragraph");
 }

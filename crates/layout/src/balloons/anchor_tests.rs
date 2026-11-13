@@ -1,5 +1,5 @@
 use super::*;
-use wordcraft_doc::{Block, Comment, Path, Table, para_block};
+use letra_doc::{Block, Comment, Path, Table, para_block};
 
 fn push(p: &mut Paragraph, object: InlineObject) {
     p.insert_object(p.len(), object, &CharProps::default()).unwrap();
@@ -30,7 +30,7 @@ fn anchors_keep_first_root_occurrences_and_utf8_table_positions() {
     // Comments in other stories do not acquire body balloons.
     let mut note = Paragraph::with_text("Note", CharProps::default());
     push(&mut note, InlineObject::CommentStart { id: 3 });
-    doc.add_part(wordcraft_doc::PartKind::Footnote, vec![para_block(note)]);
+    doc.add_part(letra_doc::PartKind::Footnote, vec![para_block(note)]);
     assert_eq!(
         anchors(&doc),
         vec![(40, Pos::body(0, first)), (9, Pos::body(0, second)), (2, Pos::new(StoryRef::Body, Path(vec![2, 0, 0, 0]), in_cell))]
@@ -41,7 +41,7 @@ fn dense_markers(n: usize) -> Document {
     let mut doc = Document::new();
     doc.comments.insert(0, Comment::default());
     let mut p = Paragraph::with_text("x", CharProps::default());
-    p.text = wordcraft_doc::para::OBJ.to_string().repeat(n);
+    p.text = letra_doc::para::OBJ.to_string().repeat(n);
     p.runs[0].len = p.len();
     p.objects = vec![InlineObject::BookmarkEnd { name: "unrelated".into() }; n];
     push(&mut p, InlineObject::CommentStart { id: 0 });
@@ -52,26 +52,26 @@ fn dense_markers(n: usize) -> Document {
 /// Asserts `check` on `make(SCALE * n)` takes at most 1.5 * SCALE times the steps it takes on
 /// `make(n)`: about 8x for 8x the input when the work is linear, about 64x when it is quadratic.
 /// The steps, not a timing, are both counters' together: the paragraph walks, the paragraph list
-/// and the path lookups (`wordcraft_doc::work`), and the comment lookups (`crate::work`).
+/// and the path lookups (`letra_doc::work`), and the comment lookups (`crate::work`).
 fn assert_linear_anchor_work(what: &str, n: usize, make: impl Fn(usize) -> Document, check: impl Fn(&Document, usize)) {
     let (small, big) = (make(n), make(crate::tests::SCALE * n));
     let steps = |doc: &Document, n| {
         let mut in_doc = 0;
-        let in_layout = crate::work::count(|| in_doc = wordcraft_doc::work::count(|| check(doc, n)));
+        let in_layout = crate::work::count(|| in_doc = letra_doc::work::count(|| check(doc, n)));
         (in_doc, in_layout)
     };
     let ((sd, sl), (bd, bl)) = (steps(&small, n), steps(&big, crate::tests::SCALE * n));
     let (s, b) = (sd + sl, bd + bl);
     let ratio = b as f64 / s.max(1) as f64;
-    eprintln!("{what}: {s} -> {b} steps ({sd} -> {bd} in wordcraft_doc, {sl} -> {bl} in layout), {ratio:.1}x for 8x the input");
-    assert!(sd > 0, "{what}: no steps counted in wordcraft_doc, so the walks this test watches no longer count them (wordcraft_doc::work)");
+    eprintln!("{what}: {s} -> {b} steps ({sd} -> {bd} in letra_doc, {sl} -> {bl} in layout), {ratio:.1}x for 8x the input");
+    assert!(sd > 0, "{what}: no steps counted in letra_doc, so the walks this test watches no longer count them (letra_doc::work)");
     assert!(sl > 0, "{what}: no steps counted in layout, so the comment lookups this test watches no longer count them (crate::work)");
     assert!(ratio <= 1.5 * crate::tests::SCALE as f64, "{what}: work grew {ratio:.1}x for 8x the input ({s} -> {b} steps)");
 }
 
 #[test]
 fn anchors_walk_dense_unrelated_markers_in_linear_work() {
-    let check = |doc: &Document, n| assert_eq!(anchors(doc), vec![(0, Pos::body(0, n * wordcraft_doc::para::OBJ.len_utf8()))]);
+    let check = |doc: &Document, n| assert_eq!(anchors(doc), vec![(0, Pos::body(0, n * letra_doc::para::OBJ.len_utf8()))]);
     assert_linear_anchor_work("balloon anchors, dense markers", 2_000, dense_markers, check);
 }
 
@@ -113,7 +113,7 @@ fn anchors_take_linear_work_over_paragraphs_comments_and_replies() {
 fn anchors_keep_the_existing_limit_in_document_order() {
     let mut doc = Document::new();
     let mut p = Paragraph::with_text("x", CharProps::default());
-    p.text = wordcraft_doc::para::OBJ.to_string().repeat(MAX_BALLOONS + 1);
+    p.text = letra_doc::para::OBJ.to_string().repeat(MAX_BALLOONS + 1);
     p.runs[0].len = p.len();
     p.objects = (0..=MAX_BALLOONS).map(|id| InlineObject::CommentStart { id: id as u32 }).collect();
     doc.comments = (0..=MAX_BALLOONS).map(|id| (id as u32, Comment::default())).collect();
@@ -121,5 +121,5 @@ fn anchors_keep_the_existing_limit_in_document_order() {
     let got = anchors(&doc);
     assert_eq!(got.len(), MAX_BALLOONS);
     assert_eq!(got.first(), Some(&(0, Pos::body(0, 0))));
-    assert_eq!(got.last(), Some(&((MAX_BALLOONS - 1) as u32, Pos::body(0, (MAX_BALLOONS - 1) * wordcraft_doc::para::OBJ.len_utf8()))));
+    assert_eq!(got.last(), Some(&((MAX_BALLOONS - 1) as u32, Pos::body(0, (MAX_BALLOONS - 1) * letra_doc::para::OBJ.len_utf8()))));
 }

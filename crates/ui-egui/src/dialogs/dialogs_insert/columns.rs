@@ -24,7 +24,7 @@ impl DropCapForm {
         if !crate::widgets::enabled(app, "insert.dropCap") {
             return None;
         }
-        let st = wordcraft_engine::cmd::insert::drop_cap_state(&app.session);
+        let st = letra_engine::cmd::insert::drop_cap_state(&app.session);
         Some(DropCapForm {
             position: st.position.into(),
             font: st.font.clone().unwrap_or_else(|| st.text_font.clone()),
@@ -100,7 +100,7 @@ pub(super) fn drop_cap_ui(app: &mut WordApp, ui: &mut Ui, f: &mut DropCapForm) -
 /// Narrowest column, points (the engine refuses narrower ones).
 const MIN_COL_PT: f32 = 18.0;
 
-/// The Columns dialog's fields. Lengths are in the interface unit ([`wordcraft_geom::Unit`]).
+/// The Columns dialog's fields. Lengths are in the interface unit ([`letra_geom::Unit`]).
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ColumnsForm {
@@ -127,11 +127,11 @@ impl ColumnsForm {
 
     pub fn read(app: &WordApp) -> ColumnsForm {
         let k = Self::k();
-        let sp = wordcraft_engine::cmd::page::sect(&app.session);
+        let sp = letra_engine::cmd::page::sect(&app.session);
         let c = &sp.columns;
         let count = c.count.clamp(1, 12);
         let sections = app.session.doc.sections().len() > 1;
-        let selection = wordcraft_engine::cmd::page::selection_sectionable(&app.session);
+        let selection = letra_engine::cmd::page::selection_sectionable(&app.session);
         let apply = match (selection, sections) {
             (true, _) => "selection",
             (false, true) => "section",

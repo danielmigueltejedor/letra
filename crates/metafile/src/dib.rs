@@ -619,7 +619,7 @@ mod tests {
     }
 
     /// Timing of the per-pixel reference against `decode_clip` on a 40 MP bitmap:
-    /// `cargo test -p wordcraft-metafile --release -- --ignored --nocapture dib_decode_speed`.
+    /// `cargo test -p letra-metafile --release -- --ignored --nocapture dib_decode_speed`.
     #[test]
     #[ignore = "timing only"]
     fn dib_decode_speed() {

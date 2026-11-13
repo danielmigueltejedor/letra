@@ -1,9 +1,9 @@
-//! WordCraft reader for the Word 97-2003 binary file format (`.doc`, [MS-DOC]).
+//! Letra reader for the Word 97-2003 binary file format (`.doc`, [MS-DOC]).
 //!
-//! [`read`] turns the bytes of a `.doc` file into a [`wordcraft_doc::Document`]. There is no
+//! [`read`] turns the bytes of a `.doc` file into a [`letra_doc::Document`]. There is no
 //! writer: saving always goes through the other formats. The reader is written from the public
 //! specification ([MS-DOC], Word (.doc) Binary File Format, Microsoft Open Specifications) and,
-//! like every WordCraft parser, is lenient by design (unknown structures are skipped, bad numbers
+//! like every Letra parser, is lenient by design (unknown structures are skipped, bad numbers
 //! fall back to defaults) and bounded (stream sizes, piece counts and property counts are
 //! capped), so hostile input yields an error or a best-effort document, never a panic.
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
@@ -27,16 +27,16 @@ mod table;
 use std::io::{Read, Seek};
 use std::sync::Arc;
 
-use wordcraft_doc::link::hyperlink_target;
-use wordcraft_doc::para::InlineObject;
-use wordcraft_doc::para::NoteKind;
-use wordcraft_doc::para::Paragraph;
-use wordcraft_doc::para::Run;
-use wordcraft_doc::props::CharProps;
-use wordcraft_doc::props::NumRef;
-use wordcraft_doc::section::HeaderSet;
-use wordcraft_doc::styles::StyleSheet;
-use wordcraft_doc::{Document, PartKind};
+use letra_doc::link::hyperlink_target;
+use letra_doc::para::InlineObject;
+use letra_doc::para::NoteKind;
+use letra_doc::para::Paragraph;
+use letra_doc::para::Run;
+use letra_doc::props::CharProps;
+use letra_doc::props::NumRef;
+use letra_doc::section::HeaderSet;
+use letra_doc::styles::StyleSheet;
+use letra_doc::{Document, PartKind};
 
 use fkp::Bins;
 use piece::{PieceTable, PrmRef};
@@ -132,7 +132,7 @@ impl Work {
     fn log(&self) {
         let dropped = self.dropped();
         for c in &dropped {
-            log::warn!(".doc: the document repeats more than WordCraft copies ({MAX_WORK} bytes): {}", c.left_out());
+            log::warn!(".doc: the document repeats more than Letra copies ({MAX_WORK} bytes): {}", c.left_out());
         }
         #[cfg(test)]
         LAST_DROPPED.with(|d| *d.borrow_mut() = dropped);
@@ -168,7 +168,7 @@ pub enum DocbinError {
     /// The password does not open the document.
     #[error("the password is incorrect")]
     WrongPassword,
-    /// The document is encrypted in a way WordCraft can't read (AES, an external provider, an
+    /// The document is encrypted in a way Letra can't read (AES, an external provider, an
     /// unknown header).
     #[error("encrypted document: {0}")]
     Encryption(String),
@@ -187,9 +187,9 @@ pub fn is_encrypted(bytes: &[u8]) -> bool {
     stream(&mut comp, "WordDocument").is_some_and(|w| fib::peek_encryption(&w).is_some())
 }
 
-/// Open the compound file around a `.doc`, after [`wordcraft_doc::cfb_guard::check`].
+/// Open the compound file around a `.doc`, after [`letra_doc::cfb_guard::check`].
 fn open_container(bytes: &[u8]) -> Result<cfb::CompoundFile<std::io::Cursor<&[u8]>>, DocbinError> {
-    wordcraft_doc::cfb_guard::check(bytes).map_err(DocbinError::Container)?;
+    letra_doc::cfb_guard::check(bytes).map_err(DocbinError::Container)?;
     cfb::CompoundFile::open(std::io::Cursor::new(bytes)).map_err(|e| DocbinError::Container(e.to_string()))
 }
 
@@ -428,7 +428,7 @@ fn paragraph_limit(max_paragraphs: usize) -> DocbinError {
 
 /// Walks one story into blocks. A walk that spent the shared paragraph budget is refused before
 /// its partial list is assembled, so a flood does not build blocks it will throw away.
-fn story_blocks(ctx: &WalkCtx<'_>, a: u32, b: u32, pics: &mut media::Pictures, max_paragraphs: usize) -> Result<wordcraft_doc::Blocks, DocbinError> {
+fn story_blocks(ctx: &WalkCtx<'_>, a: u32, b: u32, pics: &mut media::Pictures, max_paragraphs: usize) -> Result<letra_doc::Blocks, DocbinError> {
     let paras = walk(ctx, a, b, pics);
     if ctx.paragraphs.exceeded.get() {
         return Err(paragraph_limit(max_paragraphs));
@@ -503,7 +503,7 @@ impl ParaBudget {
 struct ParaBuild {
     text: String,
     runs: Vec<Run>,
-    props: wordcraft_doc::props::ParaProps,
+    props: letra_doc::props::ParaProps,
     mark: CharProps,
     /// Which resolved formatting ([`FmtState::generation`]) the last character came from, while
     /// the last run is still the one it extended: the same generation means equal properties.

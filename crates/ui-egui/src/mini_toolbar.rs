@@ -213,7 +213,7 @@ pub fn context_menu_visible(app: &WordApp) -> bool {
         && app.session.math.is_none()
         && app.session.cell_range().is_none()
         && !crate::ribbon::has_picture_selected(&app.session)
-        && wordcraft_engine::cmd::objects::object_selection(&app.session).is_none()
+        && letra_engine::cmd::objects::object_selection(&app.session).is_none()
 }
 
 /// The existing two-row toolbar in the context menu's popup, above its command panel. Sharing
@@ -245,7 +245,7 @@ fn content(app: &mut WordApp, ui: &mut egui::Ui, t: &Tokens, preview_on_hover: b
         .doc
         .para_at(&app.session.sel.focus)
         .map(|_| {
-            let r = wordcraft_engine::cmd::para::selection_para(&app.session);
+            let r = letra_engine::cmd::para::selection_para(&app.session);
             r.align.visual(r.bidi)
         })
         .unwrap_or_default();
@@ -296,7 +296,7 @@ fn content(app: &mut WordApp, ui: &mut egui::Ui, t: &Tokens, preview_on_hover: b
         let size =
             st.get("size").and_then(Value::as_f64).map(|s| if s.fract() == 0.0 { format!("{s:.0}") } else { s.to_string() }).unwrap_or_default();
         let sizes: Vec<String> =
-            wordcraft_engine::cmd::format::SIZES.iter().map(|s| if s.fract() == 0.0 { format!("{s:.0}") } else { s.to_string() }).collect();
+            letra_engine::cmd::format::SIZES.iter().map(|s| if s.fract() == 0.0 { format!("{s:.0}") } else { s.to_string() }).collect();
         let _ = widgets::take_hover(ui.ctx());
         let picked = widgets::combo_hint(ui, "mini_size", COMBO_SIZE_W, &size, &sizes, None, tl!("Font Size"));
         if preview_on_hover
@@ -344,7 +344,7 @@ fn content(app: &mut WordApp, ui: &mut egui::Ui, t: &Tokens, preview_on_hover: b
         );
         preview_on_hover_if(app, &main, "format.highlight", json!({"color": color}), preview_on_hover);
         let fc = app.canvas.last_font_color.clone();
-        let sw = wordcraft_doc::Rgb::parse(&fc).map(crate::theme::c32);
+        let sw = letra_doc::Rgb::parse(&fc).map(crate::theme::c32);
         let main = widgets::split(
             ui,
             app,
@@ -365,7 +365,7 @@ fn content(app: &mut WordApp, ui: &mut egui::Ui, t: &Tokens, preview_on_hover: b
         preview_on_hover_if(app, &main, "format.color", json!({"color": fc}), preview_on_hover);
         sep(ui, t);
 
-        use wordcraft_doc::Align as A;
+        use letra_doc::Align as A;
         hover_small(ui, app, "alignLeft", "Align Left", "para.alignLeft", align == A::Left, preview_on_hover);
         hover_small(ui, app, "alignCenter", "Center", "para.alignCenter", align == A::Center, preview_on_hover);
         hover_small(ui, app, "alignRight", "Align Right", "para.alignRight", align == A::Right, preview_on_hover);
@@ -406,8 +406,8 @@ fn sep(ui: &mut egui::Ui, t: &Tokens) {
 
 /// The split-button icon and colour bar for the remembered highlight choice.
 pub(crate) fn highlight_button_appearance(name: &str) -> (&'static str, Option<egui::Color32>, &'static str) {
-    let highlight = wordcraft_doc::props::Highlight::from_ooxml(name);
-    let icon = if highlight == wordcraft_doc::props::Highlight::None { "highlightNoColor" } else { "highlight" };
+    let highlight = letra_doc::props::Highlight::from_ooxml(name);
+    let icon = if highlight == letra_doc::props::Highlight::None { "highlightNoColor" } else { "highlight" };
     (icon, highlight.rgb().map(crate::theme::c32), highlight.ooxml())
 }
 
@@ -416,7 +416,7 @@ pub(crate) fn highlight_button_appearance(name: &str) -> (&'static str, Option<e
 /// button removes highlighting (#2105).
 pub(crate) fn highlight_menu(ui: &mut egui::Ui, app: &mut WordApp) {
     crate::rtl::grid(ui, egui::Grid::new("mini_hl").spacing(Vec2::new(3.0, 3.0)), |ui| {
-        for (i, h) in wordcraft_doc::props::Highlight::ALL.iter().enumerate().skip(1) {
+        for (i, h) in letra_doc::props::Highlight::ALL.iter().enumerate().skip(1) {
             let Some(c) = h.rgb() else { continue };
             let (r, resp) = ui.allocate_exact_size(Vec2::new(18.0, 18.0), Sense::click());
             ui.painter().rect_filled(r, 2.0, egui::Color32::from_rgb(c.0, c.1, c.2));

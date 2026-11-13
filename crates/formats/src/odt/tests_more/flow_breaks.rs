@@ -2,14 +2,14 @@
 //! (`fo:break-after`), lines kept together (`fo:keep-together`), widow and orphan control
 //! (`fo:widows`, `fo:orphans`), hyphenation (`fo:hyphenate`), a table's alignment and width
 //! (`table:align`, `style:rel-width`) and its rows' heights (`style:row-height`,
-//! `style:min-row-height`), read into WordCraft's document and written back.
+//! `style:min-row-height`), read into Letra's document and written back.
 
 use crate::odt::tests::{NS_T, content_of, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Align;
-use wordcraft_doc::props::HeightRule;
+use letra_doc::Align;
+use letra_doc::props::HeightRule;
 
-fn doc(styles: &str, body: &str) -> wordcraft_doc::Document {
+fn doc(styles: &str, body: &str) -> letra_doc::Document {
     let content = format!(
         r#"<office:document-content {NS_T}><office:automatic-styles>{styles}</office:automatic-styles><office:body><office:text>{body}</office:text></office:body></office:document-content>"#
     );
@@ -22,7 +22,7 @@ fn para_style(name: &str, para: &str, text: &str) -> String {
     )
 }
 
-fn paras(d: &wordcraft_doc::Document) -> Vec<&wordcraft_doc::props::ParaProps> {
+fn paras(d: &letra_doc::Document) -> Vec<&letra_doc::props::ParaProps> {
     d.body.iter().filter_map(|b| b.as_para()).map(|p| &p.props).collect()
 }
 
@@ -56,7 +56,7 @@ fn kept_lines_and_widow_control_are_read_and_written() {
 
 #[test]
 fn a_hyphenated_paragraph_makes_the_document_hyphenate() {
-    // Hyphenation is a paragraph's in ODF, the document's in WordCraft: the document hyphenates
+    // Hyphenation is a paragraph's in ODF, the document's in Letra: the document hyphenates
     // and the other paragraphs opt out.
     let d = doc(&para_style("P1", "", r#"fo:hyphenate="true""#), r#"<text:p text:style-name="P1">Hyphenated.</text:p><text:p>Not.</text:p>"#);
     assert!(d.settings.auto_hyphenation);
@@ -133,7 +133,7 @@ fn a_tables_own_space_above_and_below_is_kept() {
         styles,
         r#"<table:table table:style-name="T"><table:table-row><table:table-cell><text:p>Cell</text:p></table:table-cell></table:table-row></table:table><text:p>After.</text:p>"#,
     );
-    let space = |d: &wordcraft_doc::Document| {
+    let space = |d: &letra_doc::Document| {
         let t = d.body.iter().find_map(|b| b.as_table()).expect("a table");
         (t.props.space_before.map(|v| (v * 100.0).round() / 100.0), t.props.space_after.map(|v| (v * 100.0).round() / 100.0))
     };
@@ -170,7 +170,7 @@ fn columns_stating_only_their_shares_keep_their_proportions() {
         )
     };
     let table = r#"<table:table><table:table-column table:style-name="A"/><table:table-column table:style-name="B"/><table:table-row><table:table-cell><text:p>a</text:p></table:table-cell><table:table-cell><text:p>b</text:p></table:table-cell></table:table-row></table:table>"#;
-    let grid = |d: &wordcraft_doc::Document| d.body.iter().find_map(|b| b.as_table()).map(|t| t.grid.clone()).unwrap_or_default();
+    let grid = |d: &letra_doc::Document| d.body.iter().find_map(|b| b.as_table()).map(|t| t.grid.clone()).unwrap_or_default();
     let d = doc(&format!("{}{}", column("A", "1000*"), column("B", "3000*")), table);
     let g = grid(&d);
     assert_eq!(g.len(), 2, "{g:?}");
@@ -210,7 +210,7 @@ fn columns_by_shares_divide_the_right_width() {
         let cells: String = names.iter().map(|_| "<table:table-cell><text:p>x</text:p></table:table-cell>").collect();
         format!(r#"<table:table table:style-name="T">{columns}<table:table-row>{cells}</table:table-row></table:table>"#)
     };
-    let grid = |d: &wordcraft_doc::Document| d.body.iter().find_map(|b| b.as_table()).map(|t| t.grid.clone()).unwrap_or_default();
+    let grid = |d: &letra_doc::Document| d.body.iter().find_map(|b| b.as_table()).map(|t| t.grid.clone()).unwrap_or_default();
     let near = |got: &[f32], want: &[f32]| {
         assert!(got.len() == want.len() && got.iter().zip(want).all(|(a, b)| (a - b).abs() < 0.5), "{got:?}, not {want:?}")
     };
@@ -312,7 +312,7 @@ fn a_tables_and_rows_background_show_behind_their_cells() {
     // Table Properties › Background: it was dropped, on screen and in LibreOffice after a save.
     let styles = r##"<style:style style:name="T" style:family="table"><style:table-properties fo:background-color="#ddffdd"/></style:style><style:style style:name="R" style:family="table-row"><style:table-row-properties fo:background-color="#ffdddd"/></style:style><style:style style:name="C" style:family="table-cell"><style:table-cell-properties fo:background-color="#ddddff"/></style:style>"##;
     let table = r#"<table:table table:style-name="T"><table:table-row><table:table-cell><text:p>table</text:p></table:table-cell><table:table-cell table:style-name="C"><text:p>cell</text:p></table:table-cell></table:table-row><table:table-row table:style-name="R"><table:table-cell><text:p>row</text:p></table:table-cell><table:table-cell table:style-name="C"><text:p>cell</text:p></table:table-cell></table:table-row></table:table>"#;
-    let colours = |d: &wordcraft_doc::Document| {
+    let colours = |d: &letra_doc::Document| {
         d.body
             .iter()
             .find_map(|b| b.as_table())
@@ -344,7 +344,7 @@ fn a_cells_background_comes_from_its_column_then_row_then_table() {
     let table = format!(
         r#"<table:table table:style-name="T"><table:table-column table:default-cell-style-name="InColumn"/><table:table-column/><table:table-row table:style-name="R" table:default-cell-style-name="InRow">{c}{c}</table:table-row><table:table-row>{c}{c}</table:table-row><table:table-row table:style-name="Clear">{c}{c}</table:table-row></table:table>"#
     );
-    let colours = |d: &wordcraft_doc::Document| {
+    let colours = |d: &letra_doc::Document| {
         d.body
             .iter()
             .find_map(|b| b.as_table())
@@ -408,7 +408,7 @@ fn a_row_that_keeps_together_says_so() {
         row("", "free"),
         row(r#" table:style-name="H""#, "kept and tall")
     );
-    let shape = |d: &wordcraft_doc::Document| {
+    let shape = |d: &letra_doc::Document| {
         d.body
             .iter()
             .find_map(|b| b.as_table())
@@ -434,7 +434,7 @@ fn a_rows_keep_together_defaults_to_the_default_style() {
         row(r#" table:style-name="H""#),
         row(r#" table:style-name="F""#)
     );
-    let keeps = |d: &wordcraft_doc::Document| {
+    let keeps = |d: &letra_doc::Document| {
         d.body.iter().find_map(|b| b.as_table()).map(|t| t.rows.iter().map(|r| r.props.cant_split).collect::<Vec<_>>()).unwrap_or_default()
     };
     let d = import(&package(&content, Some(styles))).unwrap();
@@ -454,12 +454,12 @@ fn a_row_free_to_break_stays_so_over_the_default_style() {
         row("")
     );
     let mut d = import(&package(&content, Some(styles))).unwrap();
-    let keeps = |d: &wordcraft_doc::Document| {
+    let keeps = |d: &letra_doc::Document| {
         d.body.iter().find_map(|b| b.as_table()).map(|t| t.rows.iter().map(|r| r.props.cant_split).collect::<Vec<_>>()).unwrap_or_default()
     };
     assert_eq!(keeps(&d), [false, true]);
-    if let Some(wordcraft_doc::Block::Table(t)) = d.body.get_mut(0).map(std::sync::Arc::make_mut)
-        && let Some(wordcraft_doc::Block::Para(p)) = t.rows[0].cells[0].blocks.get_mut(0).map(std::sync::Arc::make_mut)
+    if let Some(letra_doc::Block::Table(t)) = d.body.get_mut(0).map(std::sync::Arc::make_mut)
+        && let Some(letra_doc::Block::Para(p)) = t.rows[0].cells[0].blocks.get_mut(0).map(std::sync::Arc::make_mut)
     {
         p.text.push('!');
         if let Some(r) = p.runs.last_mut() {

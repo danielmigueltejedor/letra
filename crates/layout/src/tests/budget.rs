@@ -3,9 +3,9 @@
 
 use crate::ctx::Outlines;
 use crate::*;
-use wordcraft_doc::props::HeightRule;
-use wordcraft_doc::table::{MAX_COLS, Table};
-use wordcraft_doc::{Block, PartKind, Pos, TextBody, para_block};
+use letra_doc::props::HeightRule;
+use letra_doc::table::{MAX_COLS, Table};
+use letra_doc::{Block, PartKind, Pos, TextBody, para_block};
 
 fn lay(doc: &Document) -> DocLayout {
     let mut c = LayoutCache::new();
@@ -19,7 +19,7 @@ fn text_box(d: &mut Document, para: usize, text: &str, w: f32, h: f32) -> u32 {
         p.body = TextBody::default();
     }
     let shape = InlineObject::Shape {
-        kind: wordcraft_doc::para::ShapeKind::TextBox,
+        kind: letra_doc::para::ShapeKind::TextBox,
         w,
         h,
         fill: None,
@@ -105,17 +105,17 @@ fn a_chain_whose_story_shows_little_still_pays_for_its_text() {
     // All 256 boxes a hair apart in width, each showing one short visible line of a story that
     // hides about 1 MB of text between them: each layout gives some 300 lines but works through
     // the whole story. Charged by its lines alone, every width was laid out (256 times the story).
-    let n = wordcraft_doc::MAX_LINKED_BOXES;
+    let n = letra_doc::MAX_LINKED_BOXES;
     let mut d = Document::from_text(&vec!["p"; n].join("\n"));
     let hidden = "Hidden words that never show. ".repeat(3500 / 30);
-    let hide = wordcraft_doc::props::CharProps { hidden: Some(true), ..Default::default() };
+    let hide = letra_doc::props::CharProps { hidden: Some(true), ..Default::default() };
     let story = (0..300)
         .map(|k| {
             let shown = format!("Line {k}.");
             let mut p = Paragraph::with_text(&format!("{shown}{hidden}"), Default::default());
             p.runs = vec![
-                wordcraft_doc::para::Run { len: shown.len(), props: Default::default() },
-                wordcraft_doc::para::Run { len: hidden.len(), props: hide.clone() },
+                letra_doc::para::Run { len: shown.len(), props: Default::default() },
+                letra_doc::para::Run { len: hidden.len(), props: hide.clone() },
             ];
             p.touch();
             para_block(p)
@@ -131,7 +131,7 @@ fn a_chain_whose_story_shows_little_still_pays_for_its_text() {
 fn a_chain_of_wide_boxes_pays_for_a_long_paragraph() {
     // 256 wide boxes a hair apart over one long paragraph: few lines per layout, but each
     // layout shapes all of it.
-    let n = wordcraft_doc::MAX_LINKED_BOXES;
+    let n = letra_doc::MAX_LINKED_BOXES;
     let mut d = Document::from_text(&vec!["p"; n].join("\n"));
     let story = "Words that run on and on through every box of the chain. ".repeat(64 * 1024 / 58);
     hairline_chain(&mut d, n, 1500.0, vec![para_block(Paragraph::with_text(&story, Default::default()))]);
@@ -159,7 +159,7 @@ fn stacked_boxes_of_any_width_share_a_layout() {
     let story = "Stacked letters run on through every box. ".repeat(20);
     let ids: Vec<u32> = (0..n).map(|i| text_box(&mut d, i, if i == 0 { &story } else { "" }, 100.0 + 3.0 * i as f32, 28.0)).collect();
     for id in &ids {
-        d.parts.get_mut(id).unwrap().body.vert = wordcraft_doc::props::TextVert::Stacked;
+        d.parts.get_mut(id).unwrap().body.vert = letra_doc::props::TextVert::Stacked;
     }
     for w in ids.windows(2) {
         d.parts.get_mut(&w[0]).unwrap().body.next = Some(w[1]);
@@ -181,7 +181,7 @@ fn past_the_cap_a_box_takes_a_layout_in_its_own_direction() {
     let story = "Words that run on and on through every box of the chain. ".repeat(200);
     let ids: Vec<u32> = (0..n).map(|i| text_box(&mut d, i, if i == 0 { &story } else { "" }, 100.0 + 3.0 * i as f32, 28.0)).collect();
     if let Some(last) = ids.last() {
-        d.parts.get_mut(last).unwrap().body.vert = wordcraft_doc::props::TextVert::Vert;
+        d.parts.get_mut(last).unwrap().body.vert = letra_doc::props::TextVert::Vert;
     }
     for w in ids.windows(2) {
         d.parts.get_mut(&w[0]).unwrap().body.next = Some(w[1]);
@@ -545,7 +545,7 @@ fn a_truncated_picture_costs_the_same_cold_and_warm() {
 
 #[test]
 fn a_header_row_holding_a_canvas_repeats_within_the_budget() {
-    use wordcraft_doc::para::{Anchor, CanvasStyle, Float, GroupChild, ShapeKind, Wrap};
+    use letra_doc::para::{Anchor, CanvasStyle, Float, GroupChild, ShapeKind, Wrap};
     // A canvas of 800 members in an exact-height header row, over two thousand pages: each page
     // would clone all 800 members.
     let member = InlineObject::Shape {
@@ -599,7 +599,7 @@ fn a_header_row_holding_a_canvas_repeats_within_the_budget() {
 /// A table with a repeating header row in a two-column section ended by a continuous break, so
 /// its columns are balanced: laid out once, then again from a snapshot for each balancing try.
 fn balanced_header_table(rows: usize) -> Document {
-    use wordcraft_doc::section::{SectionProps, SectionStart};
+    use letra_doc::section::{SectionProps, SectionStart};
     let mut d = Document::from_text("Before\nEnd of the section\nAfter the break");
     let mut s = SectionProps::default();
     s.columns.count = 2;

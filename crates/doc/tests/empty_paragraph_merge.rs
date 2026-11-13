@@ -1,6 +1,6 @@
+use letra_doc::props::{Align, CharProps, ParaProps};
+use letra_doc::{Block, Document, Paragraph, Path, Pos, StoryRef, Table, para_block};
 use std::sync::Arc;
-use wordcraft_doc::props::{Align, CharProps, ParaProps};
-use wordcraft_doc::{Block, Document, Paragraph, Path, Pos, StoryRef, Table, para_block};
 
 /// Build an empty heading followed by explicitly formatted, mixed-run body text.
 fn fixture(first: &str, style: Option<&str>) -> Document {
@@ -66,8 +66,8 @@ fn an_empty_start_preserves_the_last_paragraph_over_a_multi_paragraph_selection(
 /// A control whose closing marker survives must move across the join without replacing tail formatting.
 #[test]
 fn an_empty_start_keeps_a_control_from_a_deleted_middle_paragraph() {
-    use wordcraft_doc::control::ContentControl;
-    use wordcraft_doc::{InlineObject, Revision, RevisionKind};
+    use letra_doc::control::ContentControl;
+    use letra_doc::{InlineObject, Revision, RevisionKind};
 
     let mut d = fixture("", Some("Normal"));
     d.body.insert(1, para_block(Paragraph::with_text("Removed", Default::default())));
@@ -109,7 +109,7 @@ fn empty_paragraph_merges_work_in_a_header_and_a_table_cell() {
             d.body = vec![Arc::new(Block::Table(table)), para_block(Paragraph::new())];
             (StoryRef::Body, Path(vec![0, 0, 0, 0]), Path(vec![0, 0, 0, 1]))
         } else {
-            let id = d.add_part(wordcraft_doc::PartKind::Header, d.body.clone());
+            let id = d.add_part(letra_doc::PartKind::Header, d.body.clone());
             (StoryRef::Part(id), Path::top(0), Path::top(1))
         };
         d.delete_range(&Pos { story, path: a.clone(), off: 0 }, &Pos { story, path: b, off: 0 }).unwrap();
@@ -122,7 +122,7 @@ fn empty_paragraph_merges_work_in_a_header_and_a_table_cell() {
 fn deleting_an_empty_section_paragraph_keeps_format_and_linked_headers() {
     let mut d = fixture("", None);
     let expected = d.para_at(&Pos::body(1, 0)).unwrap().clone();
-    let header = d.add_part(wordcraft_doc::PartKind::Header, vec![para_block(Paragraph::with_text("Header", Default::default()))]);
+    let header = d.add_part(letra_doc::PartKind::Header, vec![para_block(Paragraph::with_text("Header", Default::default()))]);
     let mut section = d.last_section.clone();
     section.headers.default = Some(header);
     d.para_mut(StoryRef::Body, &Path::top(0)).unwrap().section = Some(Box::new(section));

@@ -74,7 +74,7 @@ pub(super) fn caption(s: &mut Session, v: &Value) -> CmdResult {
 
 /// Renumber the body's SEQ fields in document order, honouring `\* format`, `\s level` (restart
 /// after each heading of that level), `\r n` (reset to n), `\c` (repeat) and `\h` (hide), and
-/// fill body STYLEREF fields ([`wordcraft_layout::styleref`]): chapter numbers (`STYLEREF n \s`,
+/// fill body STYLEREF fields ([`letra_layout::styleref`]): chapter numbers (`STYLEREF n \s`,
 /// the last level-n heading's number, or its count when the heading isn't numbered) and the
 /// text or number of the nearest paragraph of a style.
 pub fn update_seq(s: &mut Session) -> Result<(), CmdError> {
@@ -105,7 +105,7 @@ struct SeqCount {
 /// the anchor in its paragraph and after those before it (measured in Word for Windows). A locked
 /// SEQ keeps its result but still counts, `\r` included; a SEQ in a tracked deletion keeps its
 /// result and doesn't count, with markup shown or not (measured in Word for Windows, exporting).
-fn seq_results(doc: &wordcraft_doc::Document) -> Vec<FieldResult> {
+fn seq_results(doc: &letra_doc::Document) -> Vec<FieldResult> {
     let mut count = SeqCount::default();
     for path in doc.para_paths(StoryRef::Body) {
         let Some(p) = doc.para(StoryRef::Body, &path) else { continue };
@@ -121,7 +121,7 @@ fn seq_results(doc: &wordcraft_doc::Document) -> Vec<FieldResult> {
 }
 
 /// Number the SEQ fields of paragraph `p` (at `path` in `story`) and of the text boxes anchored in it.
-fn count_seq(doc: &wordcraft_doc::Document, story: StoryRef, path: &Path, p: &Paragraph, count: &mut SeqCount) {
+fn count_seq(doc: &letra_doc::Document, story: StoryRef, path: &Path, p: &Paragraph, count: &mut SeqCount) {
     // The runs come in order and the objects by offset, so one cursor walks the deleted ranges.
     let mut deleted = p.deleted_ranges().into_iter().peekable();
     for (k, (off, o)) in p.objects_with_offsets().enumerate() {
@@ -158,18 +158,18 @@ fn count_seq(doc: &wordcraft_doc::Document, story: StoryRef, path: &Path, p: &Pa
         if *locked {
             continue;
         }
-        let fmt = wordcraft_layout::fields::format_switch(instr).unwrap_or_default();
-        let r = if f.has('h') { String::new() } else { wordcraft_layout::fields::field_number(instr, fmt, n.0) };
+        let fmt = letra_layout::fields::format_switch(instr).unwrap_or_default();
+        let r = if f.has('h') { String::new() } else { letra_layout::fields::field_number(instr, fmt, n.0) };
         count.out.push((story, path.clone(), k, r));
     }
 }
 
 /// The fresh results of the body's unlocked STYLEREF fields ([`update_seq`]), from the text
 /// `doc` holds: the SEQ fields in the headings they find should already show their numbers.
-fn styleref_results(doc: &wordcraft_doc::Document) -> Vec<FieldResult> {
+fn styleref_results(doc: &letra_doc::Document) -> Vec<FieldResult> {
     let mut out = Vec::new();
     // Built on the first STYLEREF.
-    let mut styles: Option<wordcraft_layout::styleref::StyleIndex> = None;
+    let mut styles: Option<letra_layout::styleref::StyleIndex> = None;
     for path in doc.para_paths(StoryRef::Body) {
         let Some(p) = doc.para(StoryRef::Body, &path) else { continue };
         for (k, o) in p.objects.iter().enumerate() {
@@ -177,9 +177,9 @@ fn styleref_results(doc: &wordcraft_doc::Document) -> Vec<FieldResult> {
             if FieldCode::parse(instr).name != "STYLEREF" {
                 continue;
             }
-            let ix = styles.get_or_insert_with(|| wordcraft_layout::styleref::StyleIndex::build(doc));
+            let ix = styles.get_or_insert_with(|| letra_layout::styleref::StyleIndex::build(doc));
             if let Some(i) = ix.index_of(&path) {
-                out.push((StoryRef::Body, path.clone(), k, text_result(instr, ix.eval(instr, wordcraft_layout::styleref::At::Body(i)))));
+                out.push((StoryRef::Body, path.clone(), k, text_result(instr, ix.eval(instr, letra_layout::styleref::At::Body(i)))));
             }
         }
     }
@@ -199,7 +199,7 @@ pub const REFERENCE_NOT_FOUND: &str = "Error! Reference source not found.";
 /// own fields not yet refreshed, as Word's output does (measured in Word for Windows). The
 /// document's bookmarks are looked up once, and each bookmark's text read once, however many
 /// fields refer to it.
-fn ref_results(doc: &wordcraft_doc::Document, stored: &wordcraft_doc::Document) -> Vec<FieldResult> {
+fn ref_results(doc: &letra_doc::Document, stored: &letra_doc::Document) -> Vec<FieldResult> {
     let mut out = Vec::new();
     let mut starts: std::collections::HashMap<String, Pos> = std::collections::HashMap::new();
     for (name, start) in doc.bookmarks().into_iter().chain(part_bookmarks(doc)) {
@@ -214,7 +214,7 @@ fn ref_results(doc: &wordcraft_doc::Document, stored: &wordcraft_doc::Document) 
             let InlineObject::Field { instr, locked: false, .. } = o else { continue };
             // `\r`, `\n` and `\w` show the bookmarked paragraph's number, which isn't computed
             // here: those keep their stored result rather than print the paragraph's text.
-            if wordcraft_layout::fields::field_name(instr) != "REF" || ['p', 'r', 'n', 'w'].iter().any(|&sw| has_switch(instr, sw)) {
+            if letra_layout::fields::field_name(instr) != "REF" || ['p', 'r', 'n', 'w'].iter().any(|&sw| has_switch(instr, sw)) {
                 continue;
             }
             let f = FieldCode::parse(instr);
@@ -237,7 +237,7 @@ fn ref_results(doc: &wordcraft_doc::Document, stored: &wordcraft_doc::Document) 
 
 /// The bookmarks outside the body (headers, footers, notes, comments and text boxes), in story
 /// order.
-fn part_bookmarks(doc: &wordcraft_doc::Document) -> Vec<(String, Pos)> {
+fn part_bookmarks(doc: &letra_doc::Document) -> Vec<(String, Pos)> {
     let mut out = Vec::new();
     for id in doc.parts.keys() {
         let story = StoryRef::Part(*id);
@@ -255,7 +255,7 @@ fn part_bookmarks(doc: &wordcraft_doc::Document) -> Vec<(String, Pos)> {
 
 /// Put `results` into their fields, clearing `w:dirty` (a computed result is no longer stale:
 /// Word's F9 clears it too).
-fn apply_results(doc: &mut wordcraft_doc::Document, results: Vec<FieldResult>) -> Result<(), CmdError> {
+fn apply_results(doc: &mut letra_doc::Document, results: Vec<FieldResult>) -> Result<(), CmdError> {
     for (story, path, k, r) in results {
         let para = doc.para_mut(story, &path)?;
         if let Some(InlineObject::Field { result, dirty, .. }) = para.objects.get_mut(k) {
@@ -268,7 +268,7 @@ fn apply_results(doc: &mut wordcraft_doc::Document, results: Vec<FieldResult>) -
 }
 
 /// `results` less those its fields already show.
-fn changed(doc: &wordcraft_doc::Document, mut results: Vec<FieldResult>) -> Vec<FieldResult> {
+fn changed(doc: &letra_doc::Document, mut results: Vec<FieldResult>) -> Vec<FieldResult> {
     results.retain(|(story, path, k, r)| {
         !matches!(doc.para(*story, path).and_then(|p| p.objects.get(*k)), Some(InlineObject::Field { result, .. }) if result == r)
     });
@@ -281,7 +281,7 @@ fn changed(doc: &wordcraft_doc::Document, mut results: Vec<FieldResult>) -> Vec<
 /// formulas keep their stored results (measured with Word for Windows, printing and exporting
 /// fields whose stored results were wrong). The document itself keeps its stored results.
 /// `None` when every such field already shows its fresh result, so nothing is copied then.
-pub fn output_fields(doc: &wordcraft_doc::Document) -> Option<wordcraft_doc::Document> {
+pub fn output_fields(doc: &letra_doc::Document) -> Option<letra_doc::Document> {
     // Numbers first, then the fields that read them: a STYLEREF to a heading holding a SEQ field,
     // and a REF to a bookmarked caption, show the new number.
     let seq = changed(doc, seq_results(doc));
@@ -375,7 +375,7 @@ pub fn update_fields_in(s: &mut Session, all: bool) -> Result<(), CmdError> {
                 }
                 continue;
             }
-            let name = wordcraft_layout::fields::field_name(instr);
+            let name = letra_layout::fields::field_name(instr);
             match name.as_str() {
                 "DATE" | "TIME" | "CREATEDATE" | "SAVEDATE" | "PRINTDATE" => {
                     let pic = date_picture(instr).unwrap_or_else(|| if name == "TIME" { "h:mm am/pm".into() } else { "M/d/yyyy".into() });
@@ -403,8 +403,8 @@ pub fn update_fields_in(s: &mut Session, all: bool) -> Result<(), CmdError> {
                         }
                     } else if !has_switch(instr, 'p') {
                         pages.get(target).map(|(num, page_fmt)| {
-                            let fmt = wordcraft_layout::fields::format_switch(instr).unwrap_or(*page_fmt);
-                            wordcraft_layout::fields::field_number(instr, fmt, *num)
+                            let fmt = letra_layout::fields::format_switch(instr).unwrap_or(*page_fmt);
+                            letra_layout::fields::field_number(instr, fmt, *num)
                         })
                     } else {
                         None
@@ -492,7 +492,7 @@ pub fn update_fields_in(s: &mut Session, all: bool) -> Result<(), CmdError> {
 /// are not "now"; `REF`, `PAGEREF`, `TOC` and citations are refreshed on an explicit update
 /// (`fields.updateAll`) and not on open, again as Word does. A field carrying `w:fldLock` keeps
 /// its stored result, which is what the lock is for.
-pub fn refresh_date_fields(doc: &mut wordcraft_doc::Document) {
+pub fn refresh_date_fields(doc: &mut letra_doc::Document) {
     let stories: Vec<StoryRef> = std::iter::once(StoryRef::Body).chain(doc.parts.keys().copied().map(StoryRef::Part)).collect();
     for story in stories {
         for path in doc.para_paths(story) {
@@ -500,7 +500,7 @@ pub fn refresh_date_fields(doc: &mut wordcraft_doc::Document) {
             let mut updates: Vec<(usize, String)> = Vec::new();
             for (k, o) in p.objects.iter().enumerate() {
                 let InlineObject::Field { instr, locked: false, .. } = o else { continue };
-                let name = wordcraft_layout::fields::field_name(instr);
+                let name = letra_layout::fields::field_name(instr);
                 if !matches!(name.as_str(), "DATE" | "TIME") {
                     continue;
                 }
@@ -540,7 +540,7 @@ fn set_values(s: &Session, paths: &[(StoryRef, Path)]) -> std::collections::Hash
         let Some(p) = s.doc.para(*story, path) else { continue };
         for o in &p.objects {
             if let InlineObject::Field { instr, .. } = o
-                && wordcraft_layout::fields::field_name(instr) == "SET"
+                && letra_layout::fields::field_name(instr) == "SET"
                 && let Some((n, v)) = set_args(instr)
                 && out.len() < MAX_SET
             {

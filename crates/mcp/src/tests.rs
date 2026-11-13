@@ -22,7 +22,7 @@ fn tool(s: &mut Server, name: &str, args: Value) -> Value {
 fn lifecycle_and_tools() {
     let mut s = Server::new(Box::new(Headless::default()));
     let init = call(&mut s, 1, "initialize", json!({"protocolVersion": "2025-06-18"}));
-    assert_eq!(init["result"]["serverInfo"]["name"], "wordcraft");
+    assert_eq!(init["result"]["serverInfo"]["name"], "letra");
     assert!(s.handle_line(r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#).is_none());
     let tools = call(&mut s, 2, "tools/list", json!({}));
     assert!(tools["result"]["tools"].as_array().unwrap().len() >= 12);
@@ -136,7 +136,7 @@ fn resources() {
     let mut s = Server::new(Box::new(Headless::default()));
     let l = call(&mut s, 1, "resources/list", json!({}));
     assert_eq!(l["result"]["resources"].as_array().unwrap().len(), 2);
-    let r = call(&mut s, 2, "resources/read", json!({"uri": "wordcraft://document"}));
+    let r = call(&mut s, 2, "resources/read", json!({"uri": "letra://document"}));
     assert!(r["result"]["contents"][0]["text"].as_str().unwrap().contains("blocks"));
 }
 
@@ -150,7 +150,7 @@ impl crate::backend::Backend for FakeApp {
     fn call(&mut self, method: &str, params: Value) -> Result<Value, String> {
         self.calls.lock().unwrap().push((method.to_string(), params.clone()));
         match method {
-            "ui.render" | "ui.screenshot" => Ok(json!({"png": wordcraft_engine::cmd::insert::base64_encode(b"\x89PNG"), "width": 1, "height": 1})),
+            "ui.render" | "ui.screenshot" => Ok(json!({"png": letra_engine::cmd::insert::base64_encode(b"\x89PNG"), "width": 1, "height": 1})),
             other => Err(format!("unexpected {other}")),
         }
     }
@@ -173,7 +173,7 @@ fn render_and_screenshot_through_the_app_use_no_temp_file() {
         let content = &r["result"]["content"];
         assert_eq!(r["result"]["isError"], false, "{tool}: {r}");
         assert_eq!(content[0]["type"], "image", "{tool}");
-        assert_eq!(content[0]["data"], wordcraft_engine::cmd::insert::base64_encode(b"\x89PNG"), "{tool}");
+        assert_eq!(content[0]["data"], letra_engine::cmd::insert::base64_encode(b"\x89PNG"), "{tool}");
         let (m, params) = calls.lock().unwrap().pop().expect("one call");
         assert_eq!(m, method);
         assert!(params.get("path").is_none(), "{tool} asked for a file: {params}");
@@ -246,7 +246,7 @@ fn type_text_paragraphs_are_one_undo_step_with_a_line_cap() {
     assert!(!tool(&mut s, "get_text", json!({}))["text"].as_str().unwrap().contains("Line"));
 
     // One line over the engine's cap ("x\n" repeated gives a last, empty line): refused, nothing typed.
-    let many = "x\n".repeat(wordcraft_engine::cmd::text::MAX_TYPED_PARAGRAPHS);
+    let many = "x\n".repeat(letra_engine::cmd::text::MAX_TYPED_PARAGRAPHS);
     let r = call(&mut s, 12, "tools/call", json!({"name": "type_text", "arguments": {"text": many, "paragraphs": true}}));
     assert_eq!(r["result"]["isError"], true, "{r}");
     assert!(r["result"]["content"][0]["text"].as_str().unwrap().contains("at most 10000 paragraphs"), "{r}");
@@ -362,7 +362,7 @@ fn insert_table_fills_a_table_and_survives_docx() {
     let mut s = Server::new(Box::new(Headless::default()));
     tool(&mut s, "new_document", json!({}));
     tool(&mut s, "insert_table", json!({"values": [["Month", "Cases"], ["January", 12], ["February", 7]], "header": true, "style": "TableGrid"}));
-    let path = std::env::temp_dir().join(format!("wordcraft-mcp-table-{}.docx", std::process::id()));
+    let path = std::env::temp_dir().join(format!("letra-mcp-table-{}.docx", std::process::id()));
     let path_str = path.to_str().expect("utf-8 path").to_string();
     tool(&mut s, "save_document", json!({"path": path_str}));
     let mut s2 = Server::new(Box::new(Headless::default()));
@@ -379,7 +379,7 @@ fn insert_table_fills_a_table_and_survives_docx() {
     h.session.run("file.open", &json!({"path": path_str})).expect("reopened");
     let _ = std::fs::remove_file(&path);
     let table = h.session.doc.body.iter().find_map(|b| match &**b {
-        wordcraft_doc::Block::Table(t) => Some(t.clone()),
+        letra_doc::Block::Table(t) => Some(t.clone()),
         _ => None,
     });
     let table = table.expect("a table");

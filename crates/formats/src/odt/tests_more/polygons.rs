@@ -1,12 +1,12 @@
 //! Polygons, polylines, paths and regular polygons (ODF 1.3 §10.3.4–10.3.7, §10.3.9:
 //! `draw:polygon`, `draw:polyline`, `draw:path` with its SVG path data, `draw:regular-polygon`)
-//! and circles (§10.3.8): opened as WordCraft freeforms (curves followed by short straight
+//! and circles (§10.3.8): opened as Letra freeforms (curves followed by short straight
 //! segments) and ellipses, and freeforms written back as paths.
 
 use crate::odt::tests::{NS_T, content_of, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
-use wordcraft_doc::para::{InlineObject, ShapeKind};
+use letra_doc::Document;
+use letra_doc::para::{InlineObject, ShapeKind};
 
 const NS_D: &str =
     r#"xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0""#;
@@ -130,7 +130,7 @@ fn hostile_paths_do_not_panic() {
         let d = open(&el);
         for (_, _, paths) in drawn(&d) {
             for (pts, _) in paths {
-                assert!(pts.len() <= wordcraft_doc::freeform::MAX_POINTS && pts.iter().all(|(x, y)| x.is_finite() && y.is_finite()));
+                assert!(pts.len() <= letra_doc::freeform::MAX_POINTS && pts.iter().all(|(x, y)| x.is_finite() && y.is_finite()));
             }
         }
         let _ = export(&d).unwrap();

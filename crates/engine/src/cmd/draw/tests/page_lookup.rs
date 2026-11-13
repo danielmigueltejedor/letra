@@ -1,11 +1,11 @@
 use super::super::{PlacedInk, ink_on};
 use crate::Session;
+use letra_doc::freeform::{Freeform, InkTool};
+use letra_doc::para::{Float, InlineObject, OBJ, ShapeKind, Wrap};
+use letra_doc::{CharProps, Document, Paragraph, Path, Pos, StoryRef, para_block};
+use letra_geom::{Rect, Spin};
+use letra_layout::{DocLayout, Page, Placed};
 use std::sync::Arc;
-use wordcraft_doc::freeform::{Freeform, InkTool};
-use wordcraft_doc::para::{Float, InlineObject, OBJ, ShapeKind, Wrap};
-use wordcraft_doc::{CharProps, Document, Paragraph, Path, Pos, StoryRef, para_block};
-use wordcraft_geom::{Rect, Spin};
-use wordcraft_layout::{DocLayout, Page, Placed};
 
 fn stroke(order: u32) -> InlineObject {
     InlineObject::Shape {
@@ -13,7 +13,7 @@ fn stroke(order: u32) -> InlineObject {
         w: 20.0,
         h: 10.0,
         fill: None,
-        stroke: Some(wordcraft_doc::Rgb(12, 34, 56)),
+        stroke: Some(letra_doc::Rgb(12, 34, 56)),
         stroke_width: 2.0,
         float: Float { wrap: Wrap::InFrontOfText, ..Default::default() },
         story: None,
@@ -45,15 +45,15 @@ fn page_ink_keeps_item_order_duplicates_story_paths_and_unmatched_storage() {
     let mut d = Document::new();
     let mut p = Paragraph::new();
     p.text = format!("é{OBJ}{OBJ}{OBJ}漢{OBJ}");
-    p.runs = vec![wordcraft_doc::Run { len: p.text.len(), props: CharProps::default() }];
+    p.runs = vec![letra_doc::Run { len: p.text.len(), props: CharProps::default() }];
     p.objects = vec![InlineObject::BookmarkStart { name: "original".into() }, stroke(11), stroke(22)];
     d.body = vec![para_block(p.clone())];
-    let h = d.add_part(wordcraft_doc::PartKind::Header, vec![para_block(p.clone())]);
-    let mut table = wordcraft_doc::Table::new(1, 1, 100.0);
+    let h = d.add_part(letra_doc::PartKind::Header, vec![para_block(p.clone())]);
+    let mut table = letra_doc::Table::new(1, 1, 100.0);
     p.objects.push(stroke(33));
     p.objects.push(stroke(99)); // Surplus storage has no character and is not placed.
     table.rows[0].cells[0].blocks = vec![para_block(p)];
-    d.body.push(Arc::new(wordcraft_doc::Block::Table(table)));
+    d.body.push(Arc::new(letra_doc::Block::Table(table)));
     let cell = Path(vec![1, 0, 0, 0]);
     let mut items = vec![
         placed(StoryRef::Body, Path::top(0), 8, 50.0),
@@ -72,7 +72,7 @@ fn page_ink_keeps_item_order_duplicates_story_paths_and_unmatched_storage() {
     assert_eq!(got.iter().map(|k| k.rect.x).collect::<Vec<_>>(), [50.0, 60.0, 70.0, 80.0, 90.0]);
     assert_eq!(got[1].pos, Pos::new(StoryRef::Part(h), Path::top(0), 5));
     assert_eq!(got[2].pos.path, cell);
-    assert!(got.iter().all(|k| k.width == 2.0 && k.color == Some(wordcraft_doc::Rgb(12, 34, 56))));
+    assert!(got.iter().all(|k| k.width == 2.0 && k.color == Some(letra_doc::Rgb(12, 34, 56))));
     assert!(ink_on(&s, &l, 1).is_empty());
     s.view.hide_ink = true;
     assert_eq!(orders(&ink_on(&s, &l, 0)), orders(&got), "discovery retains hidden ink; callers decide visibility");
@@ -85,7 +85,7 @@ fn page_ink_lookup_work_does_not_multiply_with_paragraph_objects() {
         let mut d = Document::new();
         let mut p = Paragraph::new();
         p.text = OBJ.to_string().repeat(n);
-        p.runs = vec![wordcraft_doc::Run { len: p.text.len(), props: CharProps::default() }];
+        p.runs = vec![letra_doc::Run { len: p.text.len(), props: CharProps::default() }];
         p.objects = (0..n).map(|i| stroke(i as u32)).collect();
         d.body = vec![para_block(p)];
         let items = (0..n).map(|i| placed(StoryRef::Body, Path::top(0), i * OBJ.len_utf8(), 50.0)).collect();
@@ -95,12 +95,12 @@ fn page_ink_lookup_work_does_not_multiply_with_paragraph_objects() {
     let (big, b) = fixture(2000);
     assert_eq!(ink_on(&small, &a, 0).len(), 250);
     assert_eq!(ink_on(&big, &b, 0).len(), 2000);
-    // The characters the object lookups walk (`wordcraft_doc::work`), not a timing: about 8x for
+    // The characters the object lookups walk (`letra_doc::work`), not a timing: about 8x for
     // 8x the objects when each paragraph is scanned once, about 64x when every lookup rescans it.
-    let s1 = wordcraft_doc::work::count(|| drop(std::hint::black_box(ink_on(&small, &a, 0))));
-    let s8 = wordcraft_doc::work::count(|| drop(std::hint::black_box(ink_on(&big, &b, 0))));
+    let s1 = letra_doc::work::count(|| drop(std::hint::black_box(ink_on(&small, &a, 0))));
+    let s8 = letra_doc::work::count(|| drop(std::hint::black_box(ink_on(&big, &b, 0))));
     let ratio = s8 as f64 / s1.max(1) as f64;
     eprintln!("page ink steps: {s1} -> {s8}, {ratio:.1}x for 8x objects");
-    assert!(s1 > 0, "no steps counted, so the walk this test watches no longer counts them (wordcraft_doc::work)");
+    assert!(s1 > 0, "no steps counted, so the walk this test watches no longer counts them (letra_doc::work)");
     assert!(ratio <= 12.0, "page ink lookup repeats paragraph-prefix work: {ratio:.1}x the steps for 8x objects ({s1} -> {s8})");
 }

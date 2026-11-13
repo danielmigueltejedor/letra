@@ -1,10 +1,10 @@
 //! Drawing shapes (ODF 1.3 §10.3): `draw:rect`, `draw:ellipse`, `draw:line` and
 //! `draw:custom-shape`, whose `draw:enhanced-geometry` (§10.6.2) names its predefined geometry
-//! in `draw:type`. WordCraft's shape kinds both ways; LibreOffice rebuilds a predefined
+//! in `draw:type`. Letra's shape kinds both ways; LibreOffice rebuilds a predefined
 //! geometry from its type alone, so only the type is written.
 
 use super::xml::{Attrs, get, length};
-use wordcraft_doc::para::ShapeKind;
+use letra_doc::para::ShapeKind;
 
 /// Largest size or offset read, points (22 inches).
 const MAX_LEN: f32 = 1584.0;
@@ -39,8 +39,8 @@ pub(super) fn element_kind(name: &str) -> ShapeKind {
 
 /// The kind of a custom shape of `draw:type` `t`: LibreOffice's own type names, and the
 /// DrawingML preset names it writes as `ooxml-…` for shapes from Word documents. A geometry
-/// WordCraft has no shape for is a rectangle.
-/// A preset geometry type WordCraft has no kind for: drawn as a rectangle (see [`kind_of`]), its
+/// Letra has no shape for is a rectangle.
+/// A preset geometry type Letra has no kind for: drawn as a rectangle (see [`kind_of`]), its
 /// geometry kept to be written back.
 pub(super) fn unknown_preset(t: &str) -> bool {
     let t = t.trim();
@@ -87,9 +87,9 @@ pub(super) fn connector_type(kind: ShapeKind) -> &'static str {
     }
 }
 
-/// WordCraft's connection site of a `kind` shape for ODF glue point `g` (§9.2.19: a shape's
+/// Letra's connection site of a `kind` shape for ODF glue point `g` (§9.2.19: a shape's
 /// default glue points are 0 top, 1 right, 2 bottom, 3 left; see
-/// [`wordcraft_doc::connector::sites`]). `None` for a glue point of its own (4 on) or a shape
+/// [`letra_doc::connector::sites`]). `None` for a glue point of its own (4 on) or a shape
 /// without sides.
 pub(super) fn site_of_glue(kind: ShapeKind, g: u32) -> Option<u32> {
     let sides: [u32; 4] = match kind {
@@ -154,7 +154,7 @@ pub(super) fn geometry(kind: ShapeKind, a: &Attrs) -> (f32, f32, Option<f32>, Op
 
 /// The paths of a polygon, polyline, path or regular polygon `name` (local) with attributes
 /// `a`, `w` × `h` points: in its view box (§19.570 `svg:viewBox`; none: around its points).
-pub(super) fn freeform(name: &str, a: &Attrs, w: f32, h: f32) -> Option<wordcraft_doc::freeform::Freeform> {
+pub(super) fn freeform(name: &str, a: &Attrs, w: f32, h: f32) -> Option<letra_doc::freeform::Freeform> {
     use super::path;
     let vb = path::view_box(get(a, "svg:viewBox"));
     match name {

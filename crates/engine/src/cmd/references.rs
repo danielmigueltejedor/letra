@@ -1,11 +1,11 @@
 //! References tab: table of contents, footnotes/endnotes, captions; field updates.
 
+use letra_doc::numbering::{Counters, LevelSuffix};
+use letra_doc::para::{InlineObject, NoteKind, OBJ};
+use letra_doc::props::{CharProps, TabAlign, TabLeader, TabStop};
+use letra_doc::section::NumFormat;
+use letra_doc::{Block, Paragraph, PartKind, Path, Pos, StoryRef, para_block};
 use serde_json::{Value, json};
-use wordcraft_doc::numbering::{Counters, LevelSuffix};
-use wordcraft_doc::para::{InlineObject, NoteKind, OBJ};
-use wordcraft_doc::props::{CharProps, TabAlign, TabLeader, TabStop};
-use wordcraft_doc::section::NumFormat;
-use wordcraft_doc::{Block, Paragraph, PartKind, Path, Pos, StoryRef, para_block};
 
 use super::{delete_selection, sel_result};
 use crate::{CmdError, CmdResult, CommandSpec, Selection, Session, p};

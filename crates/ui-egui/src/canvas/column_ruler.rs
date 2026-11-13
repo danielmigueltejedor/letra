@@ -3,9 +3,9 @@
 //! and spacing, through `layout.columns`. As in Word for Mac, the space has no grip of its own
 //! in the middle: only its edges drag.
 
+use letra_doc::section::SectionProps;
+use letra_doc::{Pos, StoryRef};
 use serde_json::Value;
-use wordcraft_doc::section::SectionProps;
-use wordcraft_doc::{Pos, StoryRef};
 
 use super::{DocLayout, Rect, Sense, Tokens, Ui, WordApp, json, pos2};
 
@@ -43,7 +43,7 @@ pub(super) fn column_gaps(app: &WordApp, layout: &DocLayout, pi: usize) -> Optio
     if sel.focus.story != StoryRef::Body || sel.anchor.story != StoryRef::Body {
         return None;
     }
-    if app.session.view.mode != wordcraft_layout::ViewMode::Print || app.session.view.read_mode {
+    if app.session.view.mode != letra_layout::ViewMode::Print || app.session.view.read_mode {
         return None;
     }
     if sel.focus.path.cell().is_some() || crate::table_ruler::text_area(app, layout, pi).is_some() {
@@ -57,7 +57,7 @@ pub(super) fn column_gaps(app: &WordApp, layout: &DocLayout, pi: usize) -> Optio
     if layout.caret_on(&sel.focus, pi).map(|c| c.page) != Some(pi) {
         return None;
     }
-    let sect = wordcraft_engine::cmd::page::sect(&app.session);
+    let sect = letra_engine::cmd::page::sect(&app.session);
     if sect.columns.count <= 1 {
         return None;
     }
@@ -211,7 +211,7 @@ fn draggable(s: &SectionProps) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wordcraft_doc::section::Columns;
+    use letra_doc::section::Columns;
 
     /// Letter paper with inch margins: 468 pt of text.
     fn letter(columns: Columns) -> SectionProps {
@@ -301,14 +301,14 @@ mod tests {
     /// between columns, and is one undo step.
     #[test]
     fn a_column_drag_sets_the_sections_columns() {
-        let mut app = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("one two three")), Default::default());
+        let mut app = WordApp::new(letra_engine::Session::new(letra_doc::Document::from_text("one two three")), Default::default());
         app.run("layout.columns", json!({"count": 2, "separator": true})).unwrap();
-        let before = wordcraft_engine::cmd::page::sect(&app.session);
+        let before = letra_engine::cmd::page::sect(&app.session);
         // The first column's end, 9 pt to the left: 18 pt more space, the columns still equal.
         let end = before.column_boxes()[0].0 + before.column_boxes()[0].1;
         let params = column_drag(&before, 0, GapGrip::End, end - 9.0).unwrap();
         app.run("layout.columns", params).unwrap();
-        let after = wordcraft_engine::cmd::page::sect(&app.session);
+        let after = letra_engine::cmd::page::sect(&app.session);
         assert_eq!(after.columns.count, 2);
         assert!(after.columns.widths.is_empty(), "the columns stay equal");
         assert_eq!(after.columns.space, before.columns.space + 18.0);
@@ -321,14 +321,14 @@ mod tests {
         assert_eq!(cg.gaps.len(), 1);
         assert!((cg.gaps[0].0 - (page.body.x + boxes[0].1)).abs() < 0.01, "the ruler's space starts where the first column ends");
         assert!(app.session.undo());
-        assert_eq!(wordcraft_engine::cmd::page::sect(&app.session).columns, before.columns);
+        assert_eq!(letra_engine::cmd::page::sect(&app.session).columns, before.columns);
     }
 
     /// A drag sets the columns of every section the selection touches, so a selection across
     /// sections gets no spaces on the ruler; nor does a page the caret isn't on.
     #[test]
     fn no_column_spaces_for_a_selection_across_sections_or_another_page() {
-        let mut app = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("one\ntwo")), Default::default());
+        let mut app = WordApp::new(letra_engine::Session::new(letra_doc::Document::from_text("one\ntwo")), Default::default());
         app.run("caret.docEnd", json!({})).unwrap();
         app.run("layout.break", json!({"kind": "nextPage"})).unwrap();
         app.run("layout.columns", json!({"count": 2, "apply": "section"})).unwrap();

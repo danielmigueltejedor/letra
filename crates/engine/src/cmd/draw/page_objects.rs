@@ -1,9 +1,9 @@
 //! Per-call object lookups for drawing-order page walks, which can revisit a paragraph's
 //! offsets out of text order. Scan only as far as the furthest requested object, once.
 
+use letra_doc::para::OBJ;
+use letra_doc::{Document, InlineObject, Path, Pos, StoryRef};
 use std::collections::HashMap;
-use wordcraft_doc::para::OBJ;
-use wordcraft_doc::{Document, InlineObject, Path, Pos, StoryRef};
 
 #[derive(Default)]
 struct ParagraphObjects<'a> {
@@ -33,7 +33,7 @@ impl<'a> PageObjects<'a> {
             // Start after the last scanned marker, not at the paragraph's start. In particular,
             // a lone object near the start never scans a long text suffix it doesn't need.
             for (off, c) in p.text.get(cached.scanned..end)?.char_indices() {
-                wordcraft_doc::work::steps(1);
+                letra_doc::work::steps(1);
                 if c == OBJ {
                     if let Some(object) = p.objects.get(cached.ordinal) {
                         cached.objects.push((cached.scanned + off, object));

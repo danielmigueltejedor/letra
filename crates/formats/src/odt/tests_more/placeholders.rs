@@ -33,7 +33,7 @@ fn placeholders_open_as_controls_showing_them() {
     assert_eq!(controls(&bytes), [("<Honorific>".into(), true, "<Honorific>".into()), ("<Name>".into(), true, "<Name>".into())]);
     // The paragraph's own text around them.
     let d = import(&bytes).unwrap();
-    let text = d.body[0].as_para().unwrap().text.replace(wordcraft_doc::para::OBJ, "");
+    let text = d.body[0].as_para().unwrap().text.replace(letra_doc::para::OBJ, "");
     assert_eq!(text, "Dear <Honorific><Name>,");
 }
 

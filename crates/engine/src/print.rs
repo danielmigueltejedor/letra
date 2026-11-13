@@ -1,6 +1,6 @@
 //! Print settings (#641): which pages go out, how many copies, as a PDF.
 //!
-//! WordCraft prints through a PDF (the host opens it in the system's print flow), so the settings
+//! Letra prints through a PDF (the host opens it in the system's print flow), so the settings
 //! that can be delivered are the ones that shape the PDF: the page range, odd/even pages, copies
 //! and collation. Physical sheet imposition is shared with the preview; printer choice and duplex
 //! are handled by the host.
@@ -9,9 +9,9 @@
 //! text is at most [`MAX_SPEC_CHARS`] long, copies are clamped to [`MAX_COPIES`], and the
 //! resulting page list never exceeds [`MAX_PRINT_PAGES`].
 
+use letra_layout::DocLayout;
+pub use letra_pdf::imposition::Imposition;
 use serde_json::{Value, json};
-use wordcraft_layout::DocLayout;
-pub use wordcraft_pdf::imposition::Imposition;
 
 use crate::{CmdError, Session, p};
 
@@ -133,15 +133,15 @@ pub fn plan(v: &Value, total: usize, current: (usize, usize)) -> Result<PrintPla
     Ok(PrintPlan { pages: out, chosen, copies })
 }
 
-/// The `paper` param of a print job: the standard paper (see [`wordcraft_geom::PAPER_SIZES`]) to
+/// The `paper` param of a print job: the standard paper (see [`letra_geom::PAPER_SIZES`]) to
 /// scale every page to (Scale to paper size, #2108), or `None` to print the document's own page
 /// sizes (absent, null, `""`, `none` or `document`). Any other value is an error.
 pub fn paper(v: &Value) -> Result<Option<(&'static str, f32, f32)>, CmdError> {
     match v.get("paper") {
         None | Some(Value::Null) => Ok(None),
         Some(Value::String(name)) if name.trim().is_empty() || ["none", "document"].contains(&name.trim().to_ascii_lowercase().as_str()) => Ok(None),
-        Some(Value::String(name)) => wordcraft_geom::paper_by_name(name).map(Some).ok_or_else(|| {
-            let names: Vec<&str> = wordcraft_geom::PAPER_SIZES.iter().map(|(n, _, _)| *n).collect();
+        Some(Value::String(name)) => letra_geom::paper_by_name(name).map(Some).ok_or_else(|| {
+            let names: Vec<&str> = letra_geom::PAPER_SIZES.iter().map(|(n, _, _)| *n).collect();
             CmdError::Params(format!("unknown paper `{}`; use none or one of {}", name.chars().take(40).collect::<String>(), names.join(", ")))
         }),
         Some(_) => Err(CmdError::Params("paper must be a paper size name or none".into())),
@@ -149,7 +149,7 @@ pub fn paper(v: &Value) -> Result<Option<(&'static str, f32, f32)>, CmdError> {
 }
 
 /// Validate the physical sheet layout without touching document page setup.
-pub fn imposition(v: &Value) -> Result<wordcraft_pdf::imposition::Imposition, CmdError> {
+pub fn imposition(v: &Value) -> Result<letra_pdf::imposition::Imposition, CmdError> {
     match v.get("pagesPerSheet") {
         None => Ok(Imposition::Single),
         Some(Value::Number(n)) => match n.as_u64() {
@@ -179,7 +179,7 @@ fn imposed_paper(v: &Value, lay: &DocLayout, pages: &[usize]) -> Result<Option<(
 }
 
 /// Plan physical sheet sides for one copy, using the same selection and geometry as printing.
-pub fn sheets(v: &Value, lay: &DocLayout, current: (usize, usize)) -> Result<Vec<wordcraft_pdf::imposition::Sheet>, CmdError> {
+pub fn sheets(v: &Value, lay: &DocLayout, current: (usize, usize)) -> Result<Vec<letra_pdf::imposition::Sheet>, CmdError> {
     if !v.is_object() {
         return Err(CmdError::Params("print settings must be an object".into()));
     }
@@ -227,7 +227,7 @@ impl Session {
         single["copies"] = json!(1);
         let single_plan = self::plan(&single, lay.pages.len(), self.current_pages(&lay))?;
         let paper = imposed_paper(v, &lay, &single_plan.pages)?;
-        let opts = wordcraft_pdf::PdfOptions {
+        let opts = letra_pdf::PdfOptions {
             pages: Some(single_plan.pages),
             imposition: imposition(v)?,
             sheet_copies: plan.copies,
@@ -240,7 +240,7 @@ impl Session {
             links,
             ..Default::default()
         };
-        let bytes = wordcraft_pdf::export_layout(doc, &lay, &opts).map_err(|e| CmdError::Failed(e.to_string()))?;
+        let bytes = letra_pdf::export_layout(doc, &lay, &opts).map_err(|e| CmdError::Failed(e.to_string()))?;
         Ok((bytes, plan))
     }
 }
@@ -311,10 +311,10 @@ mod tests {
     /// one saved with Save these pages as PDF (`file.printPdf`) keep them.
     #[test]
     fn only_the_print_job_leaves_out_link_annotations() {
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         s.run("insert.link", &json!({"url": "https://example.com", "text": "a link"})).unwrap();
         let lay = s.export_layout();
-        let exported = wordcraft_pdf::export_layout(&s.doc, &lay, &wordcraft_pdf::PdfOptions::default()).unwrap();
+        let exported = letra_pdf::export_layout(&s.doc, &lay, &letra_pdf::PdfOptions::default()).unwrap();
         let links = |bytes: &[u8]| {
             let raw = String::from_utf8_lossy(bytes);
             raw.contains("/Annots") && raw.contains("/Link")
@@ -402,7 +402,7 @@ mod imposition_tests {
     /// Sheet printing leaves document bytes, dirty state, selection and undo history untouched.
     #[test]
     fn print_imposition_is_pure_and_rejects_hostile_modes() {
-        let s = Session::new(wordcraft_doc::Document::from_text("one\u{c}two\u{c}three\u{c}four\u{c}five"));
+        let s = Session::new(letra_doc::Document::from_text("one\u{c}two\u{c}three\u{c}four\u{c}five"));
         let before = (s.rev(), s.dirty, s.sel.clone(), serde_json::to_value(&s.doc).unwrap());
         for (mode, sides) in
             [(json!(2), 3), (json!(4), 2), (json!(6), 1), (json!(9), 1), (json!(16), 1), (json!("booklet"), 4), (json!("bookletReverse"), 4)]

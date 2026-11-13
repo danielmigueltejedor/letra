@@ -4,8 +4,8 @@
 
 use std::io::Write;
 
+use letra_doc::{InlineObject, StoryRef};
 use serde_json::json;
-use wordcraft_doc::{InlineObject, StoryRef};
 
 const W: &str = r#"xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships""#;
 
@@ -79,18 +79,18 @@ fn field(instr: &str, cached: &str) -> String {
 }
 
 /// Open a synthetic OOXML package through the real document reader.
-fn open(body: &str) -> wordcraft_engine::Session {
+fn open(body: &str) -> letra_engine::Session {
     let rels = r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>"#;
     let doc_rels = r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdN" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/></Relationships>"#;
     let doc = format!(r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document {W}><w:body>{body}</w:body></w:document>"#);
     let numbering = numbering();
     let bytes =
         zip(&[("_rels/.rels", rels), ("word/_rels/document.xml.rels", doc_rels), ("word/document.xml", &doc), ("word/numbering.xml", &numbering)]);
-    wordcraft_engine::Session::new(wordcraft_engine::io::open_bytes("d.docx", &bytes).expect("opens"))
+    letra_engine::Session::new(letra_engine::io::open_bytes("d.docx", &bytes).expect("opens"))
 }
 
 /// Every body field, as (code, result), in document order.
-fn fields(s: &wordcraft_engine::Session) -> Vec<(String, String)> {
+fn fields(s: &letra_engine::Session) -> Vec<(String, String)> {
     let mut out = Vec::new();
     for path in s.doc.para_paths(StoryRef::Body) {
         let Some(p) = s.doc.para(StoryRef::Body, &path) else { continue };
@@ -246,8 +246,8 @@ fn numeric_refs_survive_undo_redo_and_docx_round_trip() {
     assert_eq!(fields(&s)[0].1, "STALE");
     s.run("edit.redo", &json!({})).unwrap();
     assert_eq!(fields(&s)[0].1, "1(a)");
-    let bytes = wordcraft_docx::write(&s.doc).unwrap();
-    let back = wordcraft_engine::Session::new(wordcraft_engine::io::open_bytes("roundtrip.docx", &bytes).unwrap());
+    let bytes = letra_docx::write(&s.doc).unwrap();
+    let back = letra_engine::Session::new(letra_engine::io::open_bytes("roundtrip.docx", &bytes).unwrap());
     assert_eq!(fields(&back), fields(&s));
 }
 
@@ -268,7 +268,7 @@ fn relative_number_from_the_root_keeps_the_parents_rendered_context() {
 /// A header can reference a body list without inheriting the body caret's relative context.
 #[test]
 fn numeric_refs_in_headers_use_the_body_target_number() {
-    use wordcraft_doc::{Paragraph, PartKind, para_block};
+    use letra_doc::{Paragraph, PartKind, para_block};
     let mut s = open(&[para(Some((4, 0)), &text("Synthetic root")), para(Some((4, 1)), &marked("_Target", 60, "Synthetic target"))].concat());
     let mut header = Paragraph::new();
     header
@@ -288,7 +288,7 @@ fn numeric_refs_in_headers_use_the_body_target_number() {
     let id = s.doc.add_part(PartKind::Header, vec![para_block(header)]);
     s.doc.last_section.headers.default = Some(id);
     s.run("references.updateFields", &json!({"all":true})).unwrap();
-    let p = s.doc.para(StoryRef::Part(id), &wordcraft_doc::Path::top(0)).unwrap();
+    let p = s.doc.para(StoryRef::Part(id), &letra_doc::Path::top(0)).unwrap();
     let InlineObject::Field { result, .. } = &p.objects[0] else { panic!() };
     assert_eq!(result, "1(a)");
 }
@@ -317,7 +317,7 @@ fn ambiguous_numeric_label_join_keeps_the_cached_full_context() {
 /// Reusing the lookup keeps the first body bookmark even with duplicate names and many updates.
 #[test]
 fn repeated_numeric_refs_keep_the_first_body_bookmark() {
-    use wordcraft_doc::{PartKind, Path};
+    use letra_doc::{PartKind, Path};
     let mut body = [
         para(Some((4, 0)), &marked("_Duplicate", 80, "First synthetic target")),
         para(Some((4, 0)), &marked("_Duplicate", 81, "Second synthetic target")),
@@ -357,8 +357,8 @@ fn full_context_keeps_the_actual_ancestor_instance_label() {
     let mut child = numbering.nums.iter().find(|n| n.id == 1).unwrap().clone();
     child.id = 6;
     child.level_overrides = vec![
-        (0, wordcraft_doc::numbering::Level { text: "Part %1.%2.".into(), ..Default::default() }),
-        (1, wordcraft_doc::numbering::Level { format: wordcraft_doc::section::NumFormat::LowerLetter, text: "(%2)".into(), ..Default::default() }),
+        (0, letra_doc::numbering::Level { text: "Part %1.%2.".into(), ..Default::default() }),
+        (1, letra_doc::numbering::Level { format: letra_doc::section::NumFormat::LowerLetter, text: "(%2)".into(), ..Default::default() }),
     ];
     numbering.nums.push(child);
     s.run("references.updateFields", &json!({"all":true})).unwrap();

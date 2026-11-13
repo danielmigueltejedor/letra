@@ -1,9 +1,9 @@
 //! STYLEREF fields in headers and footers (#775): each page shows its own result.
 
 use crate::*;
-use wordcraft_doc::para::InlineObject;
-use wordcraft_doc::props::{CharProps, NumRef};
-use wordcraft_doc::{ListKind, PartKind, Pos, para_block};
+use letra_doc::para::InlineObject;
+use letra_doc::props::{CharProps, NumRef};
+use letra_doc::{ListKind, PartKind, Pos, para_block};
 
 fn field(instr: &str) -> InlineObject {
     InlineObject::Field { instr: instr.into(), result: "stale".into(), locked: false, dirty: false, code: false, form: String::new() }
@@ -111,7 +111,7 @@ fn full_context_keeps_the_parent_of_a_none_level_heading() {
     let mut d = doc(CHAPTERS, &[r#"STYLEREF "Heading 2" \w"#, r#"STYLEREF "Heading 2" \r"#]);
     let num = Arc::make_mut(&mut d.numbering).add_list(ListKind::Numbered);
     if let Some(n) = Arc::make_mut(&mut d.numbering).nums.iter_mut().find(|n| n.id == num) {
-        let note = wordcraft_doc::numbering::Level { format: wordcraft_doc::section::NumFormat::None, text: "Note".into(), ..Default::default() };
+        let note = letra_doc::numbering::Level { format: letra_doc::section::NumFormat::None, text: "Note".into(), ..Default::default() };
         n.level_overrides = vec![(1, note)];
     }
     for (i, lvl) in [(0, 0u8), (2, 0), (5, 0), (6, 1)] {
@@ -129,7 +129,7 @@ fn a_none_level_heading_s_number_has_no_text_and_no_trailing_period() {
         let mut d = doc(CHAPTERS, codes);
         let num = Arc::make_mut(&mut d.numbering).add_list(ListKind::Numbered);
         if let Some(n) = Arc::make_mut(&mut d.numbering).nums.iter_mut().find(|n| n.id == num) {
-            let level = wordcraft_doc::numbering::Level { format: wordcraft_doc::section::NumFormat::None, text: text.into(), ..Default::default() };
+            let level = letra_doc::numbering::Level { format: letra_doc::section::NumFormat::None, text: text.into(), ..Default::default() };
             n.level_overrides = vec![(1, level)];
         }
         for (i, lvl) in [(0, 0u8), (2, 0), (5, 0), (6, 1)] {
@@ -179,7 +179,7 @@ fn style_index_is_reused_until_the_body_or_styles_change() {
     // Rename the first chapter: rebuilt, and the header shows the new title.
     let p = d.para_mut(StoryRef::Body, &Path::top(0)).unwrap();
     p.text = "Openings".into();
-    p.runs = vec![wordcraft_doc::para::Run { len: p.text.len(), props: Default::default() }];
+    p.runs = vec![letra_doc::para::Run { len: p.text.len(), props: Default::default() }];
     let after = pages(&d, &mut c);
     assert!(!Arc::ptr_eq(&first, &index(&c)), "an edited heading rebuilds it");
     assert!(after[0].iter().any(|t| t.contains("Openings")), "{after:?}");
@@ -293,7 +293,7 @@ fn field_drawn(d: &Document, opts: &LayoutOptions) -> Vec<String> {
             let cl = &para.clusters[*k];
             // A fallback face's glyphs share the cluster, so a glyph is matched in every face.
             let gids = |ch: char| -> Vec<Option<u32>> {
-                para.styles.iter().map(|st| wordcraft_fonts::shape_run(&st.face, &ch.to_string(), &[], |c| c, false).first().map(|g| g.gid)).collect()
+                para.styles.iter().map(|st| letra_fonts::shape_run(&st.face, &ch.to_string(), &[], |c| c, false).first().map(|g| g.gid)).collect()
             };
             let glyphs = &para.glyphs[cl.g0 as usize..cl.g1 as usize];
             let mut drawn: Vec<(f32, char)> = glyphs

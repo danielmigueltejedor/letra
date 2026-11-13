@@ -1,10 +1,10 @@
 //! Text fields (ODF 1.3 §7): page number and count, dates and times, document information and
-//! bookmark references open as WordCraft fields and are written back as ODF fields.
+//! bookmark references open as Letra fields and are written back as ODF fields.
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::para::InlineObject;
-use wordcraft_doc::{Document, Paragraph, para_block};
+use letra_doc::para::InlineObject;
+use letra_doc::{Document, Paragraph, para_block};
 
 /// Every field in the body: (code, cached result).
 pub(super) fn fields(d: &Document) -> Vec<(String, String)> {
@@ -53,7 +53,7 @@ fn fields_open_as_fields_with_their_shown_text() {
     assert_eq!(got.iter().map(|(a, b)| (a.as_str(), b.as_str())).collect::<Vec<_>>(), want);
     // The text around the fields stays where it was.
     let p0 = d.body[0].as_para().unwrap();
-    assert_eq!(p0.text.replace(wordcraft_doc::para::OBJ, "#"), "Page # of #.");
+    assert_eq!(p0.text.replace(letra_doc::para::OBJ, "#"), "Page # of #.");
 }
 
 #[test]
@@ -86,13 +86,13 @@ fn a_fixed_date_is_a_locked_field_and_unknown_fields_are_plain_text() {
     assert_eq!(fields(&d).len(), 1);
 }
 
-fn field_para(parts: &[(&str, Option<&str>)]) -> std::sync::Arc<wordcraft_doc::Block> {
+fn field_para(parts: &[(&str, Option<&str>)]) -> std::sync::Arc<letra_doc::Block> {
     // Text pieces, and fields given as (code, Some(result)).
     let mut p = Paragraph::new();
     for (s, field) in parts {
         match field {
             Some(result) => {
-                p.text.push(wordcraft_doc::para::OBJ);
+                p.text.push(letra_doc::para::OBJ);
                 p.objects.push(InlineObject::Field {
                     instr: s.to_string(),
                     result: result.to_string(),
@@ -105,7 +105,7 @@ fn field_para(parts: &[(&str, Option<&str>)]) -> std::sync::Arc<wordcraft_doc::B
             None => p.text.push_str(s),
         }
     }
-    p.runs = vec![wordcraft_doc::para::Run { len: p.text.len(), props: Default::default() }];
+    p.runs = vec![letra_doc::para::Run { len: p.text.len(), props: Default::default() }];
     para_block(p)
 }
 
@@ -129,7 +129,7 @@ fn fields_round_trip() {
     let got: Vec<String> = fields(&back).into_iter().map(|(c, _)| c).collect();
     // The date keeps its picture (as a date style).
     assert_eq!(got, ["PAGE", "NUMPAGES", "DATE \\@ \"d MMMM yyyy\"", "TITLE", "PAGEREF intro \\h"]);
-    assert_eq!(back.body[0].as_para().unwrap().text.matches(wordcraft_doc::para::OBJ).count(), 5);
+    assert_eq!(back.body[0].as_para().unwrap().text.matches(letra_doc::para::OBJ).count(), 5);
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn an_element_inside_a_field_leaves_the_formatting_after_it_alone() {
 #[test]
 fn a_paragraph_ending_inside_a_field_still_ends() {
     let d = import(&body("<text:p>a<text:page-number>1</text:p><text:p>b</text:p>")).unwrap();
-    let texts: Vec<String> = d.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(wordcraft_doc::para::OBJ, "#")).collect();
+    let texts: Vec<String> = d.body.iter().filter_map(|b| b.as_para()).map(|p| p.text.replace(letra_doc::para::OBJ, "#")).collect();
     assert_eq!(texts, ["a#", "b"]);
 }
 
@@ -201,7 +201,7 @@ fn custom_properties_and_user_fields_are_docproperty_fields() {
         .iter()
         .filter_map(|b| b.as_para())
         .flat_map(|p| p.objects.iter())
-        .filter_map(|o| if let wordcraft_doc::para::InlineObject::Field { instr, .. } = o { Some(instr.clone()) } else { None })
+        .filter_map(|o| if let letra_doc::para::InlineObject::Field { instr, .. } = o { Some(instr.clone()) } else { None })
         .collect();
     assert_eq!(instrs, [r#"DOCPROPERTY "Project""#, r#"DOCPROPERTY "Owner""#]);
     // Saved: the properties in `meta.xml` with `text:user-defined` fields, the user field as one.
@@ -274,7 +274,7 @@ fn variables_open_as_set_and_ref_fields() {
     .collect();
     assert_eq!(fields(&d), want);
     // The text around them, as LibreOffice shows it.
-    assert_eq!(d.body[0].as_para().unwrap().text.replace(wordcraft_doc::para::OBJ, ""), "Set: . Hidden: . Get: . Number: .");
+    assert_eq!(d.body[0].as_para().unwrap().text.replace(letra_doc::para::OBJ, ""), "Set: . Hidden: . Get: . Number: .");
 }
 
 #[test]
@@ -343,7 +343,7 @@ fn user_fields_stay_user_fields() {
 #[test]
 fn sender_fields_stay_fields() {
     // LibreOffice's letter and fax templates: the sender's details (§7.3.6), shown as last filled
-    // in (WordCraft's `SENDER` field code), written back as the same fields.
+    // in (Letra's `SENDER` field code), written back as the same fields.
     let d = import(&body(r#"<text:p><text:sender-firstname>Ada</text:sender-firstname> <text:sender-lastname>Lovelace</text:sender-lastname>, <text:sender-email>ada@example.org</text:sender-email></text:p>"#)).unwrap();
     assert_eq!(
         fields(&d),
@@ -359,8 +359,8 @@ fn sender_fields_stay_fields() {
 #[test]
 fn a_field_that_follows_the_document_says_so() {
     // §19.807: not fixed unless said; LibreOffice reads an author field without `text:fixed` as
-    // fixed (an empty one stayed empty instead of showing the author), so WordCraft says it, as
-    // LibreOffice does. Sender fields it writes without, and so does WordCraft.
+    // fixed (an empty one stayed empty instead of showing the author), so Letra says it, as
+    // LibreOffice does. Sender fields it writes without, and so does Letra.
     let d = import(&body(r#"<text:p><text:author-name text:fixed="false"/> <text:sender-firstname>Ann</text:sender-firstname></text:p>"#)).unwrap();
     let c = crate::odt::tests::content_of(&export(&d).unwrap());
     assert!(c.contains(r#"<text:author-name text:fixed="false""#), "{c}");

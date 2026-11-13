@@ -5,8 +5,8 @@
 use std::collections::{BTreeMap, HashMap};
 use std::ops::{Range, RangeInclusive};
 
-use wordcraft_doc::Document;
-use wordcraft_fonts::ShapedGlyph;
+use letra_doc::Document;
+use letra_fonts::ShapedGlyph;
 
 use crate::DocLayout;
 use crate::display::{DisplayOptions, Draw, page_display};
@@ -137,13 +137,13 @@ impl DocLayout {
 /// character that font lacks shapes to glyph id 0. Strict export checks these same glyphs
 /// ([`missing_watermark_glyphs`]), so the check and the exporters can't drift. `None` for a
 /// blank watermark.
-pub fn watermark_run(wm: &wordcraft_doc::Watermark, max_chars: usize) -> Option<(wordcraft_fonts::FaceRef, String, Vec<ShapedGlyph>)> {
+pub fn watermark_run(wm: &letra_doc::Watermark, max_chars: usize) -> Option<(letra_fonts::FaceRef, String, Vec<ShapedGlyph>)> {
     if wm.text.trim().is_empty() {
         return None;
     }
-    let face = wordcraft_fonts::word::resolve(&wm.font, false, false).face;
+    let face = letra_fonts::word::resolve(&wm.font, false, false).face;
     let text: String = wm.text.chars().take(max_chars).collect();
-    let shaped = wordcraft_fonts::shape(&face, &text, &[], |c| c);
+    let shaped = letra_fonts::shape(&face, &text, &[], |c| c);
     Some((face, text, shaped))
 }
 
@@ -151,16 +151,16 @@ pub fn watermark_run(wm: &wordcraft_doc::Watermark, max_chars: usize) -> Option<
 /// in the face its font name resolves to (no fallback face), so a character that face lacks shapes
 /// to glyph id 0. Strict export checks these same glyphs, so the check and the exporters can't
 /// drift.
-pub fn metafile_text_run(t: &wordcraft_metafile::Text) -> (wordcraft_fonts::FaceRef, Vec<ShapedGlyph>) {
-    let face = wordcraft_fonts::word::resolve(&t.font, t.bold, t.italic).face;
-    let shaped = wordcraft_fonts::shape(&face, &t.text, &[], |c| c);
+pub fn metafile_text_run(t: &letra_metafile::Text) -> (letra_fonts::FaceRef, Vec<ShapedGlyph>) {
+    let face = letra_fonts::word::resolve(&t.font, t.bold, t.italic).face;
+    let shaped = letra_fonts::shape(&face, &t.text, &[], |c| c);
     (face, shaped)
 }
 
 /// The characters of the watermark that draw as an empty box (glyph id 0), counted as
 /// [`DocLayout::missing_glyphs`] counts them; sorted by code point. The watermark is on every
 /// page, so it counts once.
-pub fn missing_watermark_glyphs(wm: &wordcraft_doc::Watermark, max_chars: usize) -> MissingGlyphs {
+pub fn missing_watermark_glyphs(wm: &letra_doc::Watermark, max_chars: usize) -> MissingGlyphs {
     let mut found = Found::default();
     if let Some((face, text, shaped)) = watermark_run(wm, max_chars) {
         let ranges = cluster_ranges(&text, &shaped);
@@ -181,7 +181,7 @@ struct Found {
 
 /// A metafile text run as drawn: its face, text, per-glyph ranges and glyph ids.
 struct MetaRun {
-    face: wordcraft_fonts::FaceRef,
+    face: letra_fonts::FaceRef,
     text: String,
     ranges: Vec<Range<usize>>,
     gids: Vec<u32>,
@@ -221,7 +221,7 @@ impl Found {
     }
 
     /// A run of glyphs of `face` (`gids`) showing `text`, glyph `k` showing `ranges[k]`.
-    fn run(&mut self, face: &wordcraft_fonts::FaceRef, gids: impl Iterator<Item = u32>, text: &str, ranges: &[Range<usize>]) {
+    fn run(&mut self, face: &letra_fonts::FaceRef, gids: impl Iterator<Item = u32>, text: &str, ranges: &[Range<usize>]) {
         let glyph_count = gids.size_hint().1.unwrap_or(0);
         let one_each = ranges.is_empty() && text.chars().count() == glyph_count;
         let mut chars = text.chars();
@@ -265,16 +265,16 @@ impl Found {
 
 /// The text runs of a metafile picture that the exporters draw (a run whose layout fails is not).
 fn meta_runs(bytes: &[u8]) -> Vec<MetaRun> {
-    if !wordcraft_metafile::is_metafile(bytes) {
+    if !letra_metafile::is_metafile(bytes) {
         return Vec::new();
     }
-    let Ok(pic) = wordcraft_metafile::parse(bytes) else { return Vec::new() };
+    let Ok(pic) = letra_metafile::parse(bytes) else { return Vec::new() };
     if !pic.has_size() {
         return Vec::new();
     }
     let mut out = Vec::new();
     for item in &pic.items {
-        let wordcraft_metafile::Item::Text(t) = item else { continue };
+        let letra_metafile::Item::Text(t) = item else { continue };
         let (face, shaped) = metafile_text_run(t);
         let glyphs: Vec<_> = shaped.iter().map(|g| (g.cluster, f64::from(g.x_advance), f64::from(g.x_offset), f64::from(g.y_offset))).collect();
         if t.layout(face.upem, face.ascent, face.descent, &glyphs).is_none() {

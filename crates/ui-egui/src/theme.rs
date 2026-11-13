@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use egui::{Align2, Color32, CornerRadius, FontData, FontDefinitions, FontFamily, FontId, Rect, Stroke, Visuals};
 
-/// WordCraft's app colour (and its darker ink for text on light backgrounds).
+/// Letra's app colour (and its darker ink for text on light backgrounds).
 pub const APP_COLOR: Color32 = Color32::from_rgb(0x3B, 0x5B, 0xDB);
 pub const APP_INK: Color32 = Color32::from_rgb(0x2B, 0x47, 0xB5);
 
@@ -472,7 +472,7 @@ pub fn install_fonts_language_with(ctx: &egui::Context, prefer_hans: bool, prefe
 /// [`install_fonts_with`], also adding document-font `faces` as last-resort fallbacks (#565): the
 /// faces that cover text the interface fonts cannot draw (an input method's composition, or a
 /// file name in the window caption).
-pub fn install_fonts_extra(ctx: &egui::Context, prefer_hans: bool, system_cjk: bool, faces: &[Arc<wordcraft_fonts::FontFace>]) {
+pub fn install_fonts_extra(ctx: &egui::Context, prefer_hans: bool, system_cjk: bool, faces: &[Arc<letra_fonts::FontFace>]) {
     install_fonts_language_extra(ctx, prefer_hans, false, false, system_cjk, faces);
 }
 
@@ -483,7 +483,7 @@ pub fn install_fonts_language_extra(
     prefer_korean: bool,
     prefer_hant: bool,
     system_cjk: bool,
-    faces: &[Arc<wordcraft_fonts::FontFace>],
+    faces: &[Arc<letra_fonts::FontFace>],
 ) {
     install_fonts_language_arabic(ctx, prefer_hans, prefer_korean, prefer_hant, system_cjk, false, faces);
 }
@@ -498,7 +498,7 @@ pub fn install_fonts_language_arabic(
     prefer_hant: bool,
     system_cjk: bool,
     system_arabic: bool,
-    faces: &[Arc<wordcraft_fonts::FontFace>],
+    faces: &[Arc<letra_fonts::FontFace>],
 ) {
     let mut fonts = font_definitions_language_arabic(prefer_hans, prefer_korean, prefer_hant, system_cjk, system_arabic);
     add_fallback_faces(&mut fonts, faces);
@@ -506,7 +506,7 @@ pub fn install_fonts_language_arabic(
 }
 
 /// Add `faces` after every other font of the interface families.
-pub fn add_fallback_faces(fonts: &mut FontDefinitions, faces: &[Arc<wordcraft_fonts::FontFace>]) {
+pub fn add_fallback_faces(fonts: &mut FontDefinitions, faces: &[Arc<letra_fonts::FontFace>]) {
     for f in faces {
         let name = format!("fallback {} {} {}", f.family, f.style, f.id());
         let mut data = FontData::from_owned(f.data().to_vec());
@@ -524,7 +524,7 @@ pub fn add_fallback_faces(fonts: &mut FontDefinitions, faces: &[Arc<wordcraft_fo
 /// the interface faces cover, or CJK, which uses the CJK UI font ([`install_fonts_with`]) rather
 /// than a document face. System CJK collections are larger than [`faces_for_preedit`] will load.
 pub fn caption_char_covered(c: char) -> bool {
-    (c as u32) < 0x250 || wordcraft_fonts::is_cjk(c)
+    (c as u32) < 0x250 || letra_fonts::is_cjk(c)
 }
 
 /// Document faces needed to draw `text` (the input method's composition, or a file name in the
@@ -533,11 +533,11 @@ pub fn caption_char_covered(c: char) -> bool {
 /// (system CJK collections) are left to the CJK fallback.
 pub fn faces_for_preedit(
     text: &str,
-    have: &[Arc<wordcraft_fonts::FontFace>],
+    have: &[Arc<letra_fonts::FontFace>],
     covered: impl Fn(char) -> bool,
-    lookup: impl Fn(char) -> Option<Arc<wordcraft_fonts::FontFace>>,
-) -> Vec<Arc<wordcraft_fonts::FontFace>> {
-    let mut out: Vec<Arc<wordcraft_fonts::FontFace>> = Vec::new();
+    lookup: impl Fn(char) -> Option<Arc<letra_fonts::FontFace>>,
+) -> Vec<Arc<letra_fonts::FontFace>> {
+    let mut out: Vec<Arc<letra_fonts::FontFace>> = Vec::new();
     for c in text.chars().filter(|c| !c.is_ascii() && !c.is_whitespace() && !covered(*c)) {
         if have.iter().chain(&out).any(|f| f.covers(c)) {
             continue;
@@ -605,13 +605,13 @@ pub fn font_definitions_language_arabic(
     }
     #[cfg(target_arch = "wasm32")]
     let _ = prefer_hant;
-    let cjk = wordcraft_fonts::ui_cjk_fonts_for(prefer_hans, prefer_korean);
+    let cjk = letra_fonts::ui_cjk_fonts_for(prefer_hans, prefer_korean);
     for f in &cjk {
         // The same static bytes the document fonts use: one copy in the binary.
         add_cjk(&mut fonts, format!("{} {}", f.family, f.style), FontData::from_static(f.bytes));
     }
     // Georgian has no glyphs in Inter, Source Sans or the CJK faces: the craft-fonts Geor face.
-    for f in wordcraft_fonts::georgian_fonts() {
+    for f in letra_fonts::georgian_fonts() {
         add_cjk(&mut fonts, format!("{} {}", f.family, f.style), FontData::from_static(f.bytes));
     }
     // The embedded faces leave interface characters without a glyph (a build without craft-fonts,
@@ -628,7 +628,7 @@ pub fn font_definitions_language_arabic(
     // Arabic-script faces last: the Arabic interface, its name in the language list, Arabic file
     // names. Without an embedded one (a build without craft-fonts), an installed font, read when
     // `system_arabic` is set: for an Arabic interface.
-    let arabic = wordcraft_fonts::ui_arabic_fonts();
+    let arabic = letra_fonts::ui_arabic_fonts();
     for f in &arabic {
         add_cjk(&mut fonts, format!("{} {}", f.family, f.style), FontData::from_static(f.bytes));
     }
@@ -647,9 +647,9 @@ pub fn font_definitions_language_arabic(
 
 /// The installed Arabic interface font, read once.
 #[cfg(not(target_arch = "wasm32"))]
-fn system_arabic_font() -> Option<&'static wordcraft_fonts::SystemUiFont> {
-    static ARABIC: std::sync::OnceLock<Option<wordcraft_fonts::SystemUiFont>> = std::sync::OnceLock::new();
-    ARABIC.get_or_init(wordcraft_fonts::system_arabic_ui_font).as_ref()
+fn system_arabic_font() -> Option<&'static letra_fonts::SystemUiFont> {
+    static ARABIC: std::sync::OnceLock<Option<letra_fonts::SystemUiFont>> = std::sync::OnceLock::new();
+    ARABIC.get_or_init(letra_fonts::system_arabic_ui_font).as_ref()
 }
 
 /// The installed CJK interface font for a Chinese (`hans`) or other interface, chosen once:
@@ -657,10 +657,10 @@ fn system_arabic_font() -> Option<&'static wordcraft_fonts::SystemUiFont> {
 /// ([`cjk_font_text`](crate::i18n::Lang::cjk_font_text)). The font is picked for the catalogs'
 /// missing characters, or for the language names when only those are missing.
 #[cfg(not(target_arch = "wasm32"))]
-fn system_cjk_font(hans: bool, korean: bool) -> Option<&'static wordcraft_fonts::SystemUiFont> {
-    static ZH: std::sync::OnceLock<Option<wordcraft_fonts::SystemUiFont>> = std::sync::OnceLock::new();
-    static OTHER: std::sync::OnceLock<Option<wordcraft_fonts::SystemUiFont>> = std::sync::OnceLock::new();
-    static KO: std::sync::OnceLock<Option<wordcraft_fonts::SystemUiFont>> = std::sync::OnceLock::new();
+fn system_cjk_font(hans: bool, korean: bool) -> Option<&'static letra_fonts::SystemUiFont> {
+    static ZH: std::sync::OnceLock<Option<letra_fonts::SystemUiFont>> = std::sync::OnceLock::new();
+    static OTHER: std::sync::OnceLock<Option<letra_fonts::SystemUiFont>> = std::sync::OnceLock::new();
+    static KO: std::sync::OnceLock<Option<letra_fonts::SystemUiFont>> = std::sync::OnceLock::new();
     (if hans {
         &ZH
     } else if korean {
@@ -669,26 +669,26 @@ fn system_cjk_font(hans: bool, korean: bool) -> Option<&'static wordcraft_fonts:
         &OTHER
     })
     .get_or_init(|| {
-        let embedded = wordcraft_fonts::ui_cjk_fonts_for(hans, korean);
+        let embedded = letra_fonts::ui_cjk_fonts_for(hans, korean);
         let (catalogs, names) = crate::i18n::Lang::cjk_font_text_for(hans, korean);
-        let mut needed = wordcraft_fonts::ui_uncovered_cjk(&catalogs, &embedded);
+        let mut needed = letra_fonts::ui_uncovered_cjk(&catalogs, &embedded);
         if needed.is_empty() {
-            needed = wordcraft_fonts::ui_uncovered_cjk(&[&names], &embedded);
+            needed = letra_fonts::ui_uncovered_cjk(&[&names], &embedded);
             if needed.is_empty() {
                 return None;
             }
         }
         log::debug!("interface: {} CJK characters lack an embedded glyph", needed.len());
-        wordcraft_fonts::system_cjk_ui_font_for(hans, korean, &needed)
+        letra_fonts::system_cjk_ui_font_for(hans, korean, &needed)
     })
     .as_ref()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn system_hant_font() -> Option<&'static wordcraft_fonts::SystemUiFont> {
-    static HANT: std::sync::OnceLock<Option<wordcraft_fonts::SystemUiFont>> = std::sync::OnceLock::new();
+fn system_hant_font() -> Option<&'static letra_fonts::SystemUiFont> {
+    static HANT: std::sync::OnceLock<Option<letra_fonts::SystemUiFont>> = std::sync::OnceLock::new();
     HANT.get_or_init(|| {
-        let f = wordcraft_fonts::system_hant_ui_font(&crate::i18n::Lang::hant_font_chars());
+        let f = letra_fonts::system_hant_ui_font(&crate::i18n::Lang::hant_font_chars());
         log::debug!("interface: Traditional Chinese font {:?}", f.as_ref().map(|f| &f.family));
         f
     })
@@ -897,7 +897,7 @@ fn visuals(t: &Tokens) -> Visuals {
     v
 }
 
-pub fn c32(c: wordcraft_doc::Rgb) -> Color32 {
+pub fn c32(c: letra_doc::Rgb) -> Color32 {
     Color32::from_rgb(c.0, c.1, c.2)
 }
 
@@ -1050,7 +1050,7 @@ mod tests {
     }
 
     /// The test root declares egui's `default_fonts` and `monochrome_emoji_fonts` features
-    /// explicitly (kittest's own dev-dependencies do not propagate). WordCraft inserts Inter at
+    /// explicitly (kittest's own dev-dependencies do not propagate). Letra inserts Inter at
     /// the front and SourceSans after egui's complete default fallback block, including the
     /// monochrome emoji faces. Production keeps only `default_fonts` through eframe.
     /// An installed Arabic font is read for an Arabic interface only (`system_arabic`), and the
@@ -1060,7 +1060,7 @@ mod tests {
         let plain = super::font_definitions_language_arabic(false, false, false, false, false).font_data.len();
         let cjk_only = super::font_definitions_language_arabic(false, false, false, true, false);
         let arabic = super::font_definitions_language_arabic(false, false, false, false, true).font_data.len();
-        let installed_arabic = wordcraft_fonts::ui_arabic_fonts().is_empty() && wordcraft_fonts::system_arabic_ui_font().is_some();
+        let installed_arabic = letra_fonts::ui_arabic_fonts().is_empty() && letra_fonts::system_arabic_ui_font().is_some();
         assert_eq!(arabic, plain + usize::from(installed_arabic), "Arabic adds the installed font when nothing is embedded");
         let arabic_named = |defs: &egui::FontDefinitions| defs.font_data.keys().filter(|k| k.starts_with("system ")).count();
         let cjk_font = super::system_cjk_font(false, false).is_some();
@@ -1082,7 +1082,7 @@ mod tests {
     /// once, and not for characters the interface fonts draw.
     #[test]
     fn preedit_gets_document_fallback_faces() {
-        let face = wordcraft_fonts::FontDb::global().face("Source Sans 3", "Regular");
+        let face = letra_fonts::FontDb::global().face("Source Sans 3", "Regular");
         let lookup = |_: char| Some(face.clone());
         let bangla = "\u{0986}\u{09AE}\u{09BF}";
         let got = super::faces_for_preedit(bangla, &[], |_| false, lookup);
@@ -1103,7 +1103,7 @@ mod tests {
     /// add here.
     #[test]
     fn caption_borrows_one_fallback_face_for_hebrew() {
-        let face = wordcraft_fonts::FontDb::global().face("Source Sans 3", "Regular");
+        let face = letra_fonts::FontDb::global().face("Source Sans 3", "Regular");
         let lookup = |c: char| {
             assert!(!super::caption_char_covered(c), "{c} is already drawn by the interface fonts");
             Some(face.clone())

@@ -1,7 +1,7 @@
 //! Relative font sizes keep each selected run's size (#4903).
 
+use letra_doc::{Document, Pos};
 use serde_json::json;
-use wordcraft_doc::{Document, Pos};
 
 use crate::Session;
 
@@ -55,8 +55,8 @@ fn relative_font_sizes_preserve_mixed_runs_and_one_undo() {
 
 #[test]
 fn relative_font_sizes_resolve_styles_and_preserve_other_properties() {
-    use wordcraft_doc::props::CharProps;
-    use wordcraft_doc::styles::{Style, StyleKind};
+    use letra_doc::props::CharProps;
+    use letra_doc::styles::{Style, StyleKind};
 
     let mut s = mixed();
     let styles = std::sync::Arc::make_mut(&mut s.doc.styles);
@@ -76,7 +76,7 @@ fn relative_font_sizes_resolve_styles_and_preserve_other_properties() {
         ..Default::default()
     });
     for block in 0..2 {
-        let p = s.doc.para_mut(wordcraft_doc::StoryRef::Body, &wordcraft_doc::Path::top(block)).unwrap();
+        let p = s.doc.para_mut(letra_doc::StoryRef::Body, &letra_doc::Path::top(block)).unwrap();
         p.props.style = Some(if block == 0 { "Large" } else { "Normal" }.into());
         for c in std::iter::once(&mut p.mark).chain(p.runs.iter_mut().map(|r| &mut r.props)) {
             c.size = None;
@@ -139,7 +139,7 @@ fn relative_font_sizes_keep_the_caret_and_word_targets() {
 
 #[test]
 fn relative_font_sizes_keep_column_cell_and_text_box_targets() {
-    use wordcraft_doc::{Path, StoryRef};
+    use letra_doc::{Path, StoryRef};
 
     let mut s = super::column_doc();
     super::block(&mut s);
@@ -213,7 +213,7 @@ fn relative_font_sizes_keep_bounds_protection_and_saved_sizes() {
 fn relative_font_sizes_keep_paragraph_mark_link_filtering() {
     let mut s = mixed();
     for (block, style) in [(0, "Hyperlink"), (1, "CustomLink")] {
-        let p = s.doc.para_mut(wordcraft_doc::StoryRef::Body, &wordcraft_doc::Path::top(block)).unwrap();
+        let p = s.doc.para_mut(letra_doc::StoryRef::Body, &letra_doc::Path::top(block)).unwrap();
         p.mark.link = Some("https://example.test/mark".into());
         p.mark.style = Some(style.into());
         p.runs[0].props.link = Some("https://example.test/text".into());

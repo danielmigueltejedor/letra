@@ -24,8 +24,8 @@ pub(in crate::odt) fn box_look_attrs(look: &model::BoxLook, defs: &mut crate::od
     // Which way its text runs (§20.404; upward is LibreOffice's own `bt-lr`; stacked letters
     // have no ODF form).
     a.push_str(match look.vert {
-        wordcraft_doc::props::TextVert::Vert => " style:writing-mode=\"tb-rl\"",
-        wordcraft_doc::props::TextVert::Vert270 => " loext:writing-mode=\"bt-lr\"",
+        letra_doc::props::TextVert::Vert => " style:writing-mode=\"tb-rl\"",
+        letra_doc::props::TextVert::Vert270 => " loext:writing-mode=\"bt-lr\"",
         _ => "",
     });
     a
@@ -35,12 +35,12 @@ pub(in crate::odt) fn box_look_attrs(look: &model::BoxLook, defs: &mut crate::od
 /// §20.120 `draw:fill-gradient-name`; a frame's `fo:background-color` too): a gradient by the
 /// name of its definition, with its main colour for readers that draw none.
 pub(in crate::odt) fn fill_attrs(
-    fill: Option<&wordcraft_doc::fill::Fill>,
+    fill: Option<&letra_doc::fill::Fill>,
     frame: bool,
     defs: &mut crate::odt::strokes::DrawDefs,
     prefix: &str,
 ) -> String {
-    use wordcraft_doc::fill::Fill;
+    use letra_doc::fill::Fill;
     let hex = |c: Rgb| format!("#{}", c.hex().to_ascii_lowercase());
     let background = |c: &str| if frame { format!(" fo:background-color=\"{c}\"") } else { String::new() };
     match fill {
@@ -63,10 +63,10 @@ pub(in crate::odt) fn fill_attrs(
 #[derive(Clone, Copy)]
 pub(in crate::odt) enum Place<'a> {
     /// In the text: anchored and placed as its float says, in line without one.
-    Text(Option<&'a wordcraft_doc::para::Float>),
+    Text(Option<&'a letra_doc::para::Float>),
     /// A member of a group, at (x, y) from where the group is anchored; its float turns or
     /// mirrors it.
-    Member(f32, f32, Option<&'a wordcraft_doc::para::Float>),
+    Member(f32, f32, Option<&'a letra_doc::para::Float>),
 }
 
 impl<'a> Place<'a> {
@@ -76,7 +76,7 @@ impl<'a> Place<'a> {
     }
 
     /// What turns or mirrors the object, and places it in the text.
-    pub(in crate::odt) fn float(self) -> Option<&'a wordcraft_doc::para::Float> {
+    pub(in crate::odt) fn float(self) -> Option<&'a letra_doc::para::Float> {
         match self {
             Place::Text(f) | Place::Member(_, _, f) => f,
         }
@@ -88,7 +88,7 @@ impl<'a> Place<'a> {
         match self {
             Place::Member(x, y, _) => (off(x, false), off(y, false)),
             Place::Text(f) => f
-                .filter(|f| f.wrap != wordcraft_doc::para::Wrap::Inline)
+                .filter(|f| f.wrap != letra_doc::para::Wrap::Inline)
                 .map_or((0.0, 0.0), |f| (off(f.x, f.h_align.is_some()), off(f.y, f.v_align.is_some()))),
         }
     }
@@ -112,7 +112,7 @@ fn clip_attr(img: &model::Img) -> String {
 pub(in crate::odt) fn placement(place: Place<'_>, w: f32, h: f32) -> (String, String, String) {
     let anchor = |a: &str| format!(" text:anchor-type=\"{a}\"");
     match place {
-        Place::Text(Some(f)) if f.wrap != wordcraft_doc::para::Wrap::Inline => {
+        Place::Text(Some(f)) if f.wrap != letra_doc::para::Wrap::Inline => {
             let (a, props, xy) = crate::odt::frames::frame_of(f, w, h);
             let page = if a == "page" && f.page > 0 { format!(" text:anchor-page-number=\"{}\"", f.page) } else { String::new() };
             (format!("{}{page}", anchor(a)), props, xy)
@@ -183,7 +183,7 @@ pub(in crate::odt) fn shape_look_attrs(look: &model::BoxLook, defs: &mut crate::
     a
 }
 
-/// A text box's default inner margins (left, top, right, bottom), points: WordCraft's and
+/// A text box's default inner margins (left, top, right, bottom), points: Letra's and
 /// Word's (0.1" and 0.05").
 pub(in crate::odt) const DEFAULT_BOX_INSET: [f32; 4] = [7.2, 3.6, 7.2, 3.6];
 
@@ -205,14 +205,14 @@ impl Writer {
     /// A text box or another drawing shape at `place`.
     pub(in crate::odt) fn drawing_shape(
         &mut self,
-        kind: wordcraft_doc::para::ShapeKind,
+        kind: letra_doc::para::ShapeKind,
         size: (f32, f32),
         place: Place<'_>,
-        (look, path): (&model::BoxLook, Option<&wordcraft_doc::freeform::Freeform>),
+        (look, path): (&model::BoxLook, Option<&letra_doc::freeform::Freeform>),
         blocks: &[FBlock],
         out: &mut String,
     ) {
-        if kind == wordcraft_doc::para::ShapeKind::TextBox {
+        if kind == letra_doc::para::ShapeKind::TextBox {
             self.text_box(size, place, look, blocks, out);
         } else {
             self.shape(kind, size, place, (look, path), blocks, out);
@@ -250,8 +250,8 @@ impl Writer {
             x(&name),
             x(&replacement)
         );
-        // A picture shown that isn't the replacement (one WordCraft can't read) follows it; a
-        // placeholder is WordCraft's own, not the file's.
+        // A picture shown that isn't the replacement (one Letra can't read) follows it; a
+        // placeholder is Letra's own, not the file's.
         let other = o.replacement.as_ref().is_some_and(|r| r.as_slice() != img.data.as_slice());
         if other && crate::odt::objects::placeholder(&o.mime).as_deref() != Some(img.data.as_slice()) {
             let href = self.picture(img);
@@ -337,7 +337,7 @@ impl Writer {
         if let Some(p) = img
             .float
             .as_deref()
-            .filter(|f| matches!(f.wrap, wordcraft_doc::para::Wrap::Tight | wordcraft_doc::para::Wrap::Through))
+            .filter(|f| matches!(f.wrap, letra_doc::para::Wrap::Tight | letra_doc::para::Wrap::Through))
             .and_then(|f| f.wrap_polygon.as_deref())
         {
             out.push_str(&crate::odt::frames::contour_xml(p, img.w, img.h));
@@ -347,17 +347,11 @@ impl Writer {
 
     /// A group (ODF 1.3 §10.3.15 `draw:g`) of `size`: anchored and wrapping as its float says, in
     /// line without one; its members at their offsets from its corner.
-    pub(in crate::odt) fn group(
-        &mut self,
-        size: (f32, f32),
-        float: Option<&wordcraft_doc::para::Float>,
-        members: &[model::Member],
-        out: &mut String,
-    ) {
+    pub(in crate::odt) fn group(&mut self, size: (f32, f32), float: Option<&letra_doc::para::Float>, members: &[model::Member], out: &mut String) {
         let reopen = self.open_ins.as_ref().map(|(m, _)| m.clone());
         self.close_ins(out);
         // The group isn't turned: its members are placed by their own positions.
-        let (anchor, props, _) = placement(Place::Text(float.filter(|f| f.wrap != wordcraft_doc::para::Wrap::Inline)), size.0, size.1);
+        let (anchor, props, _) = placement(Place::Text(float.filter(|f| f.wrap != letra_doc::para::Wrap::Inline)), size.0, size.1);
         let style = self.graphic_style(props);
         self.boxes += 1;
         out.push_str(&format!("<draw:g draw:name=\"{}Group{}\" draw:style-name=\"{style}\"{anchor} draw:z-index=\"0\">", self.prefix, self.boxes));
@@ -435,10 +429,10 @@ impl Writer {
     /// floats, with its fill, line and text.
     pub(in crate::odt) fn shape(
         &mut self,
-        kind: wordcraft_doc::para::ShapeKind,
+        kind: letra_doc::para::ShapeKind,
         size: (f32, f32),
         place: Place<'_>,
-        (look, path): (&model::BoxLook, Option<&wordcraft_doc::freeform::Freeform>),
+        (look, path): (&model::BoxLook, Option<&letra_doc::freeform::Freeform>),
         blocks: &[FBlock],
         out: &mut String,
     ) {
@@ -454,7 +448,7 @@ impl Writer {
         let kept = look
             .geometry
             .as_deref()
-            .filter(|_| (kind == wordcraft_doc::para::ShapeKind::Freeform && path.is_some()) || kind == wordcraft_doc::para::ShapeKind::Rectangle);
+            .filter(|_| (kind == letra_doc::para::ShapeKind::Freeform && path.is_some()) || kind == letra_doc::para::ShapeKind::Rectangle);
         let (element, geometry) = match crate::odt::shapes::element_of(kind) {
             _ if kept.is_some() => ("draw:custom-shape", None),
             // A freeform without paths has nothing to draw but its frame.
@@ -537,7 +531,7 @@ impl Writer {
     /// type and glued ends (§19.228–19.229), each end's site as the ODF glue point of the shape it
     /// is glued to (an end glued to a shape not written, or to a site ODF has no glue point for,
     /// is left unglued).
-    fn conn_attrs(&self, kind: wordcraft_doc::para::ShapeKind, look: &model::BoxLook) -> String {
+    fn conn_attrs(&self, kind: letra_doc::para::ShapeKind, look: &model::BoxLook) -> String {
         let mut a = String::new();
         if kind.is_connector() {
             a.push_str(&format!(" draw:type=\"{}\"", crate::odt::shapes::connector_type(kind)));
@@ -614,7 +608,7 @@ impl Writer {
     /// text, centred on a page whose text area is `area` (width, height; points), turned up 45°
     /// when diagonal, filled with its colour (half transparent when semitransparent). It doesn't
     /// grow to its text: its text is stretched to it.
-    pub(in crate::odt) fn watermark(&mut self, wm: &wordcraft_doc::Watermark, page: (f32, f32), area: (f32, f32)) -> String {
+    pub(in crate::odt) fn watermark(&mut self, wm: &letra_doc::Watermark, page: (f32, f32), area: (f32, f32)) -> String {
         let [w, h] = wm.frame(page.0, page.1);
         let opacity = if wm.semitransparent { " draw:opacity=\"50%\"" } else { "" };
         let style = self.graphic_style(format!(
@@ -642,7 +636,7 @@ mod tests {
 
     #[test]
     fn an_object_never_takes_a_kept_objects_name() {
-        // Re-saving a file WordCraft saved: its `Object wc1` is kept as read, so a new object
+        // Re-saving a file Letra saved: its `Object wc1` is kept as read, so a new object
         // (an edited paragraph's chart or formula) takes `Object wc2`, not the kept one's files.
         let mut w = Writer::with_prefix("wc");
         w.reserved = std::sync::Arc::new(["Object wc1/content.xml".to_string(), "Object wc3".to_string()].into_iter().collect());
@@ -656,7 +650,7 @@ mod tests {
 
     #[test]
     fn a_picture_never_takes_a_name_an_earlier_one_took() {
-        // Re-saving a file WordCraft saved: its `wcimage1.png` is kept as read, so the first new
+        // Re-saving a file Letra saved: its `wcimage1.png` is kept as read, so the first new
         // picture skips to 2, and the second must not take 2 again (a duplicate zip entry fails
         // the save).
         let mut w = Writer::with_prefix("wc");

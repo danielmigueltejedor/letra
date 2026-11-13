@@ -206,7 +206,7 @@ impl Fit {
             Fit { paper_w: page.w, paper_h: page.h, page_w: page.w, k: 1.0, dx: 0.0, dy: 0.0 }
         };
         let Some((w, h)) = paper else { return own };
-        let f = wordcraft_geom::fit_to_paper(own.paper_w, own.paper_h, w, h);
+        let f = letra_geom::fit_to_paper(own.paper_w, own.paper_h, w, h);
         Fit { paper_w: f.paper_w, paper_h: f.paper_h, page_w: own.page_w, k: own.k * f.k, dx: f.dx, dy: own.dy * f.k + f.dy }
     }
 
@@ -223,7 +223,7 @@ mod tests {
     /// N-up fits the whole markup page once, with the same centering as the physical-sheet preview.
     #[test]
     fn imposed_markup_pages_fit_the_slot_without_double_scaling() {
-        let page = wordcraft_layout::Page { w: 732.0, h: 792.0, markup: 120.0, ..Default::default() };
+        let page = letra_layout::Page { w: 732.0, h: 792.0, markup: 120.0, ..Default::default() };
         for (width, height, scale) in [(1000.0, 396.0, 0.5), (183.0, 1000.0, 0.25)] {
             let slot = imposition::Slot { page: 0, x: 17.0, y: 23.0, width, height };
             let fit = Fit::in_slot(&page, slot);

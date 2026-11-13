@@ -1,10 +1,10 @@
 //! Connectors (ODF 1.3 §10.3.10 `draw:connector`): lines glued to other shapes' glue points
-//! (§9.2.19), read as WordCraft connectors glued to the shapes' connection sites, placed between
+//! (§9.2.19), read as Letra connectors glued to the shapes' connection sites, placed between
 //! them, and written back glued.
 
 use crate::odt::import;
 use crate::odt::tests::{NS_T, content_of, package};
-use wordcraft_doc::para::{InlineObject, ShapeKind};
+use letra_doc::para::{InlineObject, ShapeKind};
 
 const NS_D: &str =
     r#"xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0""#;
@@ -12,7 +12,7 @@ const NS_D: &str =
 /// A rectangle (`id1`) and an ellipse (`id2`) anchored to one paragraph, and a connector of
 /// `kind` from the rectangle's bottom (glue point 2) to the ellipse's top (0), its own
 /// coordinates in LibreOffice's drawing layer (far from the shapes).
-fn doc(kind: &str) -> wordcraft_doc::Document {
+fn doc(kind: &str) -> letra_doc::Document {
     let content = format!(
         r#"<office:document-content {NS_T} {NS_D}><office:body><office:text><text:p><draw:rect text:anchor-type="paragraph" xml:id="id1" draw:id="id1" svg:width="1in" svg:height="0.5in" svg:x="0in" svg:y="0in"/><draw:ellipse text:anchor-type="paragraph" xml:id="id2" draw:id="id2" svg:width="1in" svg:height="0.5in" svg:x="3in" svg:y="1in"/><draw:connector text:anchor-type="paragraph"{kind} svg:x1="2in" svg:y1="4in" svg:x2="5in" svg:y2="5in" draw:start-shape="id1" draw:start-glue-point="2" draw:end-shape="id2" draw:end-glue-point="0"/>Text.</text:p></office:text></office:body></office:document-content>"#
     );
@@ -21,7 +21,7 @@ fn doc(kind: &str) -> wordcraft_doc::Document {
 
 /// The paragraph's shapes: (kind, frame x, y, w, h, flips, drawing id, glued ends).
 #[allow(clippy::type_complexity)]
-fn shapes(d: &wordcraft_doc::Document) -> Vec<(ShapeKind, [f32; 4], (bool, bool), u32, Option<(u32, u32)>, Option<(u32, u32)>)> {
+fn shapes(d: &letra_doc::Document) -> Vec<(ShapeKind, [f32; 4], (bool, bool), u32, Option<(u32, u32)>, Option<(u32, u32)>)> {
     d.body
         .iter()
         .filter_map(|b| b.as_para())

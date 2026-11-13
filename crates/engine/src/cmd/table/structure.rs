@@ -2,7 +2,7 @@ use super::cells::{cell, selected_cells};
 use super::clear::{cell_prefix, guard_delete, text_spans};
 use super::layout::{fix_caret, sync_cell_widths};
 use super::{Block, CmdError, CmdResult, Paragraph, Pos, Selection, Session, Value, json, p, sel_result};
-use wordcraft_doc::Path;
+use letra_doc::Path;
 
 /// Insert Above / Below: rows like the caret's, as many as the selection spans; the caret goes into the first.
 pub(in crate::cmd) fn row(s: &mut Session, below: bool) -> CmdResult {
@@ -67,7 +67,7 @@ pub(super) fn del_col(s: &mut Session, _: &Value) -> CmdResult {
     let mut cols = std::collections::BTreeSet::new();
     for (rr, cc) in cells {
         let g = t.grid_col(rr, cc);
-        let span = t.rows.get(rr).and_then(|x| x.cells.get(cc)).map_or(1, wordcraft_doc::Cell::span);
+        let span = t.rows.get(rr).and_then(|x| x.cells.get(cc)).map_or(1, letra_doc::Cell::span);
         cols.extend(g..g.saturating_add(span).min(t.grid.len()));
     }
     if cols.is_empty() {

@@ -8,9 +8,9 @@ use super::{
     StoryRef, TextColor, Underline,
 };
 use crate::display::Paint;
-use wordcraft_doc::Paragraph;
-use wordcraft_doc::graphic::PathSeg;
-use wordcraft_doc::para::ShapeKind;
+use letra_doc::Paragraph;
+use letra_doc::graphic::PathSeg;
+use letra_doc::para::ShapeKind;
 
 /// Append display items for the half-open line range `l0..l1` of a laid-out paragraph.
 /// `(x, y)` positions the paragraph's left origin and the first selected line's top; later lines
@@ -107,7 +107,7 @@ fn collect_glyph_run(
     let mut glyphs = Vec::with_capacity(n_glyphs);
     let mut text = String::with_capacity(n_bytes);
     let mut ranges: Vec<std::ops::Range<usize>> = Vec::with_capacity(n_glyphs);
-    let symbol_font = wordcraft_doc::symbol_fonts::is_symbol_font(&st.rc.font);
+    let symbol_font = letra_doc::symbol_fonts::is_symbol_font(&st.rc.font);
     while k < line.c1 {
         let Some(c) = pl.clusters.get(k) else { break };
         if c.style != si {
@@ -133,7 +133,7 @@ fn collect_glyph_run(
                 let t = p.text.get(c.start..c.end).unwrap_or("");
                 // Symbol-font characters (Wingdings…) read as the Unicode symbols drawn.
                 if symbol_font {
-                    text.push_str(&wordcraft_doc::symbol_fonts::map_text(&st.rc.font, t));
+                    text.push_str(&letra_doc::symbol_fonts::map_text(&st.rc.font, t));
                 } else if st.rc.caps || st.rc.small_caps {
                     // All Caps and Small Caps read as the capitals drawn (#1473), mapped
                     // as drawn, so a glyph never stands for two cases and ß reads as SS (#1581).
@@ -350,7 +350,7 @@ fn draw_glyph_runs(ctx: &LineContext<'_, '_, '_>, out: &mut Vec<Draw>) {
             }
         }
         // Emphasis marks (Font › Emphasis mark): one over (or under) each character.
-        if rc.emphasis != wordcraft_doc::props::EmphasisMark::None {
+        if rc.emphasis != letra_doc::props::EmphasisMark::None {
             for kk in run_start..end_k {
                 if pl.clusters.get(kk).is_none_or(|c| c.kind != ClKind::Text) {
                     continue;
@@ -365,8 +365,8 @@ fn draw_glyph_runs(ctx: &LineContext<'_, '_, '_>, out: &mut Vec<Draw>) {
 
 /// An emphasis mark `mark` for a character centred at `cx` on baseline `base`, in a font of
 /// `size` points: a dot or a hollow circle above, a comma (sesame) above, or a dot below.
-fn emphasis_mark(mark: wordcraft_doc::props::EmphasisMark, cx: f32, base: f32, size: f32, color: Rgb) -> Draw {
-    use wordcraft_doc::props::EmphasisMark as E;
+fn emphasis_mark(mark: letra_doc::props::EmphasisMark, cx: f32, base: f32, size: f32, color: Rgb) -> Draw {
+    use letra_doc::props::EmphasisMark as E;
     let size = if size.is_finite() { size.clamp(1.0, 1638.0) } else { 12.0 };
     let r = size * 0.07;
     // Above the tallest letters, or below the descenders.
@@ -637,7 +637,7 @@ fn inline_objects(ctx: &LineContext<'_, '_, '_>, out: &mut Vec<Draw>) {
         }
         let cx = x + line.cl_left(k).unwrap_or(0.0);
         let obj = para.and_then(|p| p.objects.get(oi));
-        let modern = doc.settings.compat_mode >= wordcraft_doc::COMPAT_MODE_CURRENT;
+        let modern = doc.settings.compat_mode >= letra_doc::COMPAT_MODE_CURRENT;
         let rect = inline_rect(obj, cx, base, c.adv, (c.obj_h, c.obj_d), pl.rule_room(line, k), modern);
         let spin = obj.and_then(InlineObject::frame).map(|(_, _, f)| f.spin()).unwrap_or_default();
         match obj {
@@ -665,7 +665,7 @@ fn inline_objects(ctx: &LineContext<'_, '_, '_>, out: &mut Vec<Draw>) {
                 }
             }
             Some(o @ InlineObject::Field { .. }) => {
-                if let Some(wordcraft_doc::legacy_form::LegacyForm::CheckBox { checked, .. }) = o.legacy_form() {
+                if let Some(letra_doc::legacy_form::LegacyForm::CheckBox { checked, .. }) = o.legacy_form() {
                     let color = pl.styles.get(c.style as usize).map_or(Rgb::BLACK, |st| text_color(&st.rc.color, None));
                     let frame = Rect::new(cx, base - c.obj_h.max(0.0), c.adv, c.obj_h + c.obj_d);
                     check_box(frame, checked, color, alpha, out);
@@ -817,7 +817,7 @@ pub fn section_break_label(start: SectionStart) -> &'static str {
 pub fn mark_text_width(text: &str, size: f32) -> f32 {
     #[cfg(test)]
     crate::test_fonts();
-    let face = wordcraft_fonts::word::resolve("Source Sans 3", false, false).face;
+    let face = letra_fonts::word::resolve("Source Sans 3", false, false).face;
     let k = size / face.upem.max(1.0) as f32;
     text.chars().map(|c| face.advance(face.glyph_for(c)) as f32 * k).sum()
 }

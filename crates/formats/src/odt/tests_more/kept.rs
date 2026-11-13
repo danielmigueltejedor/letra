@@ -1,5 +1,5 @@
-//! What WordCraft doesn't model survives a save that doesn't change it: a paragraph nothing
-//! edited is written back as it was read, with the definitions it names (`wordcraft_doc::kept`,
+//! What Letra doesn't model survives a save that doesn't change it: a paragraph nothing
+//! edited is written back as it was read, with the definitions it names (`letra_doc::kept`,
 //! `odt::kept`).
 //!
 //! Every sample here (and any sample file added for the no-edit loss gate) is written by us for
@@ -8,14 +8,14 @@
 
 use crate::odt::tests::{NS_T, content_of, package, styles_of};
 use crate::odt::{export, import};
-use wordcraft_doc::Pos;
+use letra_doc::Pos;
 
-/// A paragraph with an element and an attribute WordCraft doesn't read, in automatic styles
-/// naming a common style WordCraft doesn't model either, and a font face.
+/// A paragraph with an element and an attribute Letra doesn't read, in automatic styles
+/// naming a common style Letra doesn't model either, and a font face.
 const CONTENT: &str = r#"<office:font-face-decls><style:font-face style:name="Odd Font" svg:font-family="'Odd Font'"/></office:font-face-decls><office:automatic-styles><style:style style:name="P1" style:family="paragraph" style:parent-style-name="Plaque"><style:paragraph-properties fo:margin-left="1in" loext:odd="yes"/></style:style><style:style style:name="T1" style:family="text"><style:text-properties style:font-name="Odd Font" fo:font-weight="bold"/></style:style></office:automatic-styles>"#;
 const PARA: &str = r#"<text:p text:style-name="P1" x:unknown="1">Keep <text:span text:style-name="T1">this</text:span><text:hidden-text text:condition="ooow:1" text:string-value="secret"/> as it is.</text:p>"#;
 
-fn doc() -> wordcraft_doc::Document {
+fn doc() -> letra_doc::Document {
     let styles = format!(
         r#"<office:document-styles {NS_T}><office:styles><style:style style:name="Plaque" style:family="paragraph" style:class="odd"><style:text-properties fo:font-size="14pt"/></style:style></office:styles></office:document-styles>"#
     );
@@ -38,7 +38,7 @@ fn an_unedited_paragraph_is_written_as_it_was_read() {
     assert!(c.contains(r#"style:name="Odd Font""#), "{c}");
     let s = styles_of(&saved);
     assert!(s.contains(r#"style:name="Plaque""#), "{s}");
-    // WordCraft's own automatic styles can't take the same names.
+    // Letra's own automatic styles can't take the same names.
     assert!(!c.contains(r#"style:name="P1" style:family="paragraph"><"#) || c.matches(r#"style:name="P1""#).count() == 1, "{c}");
     // And it reads back the same.
     let back = import(&saved).unwrap();
@@ -56,13 +56,13 @@ fn an_edited_paragraph_is_written_from_the_model() {
     assert!(c.contains("Now Keep"), "{c}");
     // The paragraph nobody touched still is as read.
     assert!(c.contains("<text:p>Other.</text:p>"), "{c}");
-    // WordCraft's names keep clear of the file's.
+    // Letra's names keep clear of the file's.
     assert!(c.contains(r#"text:style-name="wcP"#) || !c.contains(r#"style:name="P1""#), "{c}");
 }
 
 #[test]
-fn a_style_edited_in_wordcraft_is_written_as_edited() {
-    // A custom style a kept paragraph names: WordCraft's version, not the one read.
+fn a_style_edited_in_letra_is_written_as_edited() {
+    // A custom style a kept paragraph names: Letra's version, not the one read.
     let styles = format!(
         r#"<office:document-styles {NS_T}><office:styles><style:style style:name="Note" style:family="paragraph"><style:text-properties fo:font-size="9pt"/></style:style></office:styles></office:document-styles>"#
     );
@@ -128,7 +128,7 @@ fn unedited_style_definitions_are_written_as_read() {
     assert!(s.contains(r#"x:odd="1""#) && s.contains(r#"xmlns:x="urn:example:x""#), "{s}");
     assert_eq!(s.matches("<text:notes-configuration text:note-class=\"footnote\"").count(), 1, "{s}");
     assert_eq!(s.matches(r#"<style:style style:name="Standard""#).count(), 1, "{s}");
-    // A style changed in WordCraft: the definitions are WordCraft's.
+    // A style changed in Letra: the definitions are Letra's.
     if let Some(st) = std::sync::Arc::make_mut(&mut d.styles).styles.iter_mut().find(|s| s.id == "Normal") {
         st.chr.bold = Some(true);
     }
@@ -162,7 +162,7 @@ fn a_file_a_kept_definition_names_is_written_with_it() {
 
 #[test]
 fn the_files_font_declarations_are_kept() {
-    // A reader without a font picks its substitute by how the file declares it. WordCraft's own
+    // A reader without a font picks its substitute by how the file declares it. Letra's own
     // guess at a font's kind replaced the file's, and a document came back from a save with no
     // edits 13 pages shorter in LibreOffice on a computer without its font.
     let ns = NS_T;
@@ -182,7 +182,7 @@ fn the_files_font_declarations_are_kept() {
     let mut d = import(&package(&content, Some(&styles))).unwrap();
     check(&export(&d).unwrap(), "no edits");
     // Text edited, written from the model: still the file's declaration.
-    if let Some(wordcraft_doc::Block::Para(p)) = d.body.get_mut(0).map(std::sync::Arc::make_mut) {
+    if let Some(letra_doc::Block::Para(p)) = d.body.get_mut(0).map(std::sync::Arc::make_mut) {
         p.text.push('!');
         if let Some(r) = p.runs.last_mut() {
             r.len += 1;
@@ -205,7 +205,7 @@ fn a_fonts_name_spelled_another_way_is_declared_once_as_the_file_has_it() {
         );
         let mut d = import(&package(&content, Some(&styles))).unwrap();
         // Text edited, written from the model.
-        if let Some(wordcraft_doc::Block::Para(p)) = d.body.get_mut(0).map(std::sync::Arc::make_mut) {
+        if let Some(letra_doc::Block::Para(p)) = d.body.get_mut(0).map(std::sync::Arc::make_mut) {
             p.text.push('!');
             if let Some(r) = p.runs.last_mut() {
                 r.len += 1;
@@ -224,7 +224,7 @@ fn a_fonts_name_spelled_another_way_is_declared_once_as_the_file_has_it() {
 }
 
 /// A face named other than its family (`F1`, `Mystery`): text written from the model names the
-/// family, and that declaration says what the file's does, not WordCraft's guess at the font's kind.
+/// family, and that declaration says what the file's does, not Letra's guess at the font's kind.
 #[test]
 fn a_face_named_other_than_its_family_gives_the_family_the_files_declaration() {
     let face =
@@ -236,7 +236,7 @@ fn a_face_named_other_than_its_family_gives_the_family_the_files_declaration() {
         r#"<office:document-content {NS_T}><office:font-face-decls>{face}</office:font-face-decls><office:automatic-styles><style:style style:name="T1" style:family="text"><style:text-properties style:font-name="F1"/></style:style></office:automatic-styles><office:body><office:text><text:p><text:span text:style-name="T1">One</text:span></text:p></office:text></office:body></office:document-content>"#
     );
     let mut d = import(&package(&content, Some(&styles))).unwrap();
-    if let Some(wordcraft_doc::Block::Para(p)) = d.body.get_mut(0).map(std::sync::Arc::make_mut) {
+    if let Some(letra_doc::Block::Para(p)) = d.body.get_mut(0).map(std::sync::Arc::make_mut) {
         p.text.push('!');
         if let Some(r) = p.runs.last_mut() {
             r.len += 1;
@@ -264,7 +264,7 @@ fn a_face_is_found_and_named_by_its_own_markup() {
         r#"<office:document-content {NS_T}>{script}<office:font-face-decls>{face}</office:font-face-decls><office:automatic-styles><style:style style:name="T1" style:family="text"><style:text-properties style:font-name="F1"/></style:style></office:automatic-styles><office:body><office:text><text:p><text:span text:style-name="T1">One</text:span></text:p></office:text></office:body></office:document-content>"#
     );
     let mut d = import(&package(&content, Some(&styles))).unwrap();
-    if let Some(wordcraft_doc::Block::Para(p)) = d.body.get_mut(0).map(std::sync::Arc::make_mut) {
+    if let Some(letra_doc::Block::Para(p)) = d.body.get_mut(0).map(std::sync::Arc::make_mut) {
         p.text.push('!');
         if let Some(r) = p.runs.last_mut() {
             r.len += 1;
@@ -278,7 +278,7 @@ fn a_face_is_found_and_named_by_its_own_markup() {
     assert!(import(&saved).is_ok());
 }
 
-/// A font declaration in single quotes is the file's too: it replaces WordCraft's, and isn't
+/// A font declaration in single quotes is the file's too: it replaces Letra's, and isn't
 /// declared a second time.
 #[test]
 fn a_font_declaration_in_single_quotes_is_kept() {

@@ -1,10 +1,10 @@
 //! Heading numbering (ODF 1.3 §16.34 `text:outline-style`): the outline style's levels number the
-//! headings of those levels; WordCraft numbers them through the heading styles, as Word does.
+//! headings of those levels; Letra numbers them through the heading styles, as Word does.
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
-use wordcraft_doc::section::NumFormat;
+use letra_doc::Document;
+use letra_doc::section::NumFormat;
 
 fn open(outline: &str) -> Document {
     let styles = format!(
@@ -126,7 +126,7 @@ fn in_custom_style(styles: &str, body: &str) -> Document {
 const HEAD: &str = r#"<style:style style:name="Head" style:family="paragraph" style:parent-style-name="Standard" style:default-outline-level="1" style:class="text"><style:text-properties fo:font-size="26pt" fo:font-weight="bold"/></style:style>"#;
 
 fn saved_after_an_edit(d: &mut Document) -> Vec<u8> {
-    d.insert_text(&wordcraft_doc::Pos::body(0, 0), "Yearly ", &Default::default()).unwrap();
+    d.insert_text(&letra_doc::Pos::body(0, 0), "Yearly ", &Default::default()).unwrap();
     export(d).unwrap()
 }
 
@@ -136,7 +136,7 @@ fn a_custom_style_with_an_outline_level_stays_the_paragraphs_style() {
     let mut d = in_custom_style(HEAD, r#"<text:p text:style-name="Head">Annual report edition</text:p>"#);
     let p = d.body[0].as_para().unwrap().props.clone();
     assert_eq!(p.style.as_deref(), Some("Head"));
-    assert_eq!(d.styles.resolve_para(&p).outline_level, Some(0), "still a heading in WordCraft");
+    assert_eq!(d.styles.resolve_para(&p).outline_level, Some(0), "still a heading in Letra");
     let look = d.styles.resolve_char(p.style.as_deref(), &Default::default());
     assert_eq!((look.size, look.bold), (26.0, true));
     let r = d.body[0].as_para().unwrap().runs.first().unwrap().props.clone();
@@ -193,7 +193,7 @@ fn a_paragraphs_own_level_and_formatting_stay_over_such_a_style() {
     );
     let d = import(&package(&content, Some(&styles))).unwrap();
     let p = d.body[0].as_para().unwrap().props.clone();
-    assert_eq!((p.style.as_deref(), p.outline_level, p.align), (Some("Head"), Some(1), Some(wordcraft_doc::Align::Center)));
+    assert_eq!((p.style.as_deref(), p.outline_level, p.align), (Some("Head"), Some(1), Some(letra_doc::Align::Center)));
     let c = crate::odt::tests::content_of(&crate::odt::tests::export_model(&d).unwrap());
     assert!(c.contains(r#"text:outline-level="2">Moved"#), "{c}");
     assert!(c.contains(r#"style:parent-style-name="Head""#) && c.contains(r#"fo:text-align="center""#), "{c}");
@@ -348,23 +348,23 @@ fn a_style_at_an_unnumbered_level_has_no_number_from_its_parent() {
 /// number the outline itself gives a heading goes with the outline.
 #[test]
 fn a_heading_in_a_list_linked_to_a_style_stays_in_it() {
+    use letra_doc::props::NumRef;
     use std::sync::Arc;
-    use wordcraft_doc::props::NumRef;
     let mut d = Document::new();
     let numbering = Arc::make_mut(&mut d.numbering);
-    let num = numbering.add_list(wordcraft_doc::numbering::ListKind::Numbered);
+    let num = numbering.add_list(letra_doc::numbering::ListKind::Numbered);
     let first = numbering.abstracts.last_mut().and_then(|a| a.levels.first_mut()).unwrap();
     first.style = Some("Heading1".into());
-    let mut p = wordcraft_doc::Paragraph::with_text("x", Default::default());
+    let mut p = letra_doc::Paragraph::with_text("x", Default::default());
     p.props.style = Some("Heading2".into());
     p.props.numbering = Some(NumRef { num, level: 1 });
     let has_list = |d: &Document| crate::odt::tests::content_of(&crate::odt::tests::export_model(d).unwrap()).contains("<text:list");
     // At a deeper level than the link, no level of its own stated.
-    d.body = vec![wordcraft_doc::para_block(p.clone())];
+    d.body = vec![letra_doc::para_block(p.clone())];
     assert!(has_list(&d), "a list of its own");
     // At its own level too, but its heading style isn't numbered: the outline wouldn't number it.
     p.props.outline_level = Some(1);
-    d.body = vec![wordcraft_doc::para_block(p)];
+    d.body = vec![letra_doc::para_block(p)];
     assert!(has_list(&d), "the outline has no number for it");
     // Its heading style numbered there by this list: the outline's number.
     Arc::make_mut(&mut d.styles).get_mut("Heading2").unwrap().para.numbering = Some(NumRef { num, level: 1 });
@@ -374,17 +374,17 @@ fn a_heading_in_a_list_linked_to_a_style_stays_in_it() {
 /// Past Heading 6 the outline written has no number to give, so a heading there keeps its list.
 #[test]
 fn a_heading_past_level_six_keeps_its_list() {
+    use letra_doc::props::NumRef;
     use std::sync::Arc;
-    use wordcraft_doc::props::NumRef;
     let mut d = Document::new();
-    let num = Arc::make_mut(&mut d.numbering).add_list(wordcraft_doc::numbering::ListKind::Numbered);
+    let num = Arc::make_mut(&mut d.numbering).add_list(letra_doc::numbering::ListKind::Numbered);
     Arc::make_mut(&mut d.styles).get_mut("Heading1").unwrap().para.numbering = Some(NumRef { num, level: 0 });
     for level in 6..=8 {
-        let mut p = wordcraft_doc::Paragraph::with_text("x", Default::default());
+        let mut p = letra_doc::Paragraph::with_text("x", Default::default());
         p.props.style = Some("Heading6".into());
         p.props.outline_level = Some(level);
         p.props.numbering = Some(NumRef { num, level });
-        d.body = vec![wordcraft_doc::para_block(p)];
+        d.body = vec![letra_doc::para_block(p)];
         let c = crate::odt::tests::content_of(&crate::odt::tests::export_model(&d).unwrap());
         assert!(c.contains("<text:list"), "level {level}: {c}");
     }

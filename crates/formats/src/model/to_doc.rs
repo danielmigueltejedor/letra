@@ -8,7 +8,7 @@ use super::{
     ParaProps, Paragraph, PropChange, Revision, RevisionKind, Rgb, RowProps, Run, Style, StyleKind, Table, TextColor, Underline, VMerge, VertAlign,
     levels_for, para_block,
 };
-use wordcraft_doc::para::{GroupChild, MAX_GROUP_CHILDREN};
+use letra_doc::para::{GroupChild, MAX_GROUP_CHILDREN};
 
 pub fn char_props(f: &Fmt) -> CharProps {
     let on = |b: bool| if b { Some(true) } else { None };
@@ -203,7 +203,7 @@ fn para_props(p: &Para, list_num: Option<u32>) -> ParaProps {
         let tabs: Vec<_> = tabs
             .iter()
             .filter(|t| t.pos.is_finite())
-            .map(|t| wordcraft_doc::props::TabStop { pos: t.pos.clamp(-1584.0, 1584.0), ..*t })
+            .map(|t| letra_doc::props::TabStop { pos: t.pos.clamp(-1584.0, 1584.0), ..*t })
             .take(64)
             .collect();
         out.tabs = Some(tabs);
@@ -230,7 +230,7 @@ struct Builder<'a> {
     /// boxes), linked once all are made ([`Builder::link_boxes`]).
     boxes: std::collections::HashMap<String, u32>,
     chains: Vec<(u32, String)>,
-    /// Tables made at the top of the flow so far (see `wordcraft_doc::kept`).
+    /// Tables made at the top of the flow so far (see `letra_doc::kept`).
     top_tables: usize,
 }
 
@@ -303,14 +303,14 @@ impl<'a> Builder<'a> {
             return None;
         }
         let blocks = self.blocks(&c.blocks, 1);
-        let part = self.doc.try_add_part(wordcraft_doc::PartKind::Comment, blocks).ok()?;
+        let part = self.doc.try_add_part(letra_doc::PartKind::Comment, blocks).ok()?;
         let ids = &self.doc.comments;
-        let Some(doc_id) = wordcraft_doc::free_id(ids.keys().next_back().copied(), ids.keys().copied(), 0) else {
+        let Some(doc_id) = letra_doc::free_id(ids.keys().next_back().copied(), ids.keys().copied(), 0) else {
             self.doc.parts.remove(&part);
             return None;
         };
         let parent = c.parent.and_then(|p| self.comments.get(&p).copied());
-        let comment = wordcraft_doc::Comment {
+        let comment = letra_doc::Comment {
             author: clean_text(&c.author),
             initials: clean_text(&c.initials),
             date: clean_text(&c.date),
@@ -328,11 +328,11 @@ impl<'a> Builder<'a> {
     /// starting with the note's mark and a space. The reference to put in the text, or `None`
     /// when the document has no room for another story.
     fn note(&mut self, endnote: bool, custom: &str, blocks: &[FBlock]) -> Option<InlineObject> {
-        use wordcraft_doc::para::NoteKind;
+        use letra_doc::para::NoteKind;
         let (kind, part, text, mark) = if endnote {
-            (NoteKind::Endnote, wordcraft_doc::PartKind::Endnote, "EndnoteText", "EndnoteReference")
+            (NoteKind::Endnote, letra_doc::PartKind::Endnote, "EndnoteText", "EndnoteReference")
         } else {
-            (NoteKind::Footnote, wordcraft_doc::PartKind::Footnote, "FootnoteText", "FootnoteReference")
+            (NoteKind::Footnote, letra_doc::PartKind::Footnote, "FootnoteText", "FootnoteReference")
         };
         let custom: String = clean_text(custom).chars().filter(|c| !c.is_control()).take(10).collect();
         let id = self.doc.try_add_part(part, Vec::new()).ok()?;
@@ -349,7 +349,7 @@ impl<'a> Builder<'a> {
                     let starts_blank = p.text.starts_with([' ', '\t']);
                     let reference = InlineObject::NoteRef { kind, id, custom: custom.clone() };
                     if p.insert_object(0, reference, &CharProps { style: Some(mark.into()), ..Default::default() }).is_ok() && !starts_blank {
-                        let at = p.text.len().min(wordcraft_doc::para::OBJ.len_utf8());
+                        let at = p.text.len().min(letra_doc::para::OBJ.len_utf8());
                         let _ = p.insert_text(at, " ", &CharProps::default());
                     }
                 }
@@ -364,7 +364,7 @@ impl<'a> Builder<'a> {
     /// The document object for picture, shape or group `i` (members of groups `depth` deep).
     fn drawing(&mut self, i: &Inline, depth: usize) -> Option<InlineObject> {
         // Offsets and distances on the page.
-        let fit_float = |float: &Option<Box<wordcraft_doc::para::Float>>| {
+        let fit_float = |float: &Option<Box<letra_doc::para::Float>>| {
             float.as_deref().cloned().map(|mut f| {
                 let fit = |v: f32| if v.is_finite() { v.clamp(-1584.0, 1584.0) } else { 0.0 };
                 (f.x, f.y) = (fit(f.x), fit(f.y));
@@ -393,14 +393,14 @@ impl<'a> Builder<'a> {
                 })
             }
             // Its drawing is made from the chart by the program that opens the document
-            // (`wordcraft_engine`'s chart drawing), which has the theme's colours.
+            // (`letra_engine`'s chart drawing), which has the theme's colours.
             Inline::Chart(c) => {
                 let (w, h) = (finite_or(c.w, 360.0).clamp(1.0, 1584.0), finite_or(c.h, 216.0).clamp(1.0, 1584.0));
                 let mut spec = (*c.spec).clone();
                 spec.sanitize();
                 let source = c.source.as_deref().and_then(|o| super::odf_object::store(self.doc, o));
-                let graphic = wordcraft_doc::graphic::Graphic {
-                    kind: wordcraft_doc::graphic::GraphicKind::Chart,
+                let graphic = letra_doc::graphic::Graphic {
+                    kind: letra_doc::graphic::GraphicKind::Chart,
                     w,
                     h,
                     chart: Some(Arc::new(spec)),
@@ -417,9 +417,9 @@ impl<'a> Builder<'a> {
             }
             Inline::Shape { kind, w, h, float, blocks, look, path } => {
                 // A text box always has its story; a shape only when it holds text.
-                let story = if *kind == wordcraft_doc::para::ShapeKind::TextBox || !blocks.is_empty() {
+                let story = if *kind == letra_doc::para::ShapeKind::TextBox || !blocks.is_empty() {
                     let story = self.blocks(blocks, 1);
-                    self.doc.try_add_part(wordcraft_doc::PartKind::TextBox, story).ok()
+                    self.doc.try_add_part(letra_doc::PartKind::TextBox, story).ok()
                 } else {
                     None
                 };
@@ -443,7 +443,7 @@ impl<'a> Builder<'a> {
                     _ => (None, 0.0),
                 };
                 // A line may be flat; anything else has some size.
-                let least = if *kind == wordcraft_doc::para::ShapeKind::Line { 0.0 } else { 1.0 };
+                let least = if *kind == letra_doc::para::ShapeKind::Line { 0.0 } else { 1.0 };
                 let fit = |v: f32| if v.is_finite() { v.clamp(least, 1584.0) } else { 72.0 };
                 let obj = InlineObject::Shape {
                     kind: *kind,
@@ -456,20 +456,19 @@ impl<'a> Builder<'a> {
                     story,
                     freeform: path
                         .clone()
-                        .filter(|_| *kind == wordcraft_doc::para::ShapeKind::Freeform)
+                        .filter(|_| *kind == letra_doc::para::ShapeKind::Freeform)
                         .map(|f| std::sync::Arc::new((*f).clone().sanitized())),
                     effects: Default::default(),
-                    extra: wordcraft_doc::connector::ShapeExtra {
+                    extra: letra_doc::connector::ShapeExtra {
                         dash: look.dash.clone(),
                         arrow_start: look.arrows.0,
                         arrow_end: look.arrows.1,
                         // Its drawing id, and what a connector's ends are glued to (sites bounded).
                         id: look.conn.as_ref().map_or(0, |c| c.id),
-                        start: look.conn.as_ref().and_then(|c| c.start).filter(|e| e.site <= wordcraft_doc::connector::MAX_SITE),
-                        end: look.conn.as_ref().and_then(|c| c.end).filter(|e| e.site <= wordcraft_doc::connector::MAX_SITE),
+                        start: look.conn.as_ref().and_then(|c| c.start).filter(|e| e.site <= letra_doc::connector::MAX_SITE),
+                        end: look.conn.as_ref().and_then(|c| c.end).filter(|e| e.site <= letra_doc::connector::MAX_SITE),
                         odf_geometry: look.geometry.clone().filter(|_| {
-                            (*kind == wordcraft_doc::para::ShapeKind::Freeform && path.is_some())
-                                || *kind == wordcraft_doc::para::ShapeKind::Rectangle
+                            (*kind == letra_doc::para::ShapeKind::Freeform && path.is_some()) || *kind == letra_doc::para::ShapeKind::Rectangle
                         }),
                         ..Default::default()
                     },
@@ -507,7 +506,7 @@ impl<'a> Builder<'a> {
         }
         let group = p.group.as_ref().and_then(|g| g.id).filter(|_| p.kept.is_some());
         if self.doc.kept.get().is_none() {
-            self.doc.kept = wordcraft_doc::kept::Kept::new(Default::default());
+            self.doc.kept = letra_doc::kept::Kept::new(Default::default());
         }
         if let Some(k) = self.doc.kept.get_mut() {
             if let Some(xml) = &p.kept {
@@ -586,7 +585,7 @@ impl<'a> Builder<'a> {
                             .map(|m| self.budget(CharProps { ins: None, del: None, fmt_change: None, ..m.clone() }))
                             .unwrap_or_default();
                         if let Some(f) = obj.float_mut()
-                            && f.wrap == wordcraft_doc::para::Wrap::Inline
+                            && f.wrap == letra_doc::para::Wrap::Inline
                             && f.y != 0.0
                         {
                             cp.position = Some(f.y.clamp(-1584.0, 1584.0));
@@ -679,7 +678,7 @@ impl<'a> Builder<'a> {
         out.normalize();
         out.touch();
         // Its markup kept for the writer, as long as nothing changes the paragraph from here on
-        // (see `wordcraft_doc::kept`: the reader seals it once the document is done).
+        // (see `letra_doc::kept`: the reader seals it once the document is done).
         self.keep_pending(p, out.rev);
         out
     }
@@ -722,7 +721,7 @@ impl<'a> Builder<'a> {
                 }
                 // The source's own label: its format and text, or its bullet.
                 match labels.get(i).copied().flatten() {
-                    Some(l) if ordered && l.format != wordcraft_doc::section::NumFormat::Bullet => {
+                    Some(l) if ordered && l.format != letra_doc::section::NumFormat::Bullet => {
                         level.format = l.format;
                         level.text = l.text(i as u8);
                     }
@@ -821,11 +820,11 @@ impl<'a> Builder<'a> {
     }
 
     fn table(&mut self, t: &FTable, depth: usize) -> Option<Table> {
-        let rows: Vec<(usize, &Vec<Cell>)> = t.rows.iter().enumerate().filter(|(_, r)| !r.is_empty()).take(wordcraft_doc::table::MAX_ROWS).collect();
+        let rows: Vec<(usize, &Vec<Cell>)> = t.rows.iter().enumerate().filter(|(_, r)| !r.is_empty()).take(letra_doc::table::MAX_ROWS).collect();
         if rows.is_empty() {
             return None;
         }
-        let cols = t.cols().clamp(1, wordcraft_doc::table::MAX_COLS);
+        let cols = t.cols().clamp(1, letra_doc::table::MAX_COLS);
         let width = self.doc.last_section.text_width().max(72.0);
         // One template row for the grid widths and props; the real rows are built below. Sizing it
         // to `rows.len()` would allocate a full rows × cols cell grid only to clear it, which a
@@ -849,18 +848,18 @@ impl<'a> Builder<'a> {
             (tb.props.space_before, tb.props.space_after) = (space(x.space[0]), space(x.space[1]));
         }
         for (ri, r) in rows {
-            let mut row = wordcraft_doc::Row { props: RowProps::default(), cells: Vec::new(), controls: Default::default() };
+            let mut row = letra_doc::Row { props: RowProps::default(), cells: Vec::new(), controls: Default::default() };
             row.props.header = !r.is_empty() && r.iter().all(|c| c.header);
             if let Some(&Some((h, exact))) = t.extra.as_ref().and_then(|x| x.heights.get(ri))
                 && h.is_finite()
                 && h > 0.0
             {
                 row.props.height = Some(h.min(1584.0));
-                row.props.height_rule = if exact { wordcraft_doc::props::HeightRule::Exact } else { wordcraft_doc::props::HeightRule::AtLeast };
+                row.props.height_rule = if exact { letra_doc::props::HeightRule::Exact } else { letra_doc::props::HeightRule::AtLeast };
             }
             row.props.cant_split = t.extra.as_ref().is_some_and(|x| x.keep_rows.get(ri) == Some(&true));
             let mut g = 0usize;
-            for c in r.iter().take(wordcraft_doc::table::MAX_COLS) {
+            for c in r.iter().take(letra_doc::table::MAX_COLS) {
                 let span = (c.colspan.clamp(1, 63) as usize).min(cols.saturating_sub(g).max(1));
                 let w: f32 = tb.grid.get(g..(g + span).min(tb.grid.len())).map(|s| s.iter().sum()).unwrap_or(72.0);
                 g += span;
@@ -878,9 +877,9 @@ impl<'a> Builder<'a> {
                 // A background picture goes into the document's media.
                 let picture = c.picture.as_deref().map(|p| {
                     let media = self.doc.add_media(p.img.data.as_ref().clone(), &p.img.ext);
-                    Box::new(wordcraft_doc::props::CellPicture { media, size: [p.img.w, p.img.h], repeat: p.repeat, align: p.align })
+                    Box::new(letra_doc::props::CellPicture { media, size: [p.img.w, p.img.h], repeat: p.repeat, align: p.align })
                 });
-                row.cells.push(wordcraft_doc::Cell {
+                row.cells.push(letra_doc::Cell {
                     props: CellProps {
                         width: Some(w),
                         span: span as u32,
@@ -898,7 +897,7 @@ impl<'a> Builder<'a> {
                 });
             }
             if row.cells.is_empty() {
-                row.cells.push(wordcraft_doc::Cell::empty());
+                row.cells.push(letra_doc::Cell::empty());
             }
             tb.rows.push(row);
         }
@@ -906,7 +905,7 @@ impl<'a> Builder<'a> {
         if depth == 0 {
             if t.kept.is_some() || t.wrap.is_some() {
                 if self.doc.kept.get().is_none() {
-                    self.doc.kept = wordcraft_doc::kept::Kept::new(Default::default());
+                    self.doc.kept = letra_doc::kept::Kept::new(Default::default());
                 }
                 if let Some(k) = self.doc.kept.get_mut() {
                     if let Some(xml) = &t.kept {
@@ -929,7 +928,7 @@ fn finite_or(v: f32, d: f32) -> f32 {
 
 /// Build a document from a flow.
 pub fn to_doc(flow: &Flow) -> Document {
-    to_doc_in(flow, wordcraft_doc::SectionProps::default())
+    to_doc_in(flow, letra_doc::SectionProps::default())
 }
 
 /// [`to_doc`] on a page of the source's own size and margins (`section`), which tables size to.
@@ -967,7 +966,7 @@ impl Builder<'_> {
     }
 }
 
-pub fn to_doc_in(flow: &Flow, section: wordcraft_doc::SectionProps) -> Document {
+pub fn to_doc_in(flow: &Flow, section: letra_doc::SectionProps) -> Document {
     let mut doc = Document::new();
     doc.last_section = section;
     doc.numbering = Default::default();

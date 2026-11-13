@@ -4,14 +4,14 @@ use hayro_interpret::{
     BlendMode, ClipPath, Context, Device, GlyphDrawMode, Image, InterpreterCache, InterpreterSettings, Paint, PathDrawMode, SoftMask, interpret_page,
 };
 use kurbo::Shape;
-use wordcraft_doc::effects::ShapeEffects;
-use wordcraft_doc::freeform::{FreePath, Freeform};
-use wordcraft_doc::para::{Anchor, Float, InlineObject, ShapeKind, Wrap};
-use wordcraft_doc::{CharProps, Document, Paragraph, para_block};
+use letra_doc::effects::ShapeEffects;
+use letra_doc::freeform::{FreePath, Freeform};
+use letra_doc::para::{Anchor, Float, InlineObject, ShapeKind, Wrap};
+use letra_doc::{CharProps, Document, Paragraph, para_block};
 
 const ALPHA_TOLERANCE: f32 = 0.015;
-const RED: wordcraft_doc::Rgb = wordcraft_doc::Rgb(255, 0, 0);
-const GREEN: wordcraft_doc::Rgb = wordcraft_doc::Rgb(0, 255, 0);
+const RED: letra_doc::Rgb = letra_doc::Rgb(255, 0, 0);
+const GREEN: letra_doc::Rgb = letra_doc::Rgb(0, 255, 0);
 
 struct PaintedPath {
     path: kurbo::BezPath,
@@ -87,7 +87,7 @@ fn shape(kind: ShapeKind, transparency: f32, effects: ShapeEffects) -> InlineObj
         kind,
         w: 24.0,
         h: 24.0,
-        fill: Some(wordcraft_doc::fill::Fill::Solid { color: RED, transparency }),
+        fill: Some(letra_doc::fill::Fill::Solid { color: RED, transparency }),
         stroke: None,
         stroke_width: 0.0,
         float: Float { wrap: Wrap::InFrontOfText, h_rel: Anchor::Page, v_rel: Anchor::Page, x: 100.0, y: 100.0, ..Default::default() },
@@ -142,11 +142,8 @@ fn soft_edge_target_alpha() {
 
 #[test]
 fn soft_edge_keeps_effect_paint() {
-    let effects = ShapeEffects {
-        shadow: Some(wordcraft_doc::effects::Shadow::default()),
-        glow: Some(wordcraft_doc::effects::Glow::default()),
-        soft_edge: Some(6.0),
-    };
+    let effects =
+        ShapeEffects { shadow: Some(letra_doc::effects::Shadow::default()), glow: Some(letra_doc::effects::Glow::default()), soft_edge: Some(6.0) };
     let opaque = paints(shape(ShapeKind::Rectangle, 0.0, effects));
     let clear = paints(shape(ShapeKind::Rectangle, 100.0, effects));
     let other = |r: &&PaintedPath| r.color[..3] != [255, 0, 0];

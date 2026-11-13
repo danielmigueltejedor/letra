@@ -52,13 +52,13 @@ fn hostile_font_faces_do_not_panic() {
 fn each_font_is_declared_with_its_kind() {
     // §16.21 `style:font-face`: a reader without the font picks a like one by its generic family
     // and pitch; each use names its declaration (`style:font-name`).
-    let mut d = wordcraft_doc::Document::new();
-    let mono = wordcraft_doc::props::CharProps { font: Some("Courier New".into()), ..Default::default() };
-    let serif = wordcraft_doc::props::CharProps { font: Some("Georgia".into()), ..Default::default() };
-    let mut p = wordcraft_doc::Paragraph::with_text("code", mono);
+    let mut d = letra_doc::Document::new();
+    let mono = letra_doc::props::CharProps { font: Some("Courier New".into()), ..Default::default() };
+    let serif = letra_doc::props::CharProps { font: Some("Georgia".into()), ..Default::default() };
+    let mut p = letra_doc::Paragraph::with_text("code", mono);
     let end = p.text.len();
     p.insert_text(end, " prose", &serif).unwrap();
-    d.body = vec![wordcraft_doc::para_block(p)];
+    d.body = vec![letra_doc::para_block(p)];
     let saved = crate::odt::export(&d).unwrap();
     let content = crate::odt::tests::content_of(&saved);
     let styles = crate::odt::tests::entry(&saved, "styles.xml");

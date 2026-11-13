@@ -2,8 +2,8 @@
 
 use std::sync::Arc;
 
-use wordcraft_doc::para::InlineObject;
-use wordcraft_doc::{Align, Block, CharProps, Document, Paragraph, Table, para_block};
+use letra_doc::para::InlineObject;
+use letra_doc::{Align, Block, CharProps, Document, Paragraph, Table, para_block};
 
 use crate::model::{self, FBlock, Kind};
 use crate::{export, import};
@@ -38,17 +38,17 @@ fn sample() -> Document {
     p.insert_text(n, ".", &CharProps::default()).unwrap();
     blocks.push(para_block(p));
     blocks.push(para_block(Paragraph::with_text("Second Level", CharProps::default()).styled("Heading2")));
-    let bul = Arc::make_mut(&mut d.numbering).add_list(wordcraft_doc::ListKind::Bullet);
-    let num = Arc::make_mut(&mut d.numbering).add_list(wordcraft_doc::ListKind::Numbered);
+    let bul = Arc::make_mut(&mut d.numbering).add_list(letra_doc::ListKind::Bullet);
+    let num = Arc::make_mut(&mut d.numbering).add_list(letra_doc::ListKind::Numbered);
     for (t, nm, lvl) in [("first bullet", bul, 0u8), ("second bullet", bul, 0), ("nested bullet", bul, 1)] {
         let mut q = Paragraph::with_text(t, CharProps::default()).styled("ListParagraph");
-        q.props.numbering = Some(wordcraft_doc::props::NumRef { num: nm, level: lvl });
+        q.props.numbering = Some(letra_doc::props::NumRef { num: nm, level: lvl });
         blocks.push(para_block(q));
     }
     blocks.push(para_block(Paragraph::with_text("Between lists", CharProps::default())));
     for t in ["step one", "step two"] {
         let mut q = Paragraph::with_text(t, CharProps::default()).styled("ListParagraph");
-        q.props.numbering = Some(wordcraft_doc::props::NumRef { num, level: 0 });
+        q.props.numbering = Some(letra_doc::props::NumRef { num, level: 0 });
         blocks.push(para_block(q));
     }
     let mut t = Table::new(2, 2, 400.0);
@@ -175,12 +175,12 @@ fn check_round_trip(ext: &str, rich: bool) {
 /// Two bullets directly followed by two numbered items.
 fn bullets_then_numbers() -> Document {
     let mut d = Document::new();
-    let bul = Arc::make_mut(&mut d.numbering).add_list(wordcraft_doc::ListKind::Bullet);
-    let num = Arc::make_mut(&mut d.numbering).add_list(wordcraft_doc::ListKind::Numbered);
+    let bul = Arc::make_mut(&mut d.numbering).add_list(letra_doc::ListKind::Bullet);
+    let num = Arc::make_mut(&mut d.numbering).add_list(letra_doc::ListKind::Numbered);
     let mut blocks = Vec::new();
     for (t, nm) in [("dot one", bul), ("dot two", bul), ("num one", num), ("num two", num)] {
         let mut q = Paragraph::with_text(t, CharProps::default()).styled("ListParagraph");
-        q.props.numbering = Some(wordcraft_doc::props::NumRef { num: nm, level: 0 });
+        q.props.numbering = Some(letra_doc::props::NumRef { num: nm, level: 0 });
         blocks.push(para_block(q));
     }
     d.body = blocks;
@@ -207,9 +207,9 @@ fn numbered_list_after_bullets_keeps_its_kind() {
 fn markdown_list_items_that_start_like_blocks_keep_their_text() {
     for text in ["---", "--", "1. Intro", "# Agenda", "ordinary item"] {
         let mut d = Document::new();
-        let bul = Arc::make_mut(&mut d.numbering).add_list(wordcraft_doc::ListKind::Bullet);
+        let bul = Arc::make_mut(&mut d.numbering).add_list(letra_doc::ListKind::Bullet);
         let mut p = Paragraph::with_text(text, CharProps::default()).styled("ListParagraph");
-        p.props.numbering = Some(wordcraft_doc::props::NumRef { num: bul, level: 0 });
+        p.props.numbering = Some(letra_doc::props::NumRef { num: bul, level: 0 });
         d.body = vec![para_block(p)];
         let bytes = export("md", &d).unwrap().unwrap();
         let blocks = flat(&import("md", &bytes).unwrap().unwrap());
@@ -318,7 +318,7 @@ fn odt_round_trip() {
 fn latex_round_trip() {
     check_round_trip("tex", true);
     let tex = String::from_utf8(export("tex", &sample()).unwrap().unwrap()).unwrap();
-    assert!(tex.starts_with("% Written by WordCraft") && tex.contains("\\documentclass{article}"), "{tex}");
+    assert!(tex.starts_with("% Written by Letra") && tex.contains("\\documentclass{article}"), "{tex}");
     assert!(tex.contains("\\section*{Main Heading}") && tex.contains("\\subsection*{Second Level}"), "{tex}");
     assert!(tex.contains("\\textbf{bold}") && tex.contains("\\textit{italic}"), "{tex}");
     assert!(tex.contains("\\href{https://example.com/x}{a link}"), "{tex}");
@@ -352,7 +352,7 @@ fn page_break_char_splits_paragraph() {
 fn txt_round_trip() {
     check_round_trip("txt", false);
     let d = import("txt", "a\r\nb\nc".as_bytes()).unwrap().unwrap();
-    assert_eq!(d.plain_text(wordcraft_doc::StoryRef::Body), "a\nb\nc");
+    assert_eq!(d.plain_text(letra_doc::StoryRef::Body), "a\nb\nc");
     // UTF-16 LE with BOM, UTF-16 without BOM, Windows-1252.
     let mut u16le = vec![0xFF, 0xFE];
     for u in "héllo".encode_utf16() {
@@ -367,19 +367,19 @@ fn txt_round_trip() {
 #[test]
 fn txt_export_writes_symbol_font_text_as_unicode() {
     let mut d = Document::from_text("Done J\u{F0FC}");
-    d.format_range(&wordcraft_doc::Pos::body(0, 5), &wordcraft_doc::Pos::body(0, 9), &|c| c.font = Some("Wingdings".into())).unwrap();
+    d.format_range(&letra_doc::Pos::body(0, 5), &letra_doc::Pos::body(0, 9), &|c| c.font = Some("Wingdings".into())).unwrap();
     let out = export("txt", &d).unwrap().unwrap();
     assert_eq!(String::from_utf8(out).unwrap(), "Done \u{263A}\u{2713}");
 }
 
-/// #1080: `txt` export (and so `wordcraft-cli text`) keeps list labels, so a list item reads
+/// #1080: `txt` export (and so `letra-cli text`) keeps list labels, so a list item reads
 /// apart from an ordinary paragraph.
 #[test]
 fn txt_export_keeps_list_labels() {
     let mut d = Document::new();
-    let bul = Arc::make_mut(&mut d.numbering).add_list(wordcraft_doc::ListKind::Bullet);
+    let bul = Arc::make_mut(&mut d.numbering).add_list(letra_doc::ListKind::Bullet);
     let mut p = Paragraph::with_text("alpha", CharProps::default());
-    p.props.numbering = Some(wordcraft_doc::props::NumRef { num: bul, level: 0 });
+    p.props.numbering = Some(letra_doc::props::NumRef { num: bul, level: 0 });
     d.body = vec![para_block(p), para_block(Paragraph::with_text("plain", CharProps::default()))];
     let out = String::from_utf8(export("txt", &d).unwrap().unwrap()).unwrap();
     let mut lines = out.split("\r\n");
@@ -419,16 +419,16 @@ fn rtf_merged_cells_and_lists() {
     let mut d = Document::new();
     let mut t = Table::new(3, 2, 300.0);
     t.rows[0].cells[0].blocks = vec![para_block(Paragraph::with_text("tall", CharProps::default()))];
-    t.rows[0].cells[0].props.vmerge = wordcraft_doc::props::VMerge::Restart;
-    t.rows[1].cells[0].props.vmerge = wordcraft_doc::props::VMerge::Continue;
+    t.rows[0].cells[0].props.vmerge = letra_doc::props::VMerge::Restart;
+    t.rows[1].cells[0].props.vmerge = letra_doc::props::VMerge::Continue;
     d.body = vec![Arc::new(Block::Table(t))];
     d.ensure_nonempty();
     for ext in ["rtf", "html", "odt"] {
         let back = import(ext, &export(ext, &d).unwrap().unwrap()).unwrap().unwrap();
         let Some(Block::Table(bt)) = back.body.first().map(|b| &**b) else { panic!("{ext}: no table") };
         assert_eq!(bt.rows.len(), 3, "{ext}");
-        assert_eq!(bt.rows[0].cells[0].props.vmerge, wordcraft_doc::props::VMerge::Restart, "{ext}");
-        assert_eq!(bt.rows[1].cells[0].props.vmerge, wordcraft_doc::props::VMerge::Continue, "{ext}");
+        assert_eq!(bt.rows[0].cells[0].props.vmerge, letra_doc::props::VMerge::Restart, "{ext}");
+        assert_eq!(bt.rows[1].cells[0].props.vmerge, letra_doc::props::VMerge::Continue, "{ext}");
     }
 }
 
@@ -546,14 +546,11 @@ fn latex_labels_in_a_row_are_read_in_linear_time() {
     }
     assert!(started.elapsed() < std::time::Duration::from_secs(10), "{:?}", started.elapsed());
     let d = crate::latex::import("\\label{one}First \\label{two}second \\label{three}third.".as_bytes());
-    let p = d.para_at(&wordcraft_doc::Pos::body(0, 0)).unwrap();
-    let names: Vec<&str> = p
-        .objects
-        .iter()
-        .filter_map(|o| if let wordcraft_doc::InlineObject::BookmarkStart { name } = o { Some(name.as_str()) } else { None })
-        .collect();
+    let p = d.para_at(&letra_doc::Pos::body(0, 0)).unwrap();
+    let names: Vec<&str> =
+        p.objects.iter().filter_map(|o| if let letra_doc::InlineObject::BookmarkStart { name } = o { Some(name.as_str()) } else { None }).collect();
     assert_eq!(names, ["one", "two", "three"]);
-    assert_eq!(d.plain_text(wordcraft_doc::StoryRef::Body).replace('\u{FFFC}', ""), "First second third.");
+    assert_eq!(d.plain_text(letra_doc::StoryRef::Body).replace('\u{FFFC}', ""), "First second third.");
 }
 
 #[test]
@@ -666,7 +663,7 @@ fn html_img_sources_go_through_the_loader() {
     });
     assert_eq!(*seen.borrow(), ["logo.png", "gone.png"]);
     assert_eq!(d.media.len(), 1);
-    let text = d.plain_text(wordcraft_doc::StoryRef::Body);
+    let text = d.plain_text(letra_doc::StoryRef::Body);
     assert!(text.contains("Missing") && !text.contains("Sample Logo"), "{text:?}");
     // Without a loader only data: URIs load.
     assert!(import("html", html.as_bytes()).unwrap().unwrap().media.is_empty());
@@ -692,7 +689,7 @@ fn chart_alt_text_is_an_image_alt_never_body_text() {
 /// so screen readers skip it; the same picture not marked decorative keeps its alt text.
 #[test]
 fn decorative_picture_exports_with_empty_alt_text() {
-    use wordcraft_doc::para::{AltText, Float};
+    use letra_doc::para::{AltText, Float};
     let doc = |decorative: bool| {
         let mut d = Document::new();
         let media = d.add_media(png(), "png");
@@ -835,7 +832,7 @@ fn bounded_scans_keep_ordinary_markdown_and_entities() {
     assert!(t.contains(&"a".repeat(40)), "{t}");
 }
 
-/// A document's hyperlink can be `javascript:` (WordCraft refuses to follow it); the exported
+/// A document's hyperlink can be `javascript:` (Letra refuses to follow it); the exported
 /// HTML and Markdown must not hand it to a browser either. Web, mail, bookmark and relative links
 /// still export as links.
 #[test]
@@ -884,8 +881,8 @@ fn exported_links_keep_only_safe_targets() {
 
 /// The note and comment texts of `d` as `(kind, text)` strings, and the references in the body.
 fn rtf_notes(d: &Document) -> (Vec<String>, Vec<String>) {
-    use wordcraft_doc::PartKind;
-    let story = |bl: &wordcraft_doc::Blocks| {
+    use letra_doc::PartKind;
+    let story = |bl: &letra_doc::Blocks| {
         bl.iter().filter_map(|b| if let Block::Para(p) = &**b { Some(p.plain_text().trim().to_string()) } else { None }).collect::<Vec<_>>().join("|")
     };
     let notes = d
@@ -900,7 +897,7 @@ fn rtf_notes(d: &Document) -> (Vec<String>, Vec<String>) {
 
 #[test]
 fn rtf_footnote_and_endnote_round_trip() {
-    use wordcraft_doc::para::NoteKind;
+    use letra_doc::para::NoteKind;
     let rtf = br"{\rtf1\ansi{\fonttbl{\f0 Arial;}}
 \pard Alpha{\super\chftn}{\footnote \pard\plain {\super\chftn} First {\b note}\par} beta 
 gamma{\super\chftn}{\footnote\ftnalt \pard\plain {\super\chftn} The end\par\pard second line\par} delta.\par}";
@@ -913,7 +910,7 @@ gamma{\super\chftn}{\footnote\ftnalt \pard\plain {\super\chftn} The end\par\pard
     let (notes, _) = rtf_notes(&d);
     assert_eq!(notes, ["Footnote:First note", "Endnote:The end|second line"]);
     // The note's own number sits at the start of its text, and its first words are bold.
-    let foot = d.parts.values().find(|p| p.kind == wordcraft_doc::PartKind::Footnote).unwrap();
+    let foot = d.parts.values().find(|p| p.kind == letra_doc::PartKind::Footnote).unwrap();
     let fp = foot.blocks.iter().find_map(|b| b.as_para()).unwrap();
     assert!(matches!(fp.objects.first(), Some(InlineObject::NoteRef { kind: NoteKind::Footnote, .. })));
     // Out and in again keeps both.
@@ -1032,11 +1029,11 @@ fn markdown_link_targets_with_unicode_spaces_read_back() {
 
 #[test]
 fn hidden_drawings_are_left_out_of_exports() {
-    let mut d = wordcraft_doc::Document::from_text("x");
+    let mut d = letra_doc::Document::from_text("x");
     let key = d.add_media(vec![0x89, b'P', b'N', b'G'], "png");
     for hidden in [false, true] {
-        let float = wordcraft_doc::para::Float { hidden, ..Default::default() };
-        let image = wordcraft_doc::InlineObject::Image {
+        let float = letra_doc::para::Float { hidden, ..Default::default() };
+        let image = letra_doc::InlineObject::Image {
             media: key.clone(),
             w: 10.0,
             h: 10.0,
@@ -1046,7 +1043,7 @@ fn hidden_drawings_are_left_out_of_exports() {
             fx: Default::default(),
             ole: None,
         };
-        d.insert_object(&wordcraft_doc::Pos::body(0, 0), image, &Default::default()).unwrap();
+        d.insert_object(&letra_doc::Pos::body(0, 0), image, &Default::default()).unwrap();
     }
     // Two pictures, one hidden: one comes out.
     assert_eq!(crate::html::export(&d).matches("<img").count(), 1);

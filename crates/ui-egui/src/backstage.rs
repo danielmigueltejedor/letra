@@ -333,13 +333,13 @@ fn template_tile(ui: &mut Ui, app: &mut WordApp, label: &str, template: &str) {
         let key = format!("tpl:{template}:{ppp}");
         let region = app.session.region();
         let tex = ui.ctx().data(|d| d.get_temp::<egui::TextureHandle>(egui::Id::unique(&key))).or_else(|| {
-            let mut s = wordcraft_engine::Session::new(wordcraft_doc::Document::new());
+            let mut s = letra_engine::Session::new(letra_doc::Document::new());
             // The blank tile shows the region's paper (#838).
             s.system_region = region;
             let _ = s.run("file.new", &json!({"template": template}));
             let l = s.export_layout();
             let page = l.pages.first()?;
-            let img = wordcraft_render::render_page(&s.doc, page, 150.0 / page.w * ppp, &crate::canvas::screen_render_options());
+            let img = letra_render::render_page(&s.doc, page, 150.0 / page.w * ppp, &crate::canvas::screen_render_options());
             let px = img.to_straight();
             let h = ui.ctx().load_texture(
                 &key,
@@ -383,7 +383,7 @@ fn matching_templates(query: &str) -> Vec<(&'static str, &'static str)> {
 /// Home: a greeting, Blank plus a short row of templates with a link to New, then Recent.
 fn home_page(app: &mut WordApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
-    let hour = wordcraft_engine::cmd::local_now().3.0;
+    let hour = letra_engine::cmd::local_now().3.0;
     heading(
         ui,
         if hour < 12 {
@@ -482,7 +482,7 @@ fn new_page(app: &mut WordApp, ui: &mut Ui) {
 }
 
 /// A personal template: what the gallery needs of a [`PersonalTemplate`] listing entry.
-type PersonalTemplate = wordcraft_engine::cmd::user_templates::PersonalTemplate;
+type PersonalTemplate = letra_engine::cmd::user_templates::PersonalTemplate;
 
 /// The templates folder setting and listing File › New shows, and the pass it was last shown in.
 #[derive(Clone)]
@@ -527,7 +527,7 @@ fn personal_templates(app: &WordApp, ui: &Ui) -> (Option<std::path::PathBuf>, Ve
         Some(f) if f.is_dir() => {
             #[cfg(test)]
             PERSONAL_LISTINGS.with(|n| n.set(n.get().saturating_add(1)));
-            wordcraft_engine::cmd::user_templates::list_templates(&f.to_string_lossy()).map(|l| l.templates).unwrap_or_else(|e| {
+            letra_engine::cmd::user_templates::list_templates(&f.to_string_lossy()).map(|l| l.templates).unwrap_or_else(|e| {
                 log::debug!("personal templates: {e}");
                 Vec::new()
             })
@@ -731,11 +731,11 @@ fn open_page(app: &mut WordApp, ui: &mut Ui) {
         let _ = app.run("ui.openFileDialog", json!({}));
     }
     // Linux and the BSDs (#576): the system dialog needs a file chooser portal or zenity; when it
-    // doesn't show up, WordCraft's own browser is always one click away.
+    // doesn't show up, Letra's own browser is always one click away.
     #[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
     if ui
-        .button(egui::RichText::new(tl!("Browse in WordCraft…")).font(medium(14.0)))
-        .on_hover_text(tl!("Open a file with WordCraft's own browser when the system file dialog doesn't appear."))
+        .button(egui::RichText::new(tl!("Browse in Letra…")).font(medium(14.0)))
+        .on_hover_text(tl!("Open a file with Letra's own browser when the system file dialog doesn't appear."))
         .clicked()
     {
         let _ = app.run("ui.fileBrowser", json!({}));

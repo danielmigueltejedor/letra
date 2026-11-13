@@ -3,7 +3,7 @@
 //!
 //! Talking SSIP directly, instead of starting `spd-say`, keeps two promises `spd-say` can't: the
 //! sentence is always data (pipe mode runs a line starting with `!-!` as an SSIP command, and a
-//! document must never send commands), and stopping cancels only WordCraft's own speech
+//! document must never send commands), and stopping cancels only Letra's own speech
 //! (`CANCEL self`), where `spd-say -C` would silence every client, a screen reader included.
 //!
 //! One connection speaks one sentence: it names the client, asks for the begin, end, cancel and
@@ -456,7 +456,7 @@ impl<W: Write, R: Read> Conversation<'_, W, R> {
     /// ended or the server holds ours back until it has. Cancelled again after that, paused, or
     /// never begun, the sentence halts reading.
     fn speak(&mut self, req: &Request<'_>) -> std::io::Result<Outcome> {
-        ok(self.command("SET SELF CLIENT_NAME user:wordcraft:read-aloud")?)?;
+        ok(self.command("SET SELF CLIENT_NAME user:letra:read-aloud")?)?;
         ok(self.command("SET SELF NOTIFICATION BEGIN on")?)?;
         ok(self.command("SET SELF NOTIFICATION END on")?)?;
         ok(self.command("SET SELF NOTIFICATION CANCEL on")?)?;
@@ -860,7 +860,7 @@ mod tests {
         let run = |script: &str| start_server(std::process::Command::new("sh").args(["-c", script]), far, &|| false);
         assert!(matches!(run("exit 0"), Started::Exited(true)));
         assert!(matches!(run("exit 1"), Started::Exited(false)));
-        let missing = start_server(&mut std::process::Command::new("no-such-program-for-wordcraft"), far, &|| false);
+        let missing = start_server(&mut std::process::Command::new("no-such-program-for-letra"), far, &|| false);
         assert!(matches!(missing, Started::Missing), "{missing:?}");
     }
 
@@ -873,7 +873,7 @@ mod tests {
 
     /// A fresh path for a start command's process id.
     fn pid_file(name: &str) -> std::path::PathBuf {
-        let p = std::env::temp_dir().join(format!("wordcraft-ssip-{}-{name}.pid", std::process::id()));
+        let p = std::env::temp_dir().join(format!("letra-ssip-{}-{name}.pid", std::process::id()));
         let _ = std::fs::remove_file(&p);
         let _ = std::fs::remove_file(p.with_extension("pid.part"));
         p

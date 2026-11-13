@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <?ifndef HasCraftFontLicences ?>
+  <?define HasCraftFontLicences=0 ?>
+  <?endif?>
+  <Package Name="Letra" Manufacturer="Nodalia" Version="$(var.Version)" UpgradeCode="5C0F5D2E-3B8A-4E61-9F2D-7A41C6B9E0D3" Scope="perUserOrMachine" Compressed="yes" Language="1033">
+    <SummaryInformation Description="Letra word processor" Manufacturer="Nodalia" />
+    <?include $(sys.SOURCEFILEDIR)install-policy.wxi?>
+    <!-- Same-version upgrades let successive pre-releases of one X.Y.Z replace each other
+         (MSI versions are numeric, so 1.2.3-rc.1 and 1.2.3-rc.2 are both 1.2.3). -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of Letra is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="LetraIcon.ico" SourceFile="$(var.IconPath)" />
+    <Property Id="ARPPRODUCTICON" Value="LetraIcon.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://getnodalia.com/letra" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://getnodalia.com/letra" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/getnodalia/letra/issues" />
+
+    <!-- Installer UI (#198): WixUI_Minimal is welcome + license, progress, then a finish page so
+         people can see the install worked. Its dialogs and bitmaps are WiX's own
+         (WixToolset.UI.wixext); package.ps1 builds the license RTF from LICENSE-MIT and
+         LICENSE-APACHE. The finish page offers to launch Letra (ticked by default) through
+         WixShellExec (WixToolset.Util.wixext); silent installs (/qn) never show it. -->
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Letra" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WixShellExecTarget" Value="[#LetraExe]" />
+    <CustomAction Id="LaunchLetra" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixShellExec" Impersonate="yes" Return="ignore" />
+    <UI>
+      <ui:WixUI Id="WixUI_Minimal" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchLetra" Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+    </UI>
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="CraftSuiteFolder" Name="Nodalia">
+        <Directory Id="INSTALLFOLDER" Name="Letra" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="Main" Title="Letra" Level="1">
+      <ComponentGroupRef Id="AppNotices" />
+      <?if $(var.HasCraftFontLicences) = 1 ?>
+      <ComponentGroupRef Id="CraftFontLicences" />
+      <?endif?>
+      <ComponentGroupRef Id="LetraFiles" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="AppNotices" Directory="INSTALLFOLDER">
+      <Files Include="$(var.AppNoticesDir)\**" />
+    </ComponentGroup>
+    <?if $(var.HasCraftFontLicences) = 1 ?>
+    <ComponentGroup Id="CraftFontLicences" Directory="INSTALLFOLDER">
+      <Files Include="$(var.DocsDir)\**" />
+    </ComponentGroup>
+    <?endif?>
+    <ComponentGroup Id="LetraFiles" Directory="INSTALLFOLDER">
+      <Component Id="LetraApp" Guid="A7E2C9B4-1F36-4D85-B0C7-2E9F4A6D1B58">
+        <File Id="LetraExe" Source="$(var.BinDir)\letra.exe" KeyPath="yes">
+          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="Letra" Description="Letra word processor" WorkingDirectory="INSTALLFOLDER" Advertise="yes" Icon="LetraIcon.ico" IconIndex="0" />
+        </File>
+
+        <RegistryValue Root="HKMU" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\letra.exe" Value="[#LetraExe]" Type="string" />
+      <RegistryValue Root="HKMU" Key="Software\Letra" Name="InstallDir" Value="[INSTALLFOLDER]" Type="string" />
+      </Component>
+
+      <!-- File associations (#295). Each document type gets a Letra ProgId (name, icon, open
+           command) and is listed under the extension's OpenWithProgids, so Letra shows in
+           Explorer's "Open with". The Word, RTF and ODT types are also Letra's Capabilities
+           (RegisteredApplications), so it appears in Settings › Default apps, where the user
+           makes it the default (File › Options › General opens that page). Nothing here sets an
+           extension's default: the installer never takes over .docx from another app. Markdown and
+           plain text are only "Open with" candidates. Removed again on uninstall. -->
+      <Component Id="LetraFileTypes" Guid="3D9B7E15-6C2A-4F80-8E4B-D51A07C3F926">
+        <RegistryValue Root="HKMU" Key="Software\RegisteredApplications" Name="Letra" Value="Software\Letra\Capabilities" Type="string" KeyPath="yes" />
+        <RegistryValue Root="HKMU" Key="Software\Letra\Capabilities" Name="ApplicationName" Value="Letra" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Letra\Capabilities" Name="ApplicationDescription" Value="Write and design documents; open and save Word files." Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Letra\Capabilities" Name="ApplicationIcon" Value="&quot;[#LetraExe]&quot;,0" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe" Name="FriendlyAppName" Value="Letra" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe\shell\open\command" Value="&quot;[#LetraExe]&quot; &quot;%1&quot;" Type="string" />
+
+        <ProgId Id="Letra.Document" Description="Word Document" Icon="LetraExe" IconIndex="0" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Letra.Document\shell\open\command" Value="&quot;[#LetraExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\.docx\OpenWithProgids" Name="Letra.Document" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe\SupportedTypes" Name=".docx" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Letra\Capabilities\FileAssociations" Name=".docx" Value="Letra.Document" Type="string" />
+
+        <ProgId Id="Letra.DocumentMacroEnabled" Description="Word Macro-Enabled Document" Icon="LetraExe" IconIndex="0" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Letra.DocumentMacroEnabled\shell\open\command" Value="&quot;[#LetraExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\.docm\OpenWithProgids" Name="Letra.DocumentMacroEnabled" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe\SupportedTypes" Name=".docm" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Letra\Capabilities\FileAssociations" Name=".docm" Value="Letra.DocumentMacroEnabled" Type="string" />
+
+        <ProgId Id="Letra.Template" Description="Word Template" Icon="LetraExe" IconIndex="0" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Letra.Template\shell\open\command" Value="&quot;[#LetraExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\.dotx\OpenWithProgids" Name="Letra.Template" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe\SupportedTypes" Name=".dotx" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Letra\Capabilities\FileAssociations" Name=".dotx" Value="Letra.Template" Type="string" />
+
+        <ProgId Id="Letra.TemplateMacroEnabled" Description="Word Macro-Enabled Template" Icon="LetraExe" IconIndex="0" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Letra.TemplateMacroEnabled\shell\open\command" Value="&quot;[#LetraExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\.dotm\OpenWithProgids" Name="Letra.TemplateMacroEnabled" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe\SupportedTypes" Name=".dotm" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Letra\Capabilities\FileAssociations" Name=".dotm" Value="Letra.TemplateMacroEnabled" Type="string" />
+
+        <ProgId Id="Letra.LegacyDocument" Description="Legacy Word Document" Icon="LetraExe" IconIndex="0" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Letra.LegacyDocument\shell\open\command" Value="&quot;[#LetraExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\.doc\OpenWithProgids" Name="Letra.LegacyDocument" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe\SupportedTypes" Name=".doc" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Letra\Capabilities\FileAssociations" Name=".doc" Value="Letra.LegacyDocument" Type="string" />
+
+        <ProgId Id="Letra.LegacyTemplate" Description="Legacy Word Template" Icon="LetraExe" IconIndex="0" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Letra.LegacyTemplate\shell\open\command" Value="&quot;[#LetraExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\.dot\OpenWithProgids" Name="Letra.LegacyTemplate" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe\SupportedTypes" Name=".dot" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Letra\Capabilities\FileAssociations" Name=".dot" Value="Letra.LegacyTemplate" Type="string" />
+
+        <ProgId Id="Letra.RichText" Description="Rich Text Document" Icon="LetraExe" IconIndex="0" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Letra.RichText\shell\open\command" Value="&quot;[#LetraExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\.rtf\OpenWithProgids" Name="Letra.RichText" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe\SupportedTypes" Name=".rtf" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Letra\Capabilities\FileAssociations" Name=".rtf" Value="Letra.RichText" Type="string" />
+
+        <ProgId Id="Letra.OpenDocumentText" Description="OpenDocument Text" Icon="LetraExe" IconIndex="0" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Letra.OpenDocumentText\shell\open\command" Value="&quot;[#LetraExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\.odt\OpenWithProgids" Name="Letra.OpenDocumentText" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe\SupportedTypes" Name=".odt" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Letra\Capabilities\FileAssociations" Name=".odt" Value="Letra.OpenDocumentText" Type="string" />
+
+        <ProgId Id="Letra.Markdown" Description="Markdown Document" Icon="LetraExe" IconIndex="0" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Letra.Markdown\shell\open\command" Value="&quot;[#LetraExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\.md\OpenWithProgids" Name="Letra.Markdown" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe\SupportedTypes" Name=".md" Value="" Type="string" />
+
+        <ProgId Id="Letra.PlainText" Description="Text Document" Icon="LetraExe" IconIndex="0" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Letra.PlainText\shell\open\command" Value="&quot;[#LetraExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\.txt\OpenWithProgids" Name="Letra.PlainText" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\letra.exe\SupportedTypes" Name=".txt" Value="" Type="string" />
+      </Component>
+
+      <Component Id="LetraCli">
+        <File Id="LetraCliExe" Source="$(var.BinDir)\letra-cli.exe" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

@@ -1,6 +1,6 @@
 use super::{Align, FBlock, FTable, Fmt, HashMap, Inline, Kind, Para, RevMark, Rgb, VAlign, mime_of, model};
-use wordcraft_doc::control::ControlKind;
-use wordcraft_doc::props::{Border, BorderStyle, Borders, LineSpacing};
+use letra_doc::control::ControlKind;
+use letra_doc::props::{Border, BorderStyle, Borders, LineSpacing};
 
 mod charts;
 mod drawing;
@@ -33,10 +33,10 @@ struct ListOut {
     start: u32,
 }
 
-/// WordCraft number format → ODF's `style:num-format` (ODF 1.3 §19.500); formats ODF lacks are
+/// Letra number format → ODF's `style:num-format` (ODF 1.3 §19.500); formats ODF lacks are
 /// written as decimal.
-pub(super) fn odf_num_format(f: wordcraft_doc::section::NumFormat) -> &'static str {
-    use wordcraft_doc::section::NumFormat as F;
+pub(super) fn odf_num_format(f: letra_doc::section::NumFormat) -> &'static str {
+    use letra_doc::section::NumFormat as F;
     match f {
         F::LowerRoman => "i",
         F::UpperRoman => "I",
@@ -141,7 +141,7 @@ fn list_xml_id(xml: &str) -> Option<String> {
 
 /// Paragraph `p` begins with a column break (Word's), which ODF states on the paragraph.
 fn starts_column(p: &Para) -> bool {
-    matches!(p.inlines.first(), Some(Inline::Text(t, _)) if t.starts_with(wordcraft_doc::para::COLUMN_BREAK))
+    matches!(p.inlines.first(), Some(Inline::Text(t, _)) if t.starts_with(letra_doc::para::COLUMN_BREAK))
 }
 
 pub(super) fn pt(v: f32) -> String {
@@ -182,7 +182,7 @@ pub(super) struct Writer {
     endnotes: u32,
     /// The footnotes' and endnotes' number format and first number (see `writer::notes`); unset,
     /// LibreOffice's defaults.
-    pub(super) note_numbers: Option<[(wordcraft_doc::section::NumFormat, u32); 2]>,
+    pub(super) note_numbers: Option<[(letra_doc::section::NumFormat, u32); 2]>,
     /// Paragraph style that plain paragraphs get: the note style inside a note.
     note_parent: Option<&'static str>,
     /// Prefix of every name it makes (styles, lists, tables, pictures): headers and footers are
@@ -235,7 +235,7 @@ pub(super) struct Writer {
     kept_lists: usize,
     /// The reference marks (§6.6.2) begun over text in the paragraph being written, to end.
     refs_open: std::collections::BTreeSet<String>,
-    /// The file's own package paths, kept as read: names WordCraft's own pictures don't take.
+    /// The file's own package paths, kept as read: names Letra's own pictures don't take.
     pub(super) reserved: std::sync::Arc<std::collections::BTreeSet<String>>,
     pub(super) kept_used: super::kept::Needed,
     /// The file's own master pages are written (its page setup is as read): kept markup may
@@ -259,7 +259,7 @@ pub(super) struct Writer {
     pub(super) object_dirs: Vec<(String, String)>,
     /// The document's bibliography sources by tag: `CITATION` fields of one are written as
     /// bibliography marks carrying it.
-    pub(super) sources: HashMap<String, wordcraft_doc::Source>,
+    pub(super) sources: HashMap<String, letra_doc::Source>,
     /// The document's custom properties' names: `DOCPROPERTY` fields naming one are written as
     /// `text:user-defined`.
     pub(super) custom_props: std::collections::HashSet<String>,
@@ -269,7 +269,7 @@ pub(super) struct Writer {
     /// `text:variable-get`.
     pub(super) variables: std::collections::BTreeSet<String>,
     /// The kinds of the shapes with drawing ids, which connectors' glue points depend on.
-    pub(super) conn_kinds: HashMap<u32, wordcraft_doc::para::ShapeKind>,
+    pub(super) conn_kinds: HashMap<u32, letra_doc::para::ShapeKind>,
     /// Ruby was written: its automatic ruby style is.
     ruby_used: bool,
     /// Form controls written (`form:*` elements for `office:forms`), and whether this writer's
@@ -277,7 +277,7 @@ pub(super) struct Writer {
     pub(super) forms: Vec<String>,
     pub(super) forms_allowed: bool,
     /// The theme's accent colours, which charts' series are drawn in.
-    pub(super) accents: Vec<wordcraft_doc::Rgb>,
+    pub(super) accents: Vec<letra_doc::Rgb>,
     /// `text:changed-region` elements written so far.
     pub(super) regions: Vec<String>,
     /// The insertion open in the body, and its region id.
@@ -464,7 +464,7 @@ impl Writer {
                     }
                     // A script, `file:`, UNC or other non-web target is written as plain text, as
                     // the HTML and Markdown exporters do (LibreOffice follows `file:`/UNC hrefs).
-                    let link = f.link.as_deref().filter(|l| wordcraft_doc::link::is_safe_href(l));
+                    let link = f.link.as_deref().filter(|l| letra_doc::link::is_safe_href(l));
                     // A tracked formatting change (§5.5.7): the text between its marks.
                     let change = f.fmt_change.as_ref().map(|c| self.region("format-change", &c.mark, ""));
                     if let Some(ct) = &change {
@@ -603,7 +603,7 @@ impl Writer {
                             // Placed by a style, standing on the baseline or raised as it was read
                             // (LibreOffice puts a control with no placement at the line's top).
                             let raise = control.form_raise.filter(|r| r.is_finite()).map(|r| r.clamp(-1584.0, 1584.0)).unwrap_or(0.0);
-                            let float = wordcraft_doc::para::Float { wrap: wordcraft_doc::para::Wrap::Inline, y: raise, ..Default::default() };
+                            let float = letra_doc::para::Float { wrap: letra_doc::para::Wrap::Inline, y: raise, ..Default::default() };
                             let (_, props, xy) = drawing::placement(drawing::Place::Text(Some(&float)), w, h);
                             let style = self.graphic_style(format!("{props}{flat}"));
                             out.push_str(&format!(
@@ -1098,7 +1098,7 @@ impl Writer {
             for (l, out) in kinds.iter().enumerate() {
                 let ordered = &out.ordered;
                 let lv = l + 1;
-                // The level's own place, else WordCraft's default: 36 pt a level, hanging 18 pt.
+                // The level's own place, else Letra's default: 36 pt a level, hanging 18 pt.
                 let (indent, hanging) = out.label.and_then(|lb| lb.position()).unwrap_or((36.0 * lv as f32, 18.0));
                 let align = match out.label.and_then(|lb| lb.align) {
                     Some(Align::Right) => " fo:text-align=\"end\"",
@@ -1113,9 +1113,9 @@ impl Writer {
                 );
                 if *ordered {
                     let fmt = ["1", "a", "i"].get(l % 3).copied().unwrap_or("1");
-                    // The level's own label, else WordCraft's default for the level.
+                    // The level's own label, else Letra's default for the level.
                     let attrs = match out.label {
-                        Some(lb) if lb.format != wordcraft_doc::section::NumFormat::Bullet => {
+                        Some(lb) if lb.format != letra_doc::section::NumFormat::Bullet => {
                             let mut a = format!(" style:num-format=\"{}\"", odf_num_format(lb.format));
                             for (k, v) in [("style:num-prefix", lb.prefix.as_str()), ("style:num-suffix", lb.suffix.as_str())] {
                                 if !v.is_empty() {
@@ -1211,7 +1211,7 @@ impl Writer {
             } else {
                 ("", props.as_str())
             };
-            // Laid out where WordCraft places it, not held in the text's area: said, as the
+            // Laid out where Letra places it, not held in the text's area: said, as the
             // standard gives no default (§20.267) and a file's default style may say otherwise.
             let flow = if props.contains("style:flow-with-text") { "" } else { " style:flow-with-text=\"false\"" };
             s.push_str(&format!(

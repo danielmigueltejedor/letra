@@ -8,8 +8,8 @@
 //!
 //! A missing or malformed file gives empty tables (or no names) and a warning.
 //!
-//! - `CRAFT_I18N_DIR`, a craft-i18n checkout (storytold/craft-i18n, at the SHA in
-//!   `craft-i18n.rev`): `craft_i18n.rs` holds `CRAFT_I18N`, one (locale, shared catalog, WordCraft
+//! - `CRAFT_I18N_DIR`, a craft-i18n checkout (getnodalia/foundation (vendor/craft-i18n), at the SHA in
+//!   `craft-i18n.rev`): `craft_i18n.rs` holds `CRAFT_I18N`, one (locale, shared catalog, Letra
 //!   catalog) entry per locale that has a `wordcraft.tsv`. Unset, or not a checkout (a warning),
 //!   it is empty and the interface is English only; with `CRAFT_I18N_REQUIRED=1` (releases) that
 //!   is an error instead. Recipe: craft-i18n's `docs/integration.md`.
@@ -61,7 +61,7 @@ fn craft_i18n() -> String {
             Vec::new()
         }
     };
-    let mut o = String::from("/// (locale, shared catalog, WordCraft's catalog), one entry per locale; `\"\"` for a missing file.\n");
+    let mut o = String::from("/// (locale, shared catalog, Letra's catalog), one entry per locale; `\"\"` for a missing file.\n");
     o.push_str("pub static CRAFT_I18N: &craft_i18n::Embedded = &[\n");
     for (code, shared, app) in entries {
         // `{:?}` escapes the path (Windows backslashes) as a Rust string literal.

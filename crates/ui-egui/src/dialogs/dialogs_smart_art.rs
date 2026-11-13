@@ -5,10 +5,10 @@
 //! the pane through [`crate::panes`].
 
 use egui::{Color32, Painter, Rect, Sense, Stroke, Ui, pos2, vec2};
+use letra_doc::props::Rgb;
+use letra_doc::smart_art::{MAX_ITEMS, SmartArtColors, SmartArtLayout, SmartArtSpec};
 use serde::Serialize;
 use serde_json::{Value, json};
-use wordcraft_doc::props::Rgb;
-use wordcraft_doc::smart_art::{MAX_ITEMS, SmartArtColors, SmartArtLayout, SmartArtSpec};
 
 use crate::WordApp;
 use crate::theme::{Tokens, c32, regular, semibold};
@@ -304,9 +304,9 @@ pub fn items_without(g: &SmartArtSpec, i: usize) -> Value {
 
 /// The Text Pane button on the left edge of the selected graphic's frame, as in Word, while
 /// the pane is closed.
-pub fn frame_button(app: &mut WordApp, ctx: &egui::Context, layout: &wordcraft_layout::DocLayout, pages: &[Rect], scale: f32, clip: Rect) {
+pub fn frame_button(app: &mut WordApp, ctx: &egui::Context, layout: &letra_layout::DocLayout, pages: &[Rect], scale: f32, clip: Rect) {
     // The pane goes with the graphic: it opens again only on request.
-    if wordcraft_engine::cmd::smart_art::selected_smart_art(&app.session).is_none() {
+    if letra_engine::cmd::smart_art::selected_smart_art(&app.session).is_none() {
         app.session.view.smart_art_pane = false;
         return;
     }
@@ -352,7 +352,7 @@ pub(crate) enum SmartArtTypeResult {
 /// Appends typing to the selected SmartArt item, joining an active typing undo, and returns
 /// whether the input was unhandled, consumed without a change, or changed an item.
 pub(crate) fn type_into(app: &mut WordApp, typed: &str) -> SmartArtTypeResult {
-    let Some(g) = wordcraft_engine::cmd::smart_art::selected_smart_art(&app.session) else {
+    let Some(g) = letra_engine::cmd::smart_art::selected_smart_art(&app.session) else {
         return SmartArtTypeResult::NotHandled;
     };
     let Some(i) = app.smart_art_item.filter(|i| *i < g.items.len()).or((!g.items.is_empty()).then_some(0)) else {
@@ -422,7 +422,7 @@ fn color_button(app: &mut WordApp, ui: &mut Ui, g: &SmartArtSpec, i: usize) {
 /// undo step per item typed in); Enter adds an item after the current one; Tab demotes the
 /// focused item and Shift+Tab promotes it, as Word's Text Pane does.
 pub fn text_pane(app: &mut WordApp, ui: &mut Ui) {
-    let Some(g) = wordcraft_engine::cmd::smart_art::selected_smart_art(&app.session) else { return };
+    let Some(g) = letra_engine::cmd::smart_art::selected_smart_art(&app.session) else { return };
     let t = Tokens::get(ui.ctx());
     ui.label(egui::RichText::new(tl!("One line per item. Enter adds an item.")).color(t.text_dim));
     ui.add_space(4.0);
@@ -506,7 +506,7 @@ mod tests {
     #[test]
     fn color_buttons_expose_item_names_and_empty_row_indices() {
         use egui_kittest::kittest::Queryable;
-        let mut app = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+        let mut app = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
         let mut spec = SmartArtSpec::sample(SmartArtLayout::Process);
         spec.items[0].text = "Named".into();
         spec.items[1].text.clear();
@@ -531,7 +531,7 @@ mod tests {
     /// The colour button opens a grid: a swatch sets the item's own colour and Style Color clears it.
     #[test]
     fn the_color_button_sets_and_clears_an_items_colour() {
-        let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+        let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
         a.run("insert.smartArt", json!({"layout": "process"})).unwrap();
         let ctx = egui::Context::default();
         crate::theme::install_fonts(&ctx);
@@ -548,8 +548,7 @@ mod tests {
             frame(ctx, vec![button(false)], a);
             frame(ctx, vec![], a);
         };
-        let colour =
-            |a: &WordApp| wordcraft_engine::cmd::smart_art::selected_smart_art(&a.session).and_then(|g| g.items.get(1).and_then(|i| i.color));
+        let colour = |a: &WordApp| letra_engine::cmd::smart_art::selected_smart_art(&a.session).and_then(|g| g.items.get(1).and_then(|i| i.color));
         frame(&ctx, vec![], &mut a);
         let button = ctx.read_response(color_button_id(1)).expect("item 1 has a colour button");
         let popup = egui::Popup::default_response_id(&button);

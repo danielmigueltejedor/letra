@@ -1,13 +1,13 @@
 //! Turned text (ODF 1.3 §20.404 `style:writing-mode`, and LibreOffice's own
 //! `loext:writing-mode="bt-lr"` for text running upwards): a table cell's and a text box's text
-//! turned down (`tb-rl`) or up opens as WordCraft's cell text direction and text box direction,
+//! turned down (`tb-rl`) or up opens as Letra's cell text direction and text box direction,
 //! and is written back the same way.
 
 use crate::odt::tests::{NS_T, content_of, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
-use wordcraft_doc::para::{InlineObject, ShapeKind};
-use wordcraft_doc::props::{TextDirection, TextVert};
+use letra_doc::Document;
+use letra_doc::para::{InlineObject, ShapeKind};
+use letra_doc::props::{TextDirection, TextVert};
 
 const NS_D: &str = r#"xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:loext="urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0""#;
 

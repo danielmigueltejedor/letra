@@ -5,8 +5,8 @@
 
 use std::sync::Arc;
 
-use wordcraft_doc::Document;
-use wordcraft_doc::graphic::{Embedded, EmbeddedRef};
+use letra_doc::Document;
+use letra_doc::graphic::{Embedded, EmbeddedRef};
 
 use super::types::OdfObject;
 

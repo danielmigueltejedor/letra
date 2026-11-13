@@ -1,7 +1,7 @@
 //! The built-in file browser (#576): Open, Save As, Export, Insert Picture and recipient lists
 //! when the system's file dialog can't be shown — a Linux desktop with neither a file chooser
 //! portal nor zenity (labwc, sway… with only xdg-desktop-portal-wlr) — or when the user asks for
-//! it (File › Open › Browse in WordCraft…).
+//! it (File › Open › Browse in Letra…).
 //!
 //! A folder path field with Up and Home folder, the folder's subfolders and the files of the
 //! chosen type, a file name field and the file types. It only lists folders the user navigates to
@@ -338,7 +338,7 @@ fn body(ui: &mut Ui, b: &mut FileBrowser, t: &Tokens) -> Option<Option<PathBuf>>
     if b.unavailable {
         ui.label(
             egui::RichText::new(tl!(
-                "The system file dialog isn't available, so WordCraft shows its own. To get the system dialog, install a file chooser portal (such as xdg-desktop-portal-gtk) or zenity."
+                "The system file dialog isn't available, so Letra shows its own. To get the system dialog, install a file chooser portal (such as xdg-desktop-portal-gtk) or zenity."
             ))
             .color(t.text_dim),
         );
@@ -508,12 +508,12 @@ fn icon_button(ui: &mut Ui, t: &Tokens, icon: &str, tip: &str, enabled: bool) ->
 mod tests {
     use super::*;
     use crate::Services;
+    use letra_engine::Session;
     use serde_json::json;
     use std::sync::mpsc::channel;
-    use wordcraft_engine::Session;
 
     fn scratch(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("wordcraft-ui-browser-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("letra-ui-browser-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
@@ -578,7 +578,7 @@ mod tests {
             })),
             ..Default::default()
         };
-        let mut a = WordApp::new(Session::new(wordcraft_doc::Document::new()), services);
+        let mut a = WordApp::new(Session::new(letra_doc::Document::new()), services);
         a.run("text.insert", json!({"text": "Saved without a portal"})).unwrap();
         a.save_as_dialog();
         assert!(a.file_dialog_open());
@@ -590,8 +590,8 @@ mod tests {
         a.close_file_browser(Some(path));
         assert!(!a.file_dialog_open());
         assert!(!a.session.dirty);
-        let saved = wordcraft_engine::io::open_path(&dir.join("novel.docx")).unwrap();
-        assert!(saved.plain_text(wordcraft_doc::StoryRef::Body).contains("Saved without a portal"));
+        let saved = letra_engine::io::open_path(&dir.join("novel.docx")).unwrap();
+        assert!(saved.plain_text(letra_doc::StoryRef::Body).contains("Saved without a portal"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -601,7 +601,7 @@ mod tests {
     #[test]
     fn the_browser_stays_above_the_dialog_that_opened_it() {
         let dir = scratch("over_dialog");
-        let mut a = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+        let mut a = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
         a.dialog = crate::dialogs::Dialog::open("templates", &mut a);
         let mut h = egui_kittest::Harness::builder().with_size(vec2(1440.0, 900.0)).build_ui_state(
             |ui, app: &mut WordApp| {
@@ -634,7 +634,7 @@ mod tests {
         h.event(egui::Event::Text("x".into()));
         h.run_steps(2);
         assert!(h.state().dialog.is_some(), "the dialog is back on top");
-        assert_eq!(h.state().session.doc.plain_text(wordcraft_doc::StoryRef::Body), "", "it keeps the keyboard");
+        assert_eq!(h.state().session.doc.plain_text(letra_doc::StoryRef::Body), "", "it keeps the keyboard");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -643,7 +643,7 @@ mod tests {
     #[test]
     fn escape_in_the_browser_leaves_the_dialog_under_it_open() {
         let dir = scratch("escape_over_dialog");
-        let mut a = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+        let mut a = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
         a.dialog = crate::dialogs::Dialog::open("templates", &mut a);
         let mut h = egui_kittest::Harness::builder().with_size(vec2(1440.0, 900.0)).build_ui_state(
             |ui, app: &mut WordApp| {
@@ -678,7 +678,7 @@ mod tests {
             })),
             ..Default::default()
         };
-        let mut a = WordApp::new(Session::new(wordcraft_doc::Document::new()), services);
+        let mut a = WordApp::new(Session::new(letra_doc::Document::new()), services);
         a.run("text.insert", json!({"text": "Unsaved"})).unwrap();
         let _ = a.run("file.close", json!({}));
         assert!(matches!(a.dialog, Some(crate::dialogs::Dialog::SaveChanges { .. })));
@@ -704,7 +704,7 @@ mod tests {
     /// #3859: beside a modeless dialog (Find) the document takes the keyboard back.
     #[test]
     fn the_document_takes_the_keyboard_back_beside_a_modeless_dialog() {
-        let mut a = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+        let mut a = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
         a.dialog = crate::dialogs::Dialog::open("find", &mut a);
         assert!(a.dialog.as_ref().is_some_and(|d| !d.is_modal()));
         a.show_file_browser(
@@ -720,7 +720,7 @@ mod tests {
     /// #3859: the browser is modal on its own too: no keytips run behind it.
     #[test]
     fn no_keytips_behind_the_browser() {
-        let mut a = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+        let mut a = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
         let ctx = egui::Context::default();
         assert!(!crate::keytips::suppressed(&a, &ctx));
         a.show_file_browser(
@@ -736,7 +736,7 @@ mod tests {
     #[test]
     fn an_empty_folder_says_there_are_no_items() {
         let dir = scratch("empty_state");
-        let mut a = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+        let mut a = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
         let mut b =
             FileBrowser::new(FileDialogRequest::Open { purpose: "document".into() }, AfterPick::OpenDocument { document: 0 }, dir.clone(), false);
         b.navigate(dir.clone());

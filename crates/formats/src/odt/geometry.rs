@@ -1,7 +1,7 @@
 //! A custom shape's own geometry (ODF 1.3 §10.6.2 `draw:enhanced-geometry`): its path
 //! (§19.145 `draw:enhanced-path`) in its view box, the path's values worked out from its
 //! equations (§10.6.3 `draw:equation`, §19.170 `draw:formula`) and adjustment values
-//! (`draw:modifiers`). Shapes whose type WordCraft has no kind for are drawn from it, as
+//! (`draw:modifiers`). Shapes whose type Letra has no kind for are drawn from it, as
 //! freeforms.
 //!
 //! Arcs and ellipses are followed in short straight steps. Everything is bounded: the path's
@@ -10,8 +10,8 @@
 use std::collections::HashMap;
 
 use super::xml::{Attrs, get};
-use wordcraft_doc::freeform::Freeform;
-use wordcraft_doc::para::ShapeKind;
+use letra_doc::freeform::Freeform;
+use letra_doc::para::ShapeKind;
 
 /// Most equations read, most levels one may refer down through, most path tokens and points.
 const MAX_EQUATIONS: usize = 512;
@@ -46,7 +46,7 @@ fn capped(s: &str) -> String {
 
 impl Pending {
     /// The geometry of a `draw:enhanced-geometry` of type `t` with attributes `a`, when it is
-    /// to be drawn from its own path: a type WordCraft has no kind for, with a path.
+    /// to be drawn from its own path: a type Letra has no kind for, with a path.
     pub(super) fn of(t: &str, a: &Attrs) -> Option<Box<Pending>> {
         let t = t.trim();
         let plain = matches!(t.strip_prefix("ooxml-").unwrap_or(t), "" | "rectangle" | "rect" | "flowchart-process" | "flowChartProcess");

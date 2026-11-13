@@ -1,22 +1,22 @@
-# Hosting WordCraft for the web
+# Hosting Letra for the web
 
-`wordcraft-web-<version>.zip` (from the GitHub release, or `packaging/web/package.sh`) holds a
-static site in `wordcraft-web-<version>/`:
+`letra-web-<version>.zip` (from the GitHub release, or `packaging/web/package.sh`) holds a
+static site in `letra-web-<version>/`:
 
 | File | What it is |
 |---|---|
 | `index.html` | The page. It loads everything through relative URLs. |
-| `wordcraft-web-<hash>.js` | wasm-bindgen glue (generated, ES module) |
-| `wordcraft-web-<hash>_bg.wasm` | The app, about 13 MB, or 5 MB with compression |
+| `letra-web-<hash>.js` | wasm-bindgen glue (generated, ES module) |
+| `letra-web-<hash>_bg.wasm` | The app, about 13 MB, or 5 MB with compression |
 | `_headers`, `.htaccess` | Sample header rules for Netlify/Cloudflare Pages and Apache |
 
 There is no server-side code. Upload the folder's contents anywhere that serves static files.
 
 ## Any path works
 
-All URLs in `index.html` are relative (`public_url = "./"` in `apps/wordcraft-web/Trunk.toml`),
+All URLs in `index.html` are relative (`public_url = "./"` in `apps/letra-web/Trunk.toml`),
 so the site works at a domain root (`https://example.com/`), under a prefix
-(`https://example.com/tools/wordcraft/`) and from a CDN bucket. The asset names carry a content
+(`https://example.com/tools/letra/`) and from a CDN bucket. The asset names carry a content
 hash, so they can be cached forever. Only `index.html` needs revalidation.
 
 ## Required server settings
@@ -31,7 +31,7 @@ hash, so they can be cached forever. Only `index.html` needs revalidation.
   `.js` files, and `no-cache` on `index.html`.
 - **HTTPS:** WebGPU (and the clipboard) only work in a secure context, which means `https://`
   or `http://localhost`. Over plain HTTP elsewhere, the app falls back to WebGL2.
-- **No special isolation headers:** WordCraft doesn't use `SharedArrayBuffer`, so it doesn't
+- **No special isolation headers:** Letra doesn't use `SharedArrayBuffer`, so it doesn't
   need `Cross-Origin-Opener-Policy` or `Cross-Origin-Embedder-Policy`. If your site already sends
   COEP `require-corp`, also send `Cross-Origin-Resource-Policy: same-origin` (or `cross-origin`
   when the files live on a CDN) on the app's files.
@@ -39,7 +39,7 @@ hash, so they can be cached forever. Only `index.html` needs revalidation.
 nginx example:
 
 ```nginx
-location /wordcraft/ {
+location /letra/ {
     types { application/wasm wasm; text/javascript js; text/html html; }
     gzip on;
     gzip_types application/wasm text/javascript text/html;
@@ -54,8 +54,8 @@ Local test: `python3 -m http.server 8765` inside the folder, then open http://lo
 
 ```html
 <iframe
-  src="https://example.com/wordcraft/"
-  title="WordCraft image editor"
+  src="https://example.com/letra/"
+  title="Letra image editor"
   style="width: 100%; height: 720px; border: 0;"
   allow="fullscreen; clipboard-read; clipboard-write"
   allowfullscreen>
@@ -75,17 +75,17 @@ Local test: `python3 -m http.server 8765` inside the folder, then open http://lo
 
 ## The parent bridge (`?host=parent`)
 
-A page framing WordCraft in a **same-origin** iframe can add `?host=parent` to the iframe's URL
-(`https://example.com/wordcraft/?host=parent`) and have WordCraft hand its files over instead of
+A page framing Letra in a **same-origin** iframe can add `?host=parent` to the iframe's URL
+(`https://example.com/letra/?host=parent`) and have Letra hand its files over instead of
 downloading them. The two sides talk `postMessage` with plain window messages that carry a `type`:
 
 | Message | Direction | Fields |
 |---|---|---|
-| `wordcraft:ready` | app → page | `version`, `appVersion`: the app is running and listening; send a file now |
-| `wordcraft:open` | page → app | `name`, `bytes` (an `ArrayBuffer` or `Uint8Array`): open like File › Open |
-| `wordcraft:save` | app → page | `name`, `saveAs`, `bytes` (a transferred `ArrayBuffer`): every file the app would otherwise download (Save, Save As, Export as PDF, Export Page as PNG). The page stores it and reports failures itself. `saveAs` says whether the file becomes the document's file: `false` after Save (the page's own file, written under its name) and for exports that are only copies (PDF, Markdown, plain text); `true` after Save As and for exports to a format that keeps everything (.docx, .odt, .rtf), after which the next Save carries that name with `false` |
-| `wordcraft:dirty` | app → page | `dirty`: unsaved changes appeared or went away |
-| `wordcraft:failed` | app → page | `error`: the app couldn't start (no WebGPU or WebGL2, for example) |
+| `letra:ready` | app → page | `version`, `appVersion`: the app is running and listening; send a file now |
+| `letra:open` | page → app | `name`, `bytes` (an `ArrayBuffer` or `Uint8Array`): open like File › Open |
+| `letra:save` | app → page | `name`, `saveAs`, `bytes` (a transferred `ArrayBuffer`): every file the app would otherwise download (Save, Save As, Export as PDF, Export Page as PNG). The page stores it and reports failures itself. `saveAs` says whether the file becomes the document's file: `false` after Save (the page's own file, written under its name) and for exports that are only copies (PDF, Markdown, plain text); `true` after Save As and for exports to a format that keeps everything (.docx, .odt, .rtf), after which the next Save carries that name with `false` |
+| `letra:dirty` | app → page | `dirty`: unsaved changes appeared or went away |
+| `letra:failed` | app → page | `error`: the app couldn't start (no WebGPU or WebGL2, for example) |
 
 In host mode the app opens no sample document, so the framing page should send the file to edit
 and guard leaving the page while changes are unsaved. `&author=` on the iframe's URL names the
@@ -94,56 +94,56 @@ iframe gives the normal app with downloads.
 
 ## Same-document host mode (no iframe)
 
-A host application can also run WordCraft from its own document: it loads the wasm-bindgen module
-itself and gives WordCraft one of its own canvases, so there is no iframe and no `?host=parent`.
+A host application can also run Letra from its own document: it loads the wasm-bindgen module
+itself and gives Letra one of its own canvases, so there is no iframe and no `?host=parent`.
 It opts in with `data-host="page"` on that canvas — the exact value `page` — and the canvas keeps
-the id the app looks up (`id="wordcraft_canvas"`).
+the id the app looks up (`id="letra_canvas"`).
 
 ```html
-<canvas id="wordcraft_canvas" data-host="page" style="width: 100%; height: 720px; display: block;"></canvas>
+<canvas id="letra_canvas" data-host="page" style="width: 100%; height: 720px; display: block;"></canvas>
 ```
 
 The page and the app then talk with DOM `CustomEvent`s on the canvas instead of `postMessage`.
-The app dispatches the same messages it would post to a parent — `wordcraft:ready`,
-`wordcraft:save`, `wordcraft:dirty`, `wordcraft:failed` — with the message fields (without the
+The app dispatches the same messages it would post to a parent — `letra:ready`,
+`letra:save`, `letra:dirty`, `letra:failed` — with the message fields (without the
 `type`) as the event's `detail`, and it opens a document when the page dispatches a
-`wordcraft:open` event with `detail: { name, bytes }`. Events do not bubble, so listen on the
+`letra:open` event with `detail: { name, bytes }`. Events do not bubble, so listen on the
 canvas itself (two editors on one page can't hear each other).
 
-Add the listeners before `init`: the app announces itself with `wordcraft:ready` while `init` is
+Add the listeners before `init`: the app announces itself with `letra:ready` while `init` is
 still running, and a file sent in reply would otherwise be missed.
 
 ```js
-import init from "./wordcraft-web-<hash>.js"; // the wasm-bindgen glue shipped with the app
+import init from "./letra-web-<hash>.js"; // the wasm-bindgen glue shipped with the app
 
-const canvas = document.getElementById("wordcraft_canvas");
+const canvas = document.getElementById("letra_canvas");
 
-canvas.addEventListener("wordcraft:ready", async () => {
+canvas.addEventListener("letra:ready", async () => {
   // The app is listening; hand it a document now, if you have one.
   const bytes = await documentBytes(); // an ArrayBuffer or Uint8Array
-  canvas.dispatchEvent(new CustomEvent("wordcraft:open", {
+  canvas.dispatchEvent(new CustomEvent("letra:open", {
     detail: { name: "Report.docx", bytes },
   }));
 });
 
-// Every file WordCraft would otherwise download (Save, Save As, Export as PDF) arrives here.
-canvas.addEventListener("wordcraft:save", (event) => {
+// Every file Letra would otherwise download (Save, Save As, Export as PDF) arrives here.
+canvas.addEventListener("letra:save", (event) => {
   const { name, saveAs, bytes } = event.detail; // bytes is an ArrayBuffer
   // Store the file under `name`; `saveAs` says whether it becomes the document's file.
   // Report your own errors.
   storeFile(name, bytes, saveAs);
 });
-canvas.addEventListener("wordcraft:dirty", (event) => {
+canvas.addEventListener("letra:dirty", (event) => {
   unsaved = event.detail.dirty; // warn before leaving, as you like
 });
-canvas.addEventListener("wordcraft:failed", (event) => {
+canvas.addEventListener("letra:failed", (event) => {
   showError(event.detail.error); // the app couldn't start
 });
 
-await init({ module_or_path: "./wordcraft-web-<hash>_bg.wasm" });
+await init({ module_or_path: "./letra-web-<hash>_bg.wasm" });
 ```
 
-- Saves are not downloads in this mode: the `bytes` in `wordcraft:save` hold the saved document,
+- Saves are not downloads in this mode: the `bytes` in `letra:save` hold the saved document,
   and the host decides where the file goes.
 - `?author=` on the page's URL still names the user for new comments and tracked changes.
 - An unframed page that uses `?host=parent` keeps the normal app with downloads.
@@ -151,29 +151,29 @@ await init({ module_or_path: "./wordcraft-web-<hash>_bg.wasm" });
   present it takes precedence, so a same-origin framed page uses the parent bridge, while an
   unframed or cross-origin page gets no bridge and keeps normal downloads.
 
-The messages and both transports are the shared contract of [`craft-web-host`](https://github.com/storytold/craft-libs/tree/main/crates/web-host) (storytold/craft-libs#420), the same for every Craft app: its README lists every message, including `saved`, with the compatibility notes. In `wordcraft:ready`, `version` is the contract's (`"1"`) and `appVersion` is this app's release. WordCraft reads bytes, so a host sends `bytes`, not a `File`.
+The messages and both transports are the shared contract of [`craft-web-host`](https://github.com/getnodalia/foundation/tree/vendor/craft-libs/main/crates/web-host) (storytold/craft-libs#420), the same for every Craft app: its README lists every message, including `saved`, with the compatibility notes. In `letra:ready`, `version` is the contract's (`"1"`) and `appVersion` is this app's release. Letra reads bytes, so a host sends `bytes`, not a `File`.
 
 ### Trust and limits
 
-- **Who is trusted.** In page host mode the page and WordCraft share one document, so any script on the page can drive the app: open files in it and receive what it saves. Use this mode only for a page you control. The iframe mode (`?host=parent`) answers only the parent window, on the page's own origin.
+- **Who is trusted.** In page host mode the page and Letra share one document, so any script on the page can drive the app: open files in it and receive what it saves. Use this mode only for a page you control. The iframe mode (`?host=parent`) answers only the parent window, on the page's own origin.
 - **Files from the host are untrusted input.** An opened file goes through the same reading as one picked with File ▸ Open or dropped on the window, with the same format limits; before it is copied into the app's memory, its size is checked against the host open limit (512 MiB) and a larger file is refused, and a name is cut to 255 characters.
-- **The event and message names are the interface.** `wordcraft:ready`, `wordcraft:open`, `wordcraft:save`, `wordcraft:dirty` and `wordcraft:failed`, and the fields they carry (the same as the `?host=parent` messages), stay stable; changing one is a breaking change.
+- **The event and message names are the interface.** `letra:ready`, `letra:open`, `letra:save`, `letra:dirty` and `letra:failed`, and the fields they carry (the same as the `?host=parent` messages), stay stable; changing one is a breaking change.
 
-### Driving it from the page (`window.wordcraft`)
+### Driving it from the page (`window.letra`)
 
-Every WordCraft web build puts `window.wordcraft` on the page, from [`craft-web-api`](https://github.com/storytold/craft-libs/tree/main/crates/web-api) (storytold/craft-libs#413), the same shape in every Craft app. `wordcraft.request(method, params)` calls any method of the control channel the desktop app serves (`docs/control-protocol.md`), and `execute(command, params)`, `commands()`, `docInspect(params)`, `uiInspect(params)` and `screenshot(params)` are shortcuts for the common ones. Each returns a Promise that resolves with the method's result and rejects with an `Error`; a call the app does not answer within 30 seconds rejects. WordCraft's control requests cannot be withdrawn, so a call that times out in the page still runs when the app reaches it, as it does for a desktop client.
+Every Letra web build puts `window.letra` on the page, from [`craft-web-api`](https://github.com/getnodalia/foundation/tree/vendor/craft-libs/main/crates/web-api) (storytold/craft-libs#413), the same shape in every Craft app. `letra.request(method, params)` calls any method of the control channel the desktop app serves (`docs/control-protocol.md`), and `execute(command, params)`, `commands()`, `docInspect(params)`, `uiInspect(params)` and `screenshot(params)` are shortcuts for the common ones. Each returns a Promise that resolves with the method's result and rejects with an `Error`; a call the app does not answer within 30 seconds rejects. Letra's control requests cannot be withdrawn, so a call that times out in the page still runs when the app reaches it, as it does for a desktop client.
 
 ```js
-const doc = await wordcraft.docInspect();                  // a summary of the open document
-await wordcraft.execute("text.insert", { text: "Hello" });
-const { data } = await wordcraft.screenshot();            // the canvas as PNG (base64)
+const doc = await letra.docInspect();                  // a summary of the open document
+await letra.execute("text.insert", { text: "Hello" });
+const { data } = await letra.screenshot();            // the canvas as PNG (base64)
 ```
 
 The API is there in every mode, with or without a host. Opening a file, handing a saved or exported file to the page, the file name and the unsaved flag stay with the host messages above.
 
 ## Renderer selection and fallback flags
 
-WordCraft renders with wgpu. It uses **WebGPU** when the browser has it and falls back to
+Letra renders with wgpu. It uses **WebGPU** when the browser has it and falls back to
 **WebGL2** on its own. URL query flags override this, and they work on the iframe `src` too:
 
 | Flag | Effect |
@@ -181,6 +181,6 @@ WordCraft renders with wgpu. It uses **WebGPU** when the browser has it and fall
 | *(none)* | WebGPU if available, otherwise WebGL2 |
 | `?webgl` | Force the WebGL2 backend (useful when a WebGPU driver misbehaves) |
 
-For example: `<iframe src="https://example.com/wordcraft/?webgl" ...>`.
+For example: `<iframe src="https://example.com/letra/?webgl" ...>`.
 
 A browser with neither WebGPU nor WebGL2 gets a message in place of the app.

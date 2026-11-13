@@ -1,13 +1,13 @@
 //! A chart in an ODT file (ODF 1.3 §10.4.3, an embedded `office:chart` object) opens as a chart
-//! WordCraft draws and edits: Chart Design's commands change it like a chart made here. The ODT
+//! Letra draws and edits: Chart Design's commands change it like a chart made here. The ODT
 //! is original and synthetic, shaped like LibreOffice's.
 
 use std::io::Write;
 
+use letra_doc::chart::ChartType;
+use letra_doc::para::InlineObject;
+use letra_engine::{Session, io};
 use serde_json::json;
-use wordcraft_doc::chart::ChartType;
-use wordcraft_doc::para::InlineObject;
-use wordcraft_engine::{Session, io};
 
 const NS: &str = r#"xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink""#;
 

@@ -5,7 +5,7 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use wordcraft_fonts::FaceRef;
+use letra_fonts::FaceRef;
 
 use crate::{DocLayout, Placed};
 

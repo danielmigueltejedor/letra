@@ -67,25 +67,25 @@ const MAX_DECODE_SIDE: u32 = u16::MAX as u32;
 /// Decode an encoded image to a premultiplied pixmap. The dimension limit above and the default
 /// allocation cap (512 MB, what `load_from_memory` applied) bound the decode during paint.
 pub fn decode_pixmap(bytes: &[u8]) -> Option<Pixmap> {
-    decode_pixmap_fx(bytes, wordcraft_doc::picfx::PicFx::default())
+    decode_pixmap_fx(bytes, letra_doc::picfx::PicFx::default())
 }
 
 /// [`decode_pixmap`] with a picture's brightness and contrast applied (#1711, #1766), under the
 /// same decode limits.
-pub fn decode_pixmap_fx(bytes: &[u8], fx: wordcraft_doc::picfx::PicFx) -> Option<Pixmap> {
+pub fn decode_pixmap_fx(bytes: &[u8], fx: letra_doc::picfx::PicFx) -> Option<Pixmap> {
     // The shared probe also charges what the decoder holds beside its output (#3644).
-    if !wordcraft_geom::picture::probe(bytes).is_ok_and(|p| p.fits(wordcraft_geom::MAX_DECODED_BYTES)) {
+    if !letra_geom::picture::probe(bytes).is_ok_and(|p| p.fits(letra_geom::MAX_DECODED_BYTES)) {
         return None;
     }
-    decode_pixmap_within(bytes, fx, wordcraft_geom::MAX_DECODED_BYTES)
+    decode_pixmap_within(bytes, fx, letra_geom::MAX_DECODED_BYTES)
 }
 
 /// [`decode_pixmap_fx`] with an explicit RGBA byte budget (a small one in tests).
-pub(crate) fn decode_pixmap_within(bytes: &[u8], fx: wordcraft_doc::picfx::PicFx, budget: u64) -> Option<Pixmap> {
-    // The decision to draw or not is the shared one (`wordcraft_geom::picture`), the one strict
+pub(crate) fn decode_pixmap_within(bytes: &[u8], fx: letra_doc::picfx::PicFx, budget: u64) -> Option<Pixmap> {
+    // The decision to draw or not is the shared one (`letra_geom::picture`), the one strict
     // export checks with.
-    let decoded = wordcraft_geom::picture::decode_for_drawing(bytes, budget, MAX_DECODE_SIDE);
-    if let Err(wordcraft_geom::picture::Refusal::TooLarge { width, height }) = &decoded {
+    let decoded = letra_geom::picture::decode_for_drawing(bytes, budget, MAX_DECODE_SIDE);
+    if let Err(letra_geom::picture::Refusal::TooLarge { width, height }) = &decoded {
         // Logged once a picture: its refusal is cached with it (`pixmap_for`).
         log::warn!("a {width}×{height} picture needs more than {budget} bytes to decode: it is not drawn (in the text, a grey box takes its place)");
     }
@@ -126,11 +126,11 @@ pub fn image_size(bytes: &[u8]) -> Option<(u32, u32)> {
 /// extension it is stored under (`"wmf"` or `"emf"`), or None for anything else (#802). Very large
 /// frames are scaled down to 22 inches on the longer side, keeping the shape.
 pub fn metafile_size(bytes: &[u8]) -> Option<(f32, f32, &'static str)> {
-    if !wordcraft_metafile::is_metafile(bytes) {
+    if !letra_metafile::is_metafile(bytes) {
         return None;
     }
     // The frame comes from the header where the file has one, so no bitmap is decoded for it.
-    let (w, h) = wordcraft_metafile::size(bytes).ok()?;
+    let (w, h) = letra_metafile::size(bytes).ok()?;
     if !(w.is_finite() && h.is_finite() && w > 0.0 && h > 0.0) {
         return None;
     }
@@ -169,7 +169,7 @@ impl Vector {
 /// the caller falls back to the raster path (and the grey box).
 pub(crate) fn vector_for(doc: &Document, key: &str) -> Option<Arc<Vector>> {
     let bytes = doc.media.get(key)?;
-    if !wordcraft_metafile::is_metafile(bytes) {
+    if !letra_metafile::is_metafile(bytes) {
         return None;
     }
     if let Some(v) = lock(vectors()).get(key, bytes) {
@@ -186,7 +186,7 @@ pub(crate) fn vector_for(doc: &Document, key: &str) -> Option<Arc<Vector>> {
 
 /// Parses a metafile and decodes its bitmaps. None when the picture has no usable size.
 fn build_vector(bytes: &[u8]) -> Option<Vector> {
-    let mut pic = wordcraft_metafile::parse(bytes).ok()?;
+    let mut pic = letra_metafile::parse(bytes).ok()?;
     if !pic.has_size() {
         return None;
     }
@@ -253,8 +253,8 @@ pub(crate) fn draw_vector(ctx: &mut RenderContext, v: &Vector, r: &kurbo::Rect, 
 }
 
 /// Draws a metafile text run: `tf` maps the run's own space (see [`PlacedItem::Text`]) to the device.
-fn draw_vector_text(ctx: &mut RenderContext, t: &wordcraft_metafile::Text, tf: Affine) {
-    let (face, shaped) = wordcraft_layout::metafile_text_run(t);
+fn draw_vector_text(ctx: &mut RenderContext, t: &letra_metafile::Text, tf: Affine) {
+    let (face, shaped) = letra_layout::metafile_text_run(t);
     let glyphs: Vec<_> = shaped.iter().map(|g| (g.cluster, f64::from(g.x_advance), f64::from(g.x_offset), f64::from(g.y_offset))).collect();
     let Some(lay) = t.layout(face.upem, face.ascent, face.descent, &glyphs) else { return };
     let k = lay.em / face.upem.max(1.0);
@@ -314,8 +314,8 @@ fn device_pixel(view: Affine) -> f64 {
 pub(crate) fn draw_page_picture(ctx: &mut RenderContext, doc: &Document, page: &Page, view: Affine) {
     let Some(pic) = &doc.settings.page_picture else { return };
     let Some(bytes) = doc.media.get(&pic.media) else { return };
-    let Some((nw, nh)) = wordcraft_geom::picture::background_size(bytes).map(|(w, h)| (f64::from(w), f64::from(h))) else { return };
-    let Some(pm) = pixmap_for(doc, &pic.media, wordcraft_doc::picfx::PicFx::default()) else { return };
+    let Some((nw, nh)) = letra_geom::picture::background_size(bytes).map(|(w, h)| (f64::from(w), f64::from(h))) else { return };
+    let Some(pm) = pixmap_for(doc, &pic.media, letra_doc::picfx::PicFx::default()) else { return };
     let (pw, ph) = (pm.width().max(1) as f64, pm.height().max(1) as f64);
     let (w, h) = (page.w as f64, (page.h as f64).min(1e6));
     if !(w.is_finite() && h.is_finite() && w > 0.0 && h > 0.0) {
@@ -349,7 +349,7 @@ pub(crate) fn draw_page_picture(ctx: &mut RenderContext, doc: &Document, page: &
     ctx.reset_paint_transform();
 }
 
-pub(crate) fn pixmap_for(doc: &Document, key: &str, fx: wordcraft_doc::picfx::PicFx) -> Option<Arc<Pixmap>> {
+pub(crate) fn pixmap_for(doc: &Document, key: &str, fx: letra_doc::picfx::PicFx) -> Option<Arc<Pixmap>> {
     let bytes = doc.media.get(key)?;
     // Corrected pixels are cached apart from the picture's own (the same picture can be shown
     // both ways).

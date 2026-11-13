@@ -1,8 +1,8 @@
+use letra_doc::props::CharProps;
+use letra_doc::{Document, Path, Pos, StoryRef};
+use letra_engine::{Selection, Session};
+use letra_layout::outline;
 use serde_json::{Value, json};
-use wordcraft_doc::props::CharProps;
-use wordcraft_doc::{Document, Path, Pos, StoryRef};
-use wordcraft_engine::{Selection, Session};
-use wordcraft_layout::outline;
 
 /// Dispatch an engine command and report its ID if it fails.
 fn run(s: &mut Session, id: &str, params: Value) {
@@ -65,8 +65,8 @@ fn deleted_empty_heading_does_not_promote_body_text_into_toc_or_docx() {
     let mut s = fixture();
     run(&mut s, "text.delete", json!({}));
     assert_eq!(outline::levels(&s.doc)[..2], [outline::BODY, 2]);
-    let bytes = wordcraft_docx::write(&s.doc).unwrap();
-    let mut s = Session::new(wordcraft_docx::read(&bytes).unwrap());
+    let bytes = letra_docx::write(&s.doc).unwrap();
+    let mut s = Session::new(letra_docx::read(&bytes).unwrap());
     assert_eq!(outline::levels(&s.doc)[..2], [outline::BODY, 2]);
     let p = s.doc.para_at(&Pos::body(0, 0)).unwrap();
     assert_eq!(p.props.style.as_deref(), None);

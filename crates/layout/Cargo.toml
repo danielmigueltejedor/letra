@@ -1,19 +1,19 @@
 [package]
-name = "wordcraft-layout"
+name = "letra-layout"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "WordCraft layout: shaping, line breaking, tabs, lists, tables, pagination, headers/footers, hit testing"
+description = "Letra layout: shaping, line breaking, tabs, lists, tables, pagination, headers/footers, hit testing"
 
 [lints]
 workspace = true
 
 [dependencies]
-wordcraft-geom = { workspace = true, features = ["image"] }
-wordcraft-doc = { workspace = true }
-wordcraft-fonts = { workspace = true }
-wordcraft-proof = { workspace = true }
-wordcraft-metafile = { workspace = true }
+letra-geom = { workspace = true, features = ["image"] }
+letra-doc = { workspace = true }
+letra-fonts = { workspace = true }
+letra-proof = { workspace = true }
+letra-metafile = { workspace = true }
 kurbo = { workspace = true }
 unicode-bidi = { workspace = true }
 unicode-linebreak = { workspace = true }
@@ -24,8 +24,8 @@ image = { workspace = true }
 log = { workspace = true }
 
 [dev-dependencies]
-wordcraft-doc = { workspace = true, features = ["test-support"] }
-wordcraft-fonts = { workspace = true, features = ["test-support"] }
+letra-doc = { workspace = true, features = ["test-support"] }
+letra-fonts = { workspace = true, features = ["test-support"] }
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
 # The browser clock (`SystemTime::now()`/`Instant::now()` panic on wasm32-unknown-unknown).

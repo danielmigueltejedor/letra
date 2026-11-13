@@ -24,7 +24,7 @@ fn click(ctx: &egui::Context, n: &mut u32, pos: egui::Pos2, a: &mut WordApp) {
 /// row undoes three steps at once.
 #[test]
 fn undo_list_matches_the_session_and_undoes_up_to_the_clicked_row() {
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     a.run("text.insert", json!({"text": "Hello"})).unwrap();
     a.run("select.all", json!({})).unwrap();
     a.run("format.bold", json!({})).unwrap();
@@ -52,7 +52,7 @@ fn undo_list_matches_the_session_and_undoes_up_to_the_clicked_row() {
     let third = ctx.read_response(undo_list_row_id(2)).unwrap();
     click(&ctx, &mut n, third.rect.center(), &mut a);
     assert_eq!(a.session.undo_history(), ["Typing"], "three steps undone in one go");
-    assert_eq!(a.session.doc.plain_text(wordcraft_doc::StoryRef::Body), "Hello");
+    assert_eq!(a.session.doc.plain_text(letra_doc::StoryRef::Body), "Hello");
     frame(&ctx, &mut n, vec![], &mut a);
     assert!(!egui::Popup::is_id_open(&ctx, popup), "the list closes");
 }
@@ -61,7 +61,7 @@ fn undo_list_matches_the_session_and_undoes_up_to_the_clicked_row() {
 /// left must not shift with it.
 #[test]
 fn status_bar_controls_hold_still_across_zoom_levels() {
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     let ctx = ctx();
     ctx.enable_accesskit();
     let names = ["Focus", "Print Layout", "Web Layout"];
@@ -111,7 +111,7 @@ fn the_count_line_words_each_unit() {
 /// spaces, characters without spaces), and its selection line counts the selection the same way.
 #[test]
 fn the_status_bar_totals_are_the_word_count_dialogs_numbers() {
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     a.run("text.insert", json!({"text": "Hello world.\nSecond line"})).unwrap();
     // Straight from the engine: `a.run` would only open the Word Count dialog (#240).
     let stats = a.session.run("review.wordCount", &json!({})).unwrap();
@@ -134,7 +134,7 @@ fn the_status_bar_totals_are_the_word_count_dialogs_numbers() {
 /// the three units, the choice taking effect at once and kept between runs.
 #[test]
 fn the_status_bar_count_is_chosen_from_its_context_menu() {
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     a.run("text.insert", json!({"text": "Hello world.\nSecond line"})).unwrap();
     let ctx = ctx();
     ctx.enable_accesskit();
@@ -192,7 +192,7 @@ fn the_status_bar_count_is_chosen_from_its_context_menu() {
     seen = drawn(&mut a, &mut n, vec![]);
     assert!(seen.iter().any(|(l, _)| l == "6 of 23 characters"), "{seen:?}");
     // The choice comes back after a restart.
-    let mut b = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut b = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     let saved = serde_json::to_vec(&a.prefs()).unwrap();
     b.apply_prefs(crate::UiState::from_json(&saved).unwrap());
     assert_eq!(b.ui.status_count, StatusCount::Characters, "kept between runs");
@@ -202,7 +202,7 @@ fn the_status_bar_count_is_chosen_from_its_context_menu() {
 /// before the controls on the right, instead of being drawn over the Focus button.
 #[test]
 fn a_long_status_message_stops_before_the_controls() {
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     let long = "C:\\Test\\Documents\\Reports\\Final individual test folder\\Second level folder\\Project - Gadgets and sleep of teenagers.docx: The system cannot find the path specified. (os error 3)";
     a.status_msg = Some((long.to_string(), crate::now_ms()));
     let ctx = ctx();
@@ -245,7 +245,7 @@ fn status_bar_names_the_actual_part_being_edited() {
         }
         "(none shown)".to_string()
     };
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     a.run("text.insert", json!({"text": "Body text"})).unwrap();
     a.run("references.footnote", json!({})).unwrap();
     assert_eq!(label(&mut a), "Editing footnote");
@@ -259,7 +259,7 @@ fn status_bar_names_the_actual_part_being_edited() {
 /// #1903: the footer's Cancel row closes the Undo list without undoing anything.
 #[test]
 fn undo_list_cancel_closes_without_undoing() {
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     a.run("text.insert", json!({"text": "Hello"})).unwrap();
     let before: Vec<String> = a.session.undo_history().into_iter().map(str::to_string).collect();
     assert!(!before.is_empty());
@@ -308,7 +308,7 @@ fn mac_title_bar_follows_the_measured_lights() {
 #[test]
 fn hide_quick_access_toolbar_takes_the_toolbar_out_of_the_title_bar() {
     use egui_kittest::kittest::Queryable;
-    let a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1440.0, 900.0)).build_ui_state(
         |ui, app: &mut WordApp| {
             let ctx = ui.ctx().clone();
@@ -354,7 +354,7 @@ fn hide_quick_access_toolbar_takes_the_toolbar_out_of_the_title_bar() {
 /// #3040: clicking a row in the Undo list hands the keyboard back to the document.
 #[test]
 fn undo_list_row_returns_focus_to_the_document() {
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     a.run("text.insert", json!({"text": "Hello"})).unwrap();
     assert_eq!(a.session.undo_history().len(), 1);
 
@@ -374,11 +374,11 @@ fn undo_list_row_returns_focus_to_the_document() {
 
 /// A saved .docx (so AutoSave can cover it) with the title bar drawn over it.
 fn autosave_harness() -> (egui_kittest::Harness<'static, WordApp>, std::path::PathBuf) {
-    let dir = std::env::temp_dir().join(format!("wordcraft-ui-autosave-label-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("letra-ui-autosave-label-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("draft.docx");
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     a.run("text.insert", json!({"text": "Hello"})).unwrap();
     a.run("file.save", json!({"path": path.to_string_lossy()})).unwrap();
     assert!(a.autosaves(), "a saved .docx is covered by AutoSave");
@@ -417,8 +417,8 @@ fn clicking_the_autosave_label_toggles_autosave() {
 
 #[test]
 fn the_font_box_warns_where_the_status_bar_does_and_before_typing() {
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
-    let missing = "Wordcraft Nowhere Face";
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
+    let missing = "Letra Nowhere Face";
     // An empty paragraph in a missing font: no letters show it yet, still worth a warning.
     a.session.run("select.all", &json!({})).unwrap();
     a.session.run("format.font", &json!({"name": missing})).unwrap();
@@ -434,22 +434,22 @@ fn the_font_box_warns_where_the_status_bar_does_and_before_typing() {
     a.session.run("select.all", &json!({})).unwrap();
     a.session.run("format.font", &json!({"name": "JetBrains Mono"})).unwrap();
     a.session.run("caret.docEnd", &json!({})).unwrap();
-    a.session.run("format.font", &json!({"name": "Wordcraft Just Picked"})).unwrap();
-    assert!(a.font_box_warning("Wordcraft Just Picked").is_some(), "picked at the caret");
+    a.session.run("format.font", &json!({"name": "Letra Just Picked"})).unwrap();
+    assert!(a.font_box_warning("Letra Just Picked").is_some(), "picked at the caret");
     // Over a selection the box shows the selected text's font, which the list decides.
     a.session.run("select.all", &json!({})).unwrap();
-    assert!(a.font_box_warning("Wordcraft Half Typed").is_none());
+    assert!(a.font_box_warning("Letra Half Typed").is_none());
 }
 
 #[test]
 fn the_east_asian_font_box_names_the_face_its_text_is_drawn_in() {
     // MS Mincho is roman in many font tables; the run's font is drawn in Cambria then, but CJK
     // text never is: it goes to the run's font or a fallback face.
-    let mincho = "Wordcraft Mincho Gone";
-    let mut doc = wordcraft_doc::Document::new();
+    let mincho = "Letra Mincho Gone";
+    let mut doc = letra_doc::Document::new();
     doc.settings.roman_fonts = vec![mincho.into()];
-    let mut a = WordApp::new(wordcraft_engine::Session::new(doc), crate::Services::default());
-    let want = wordcraft_engine::cmd::font::east_asian_shown_as(&a.session.doc, mincho, "JetBrains Mono");
+    let mut a = WordApp::new(letra_engine::Session::new(doc), crate::Services::default());
+    let want = letra_engine::cmd::font::east_asian_shown_as(&a.session.doc, mincho, "JetBrains Mono");
     assert!(want.is_some(), "not installed");
     assert_eq!(a.east_asian_font_box_warning(mincho, "JetBrains Mono"), want, "an empty paragraph warns");
 }
@@ -457,10 +457,10 @@ fn the_east_asian_font_box_names_the_face_its_text_is_drawn_in() {
 #[test]
 fn a_screen_reader_hears_the_font_box_warning() {
     use egui_kittest::kittest::{NodeT, Queryable};
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     a.session.run("text.insert", &json!({"text": "Hello"})).unwrap();
     a.session.run("select.all", &json!({})).unwrap();
-    a.session.run("format.font", &json!({"name": "Wordcraft Nowhere Face"})).unwrap();
+    a.session.run("format.font", &json!({"name": "Letra Nowhere Face"})).unwrap();
     let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1440.0, 900.0)).build_ui_state(
         |ui, app: &mut WordApp| {
             let ctx = ui.ctx().clone();
@@ -473,7 +473,7 @@ fn a_screen_reader_hears_the_font_box_warning() {
     let described = h
         .query_all_by_role(egui::accesskit::Role::TextInput)
         .filter_map(|n| n.accesskit_node().description())
-        .any(|d| d.contains("Wordcraft Nowhere Face") && d.contains("isn't installed"));
+        .any(|d| d.contains("Letra Nowhere Face") && d.contains("isn't installed"));
     assert!(described, "the font box describes its warning");
 }
 
@@ -481,28 +481,28 @@ fn a_screen_reader_hears_the_font_box_warning() {
 fn the_font_dialog_warns_for_a_missing_font_over_a_selection() {
     // Selected Latin text: no East Asian text shows the Asian font, and none shows a font just
     // typed into the dialog, so the list has neither; OK would apply them all the same.
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     a.session.run("text.insert", &json!({"text": "Hello"})).unwrap();
     a.session.run("select.all", &json!({})).unwrap();
     a.session.run("format.font", &json!({"name": "JetBrains Mono"})).unwrap();
-    assert!(a.east_asian_font_box_warning("Wordcraft Mincho Gone", "JetBrains Mono").is_some(), "the Asian box");
-    assert!(a.font_dialog_warning("Wordcraft Dialog Gone").is_some(), "the Latin box");
+    assert!(a.east_asian_font_box_warning("Letra Mincho Gone", "JetBrains Mono").is_some(), "the Asian box");
+    assert!(a.font_dialog_warning("Letra Dialog Gone").is_some(), "the Latin box");
     assert!(a.font_dialog_warning("JetBrains Mono").is_none(), "an installed font");
     // The ribbon's box over the selection shows the selected text's font: the list decides.
-    assert!(a.font_box_warning("Wordcraft Dialog Gone").is_none());
+    assert!(a.font_box_warning("Letra Dialog Gone").is_none());
 }
 
 #[test]
 fn the_asian_box_names_the_face_cjk_text_gets_even_for_a_font_latin_text_uses() {
     // The status bar lists the font with the face its Latin text is drawn in; Chinese, Japanese
     // and Korean text in it would go to the Latin text font or a fallback face instead.
-    let gone = "Wordcraft Both Ways Gone";
-    let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+    let gone = "Letra Both Ways Gone";
+    let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
     a.session.run("text.insert", &json!({"text": "Hello"})).unwrap();
     a.session.run("select.all", &json!({})).unwrap();
     a.session.run("format.font", &json!({"name": gone})).unwrap();
     assert!(a.font_box_warning(gone).is_some(), "listed for its Latin text");
-    let want = wordcraft_engine::cmd::font::east_asian_shown_as(&a.session.doc, gone, "JetBrains Mono");
+    let want = letra_engine::cmd::font::east_asian_shown_as(&a.session.doc, gone, "JetBrains Mono");
     assert!(want.is_some());
     assert_eq!(a.east_asian_font_box_warning(gone, "JetBrains Mono"), want);
 }
