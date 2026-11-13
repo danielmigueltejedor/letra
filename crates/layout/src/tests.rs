@@ -660,7 +660,7 @@ fn hit_and_caret_agree() {
     crate::test_fonts();
     let d = Document::from_text("Hello world, this is Letra.\nSecond paragraph here.");
     let l = lay(&d);
-    for off in [0, 5, 12, 31] {
+    for off in [0, 5, 12, 27] {
         let pos = Pos::body(0, off);
         let c = l.caret(&pos).unwrap();
         let back = l.hit(c.page, c.x + 0.1, c.top + c.height / 2.0, StoryRef::Body).unwrap();
