@@ -340,16 +340,19 @@ impl Tokens {
             accent_text: ndl(p.accent_text),
             on_accent: ndl(p.text_on_accent),
             input: ndl(p.control_field_bg),
-            input_border: ndl(p.border_default),
+            // Fields keep a 3:1 outline (#657), which NDL's default border is too light for.
+            input_border: ndl(p.border_strong),
             group_label: ndl(p.text_tertiary),
             ruler: ndl(p.surface_panel),
-            ruler_margin: ndl(p.surface_sunken),
+            // The margins are a step darker than both the text area and the canvas around the
+            // page, so the ruler reads as a ruler (#1148).
+            ruler_margin: if dark { ndl(p.surface_window) } else { ndl(p.border_subtle) },
             ruler_tick: ndl(p.text_tertiary),
             status_bar: ndl(p.surface_panel),
             selection: Color32::from_rgba_unmultiplied(accent.r(), accent.g(), accent.b(), if dark { 0x55 } else { 0x48 }),
             balloon: ndl(p.surface_raised),
             markup_area: ndl(p.surface_sunken),
-            markup_edge: ndl(p.border_subtle),
+            markup_edge: ndl(p.border_default),
             menu: ndl(p.surface_overlay),
             blue: ndl(p.status_info_fg),
             red: ndl(p.status_danger_fg),
@@ -357,7 +360,8 @@ impl Tokens {
             orange: ndl(p.status_warning_fg),
             close_hover: ndl(WINDOW_CLOSE),
             close_pressed: ndl(WINDOW_CLOSE_PRESSED),
-            on_close: Color32::WHITE,
+            // NDL's coral is too light for a white ✕ (#1885); the glyph is dark ink instead.
+            on_close: Color32::from_rgb(0x14, 0x04, 0x02),
             ..base
         }
     }

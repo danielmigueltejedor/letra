@@ -168,6 +168,7 @@ impl WordApp {
             integrated_titlebar: _,
             linux_desktop: _,
             ndl_window_controls: _,
+            global_menu: _,
             mac_titlebar: _,
             control_rx: _,
             updates_rt: _,

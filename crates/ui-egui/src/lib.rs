@@ -41,6 +41,7 @@ pub mod file_browser;
 pub mod file_dialogs;
 pub mod format_shape;
 pub mod frame;
+pub mod global_menu;
 pub mod guides;
 pub mod i18n;
 pub mod ibeam;
@@ -644,6 +645,8 @@ pub struct WordApp {
     pub linux_desktop: bool,
     /// The window has no OS decorations and Letra draws Nodalia's window controls.
     pub ndl_window_controls: bool,
+    /// The desktop's global menu, when the host found one to serve ([`global_menu`]).
+    pub global_menu: Option<Box<dyn global_menu::Backend>>,
     /// macOS: the title bar's height and where its content starts, around the traffic lights.
     pub mac_titlebar: chrome::MacTitleBar,
     /// Focus (#1678): the ribbon is dropped down from the Focus bar, over the page.

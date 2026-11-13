@@ -105,6 +105,7 @@ impl WordApp {
             integrated_titlebar: false,
             linux_desktop: false,
             ndl_window_controls: false,
+            global_menu: None,
             mac_titlebar: chrome::MacTitleBar::default(),
             updates_rt: updates_ui::Runtime::default(),
             packs_rt: Default::default(),
@@ -470,6 +471,7 @@ impl WordApp {
             backstage::forget_save_as_error(&ctx);
         }
         self.sync_window_controls(&ctx);
+        self.sync_global_menu(&ctx);
         self.paint_window(ui, &ctx, t);
         if !moved(self) {
             self.show_overlays(ui, &ctx);

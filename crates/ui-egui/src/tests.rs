@@ -1380,7 +1380,7 @@ fn web_layout_fills_the_window_width() {
     frame(&mut a, 1400.0, tick);
     assert_eq!(a.session.view.web_width, wide, "no change without a resize");
     let page = a.canvas.page_rects[0];
-    assert!(page.left() < 4.0, "page starts at the left edge: {page:?}");
+    assert!(page.left() < 4.0 + theme::ISLAND_GAP, "page starts at the left edge of the canvas island: {page:?}");
     // A window drag: the width holds while the size keeps changing, then follows once it settles.
     for w in [1300.0, 1100.0, 900.0, 700.0, 500.0] {
         frame(&mut a, w, tick);
@@ -6497,7 +6497,7 @@ fn system_theme_follows_the_os_without_pinning_the_window() {
         let want = if dark { theme::Tokens::dark() } else { theme::Tokens::light() };
         assert_eq!(theme::Tokens::get(&ctx).dark, dark, "OS at {os:?}");
         // Our palette, not egui's default style for that theme.
-        assert_eq!(ctx.global_style().visuals.panel_fill, want.ribbon, "OS at {os:?}");
+        assert_eq!(ctx.global_style().visuals.panel_fill, want.title_bar, "OS at {os:?}");
         assert_eq!(a.ui_is_dark(), dark, "OS at {os:?}");
     }
     assert!(sent.contains(&ViewportCommand::SetTheme(SystemTheme::SystemDefault)), "{sent:?}");
