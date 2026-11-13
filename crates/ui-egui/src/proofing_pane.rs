@@ -1,9 +1,9 @@
 //! Language-aware proofing task pane, laid out from black-box observation of Word on Windows.
 
 use egui::{Align, Align2, Sense, Stroke, Ui, vec2};
+use letra_engine::Selection;
 use serde::Serialize;
 use serde_json::{Value, json};
-use wordcraft_engine::Selection;
 
 use crate::WordApp;
 use crate::theme::{Tokens, regular, semibold};
@@ -250,8 +250,8 @@ fn body(app: &mut WordApp, ui: &mut Ui, form: &mut SpellingForm) {
 #[cfg(test)]
 mod tests {
     use egui_kittest::kittest::Queryable;
-    use wordcraft_doc::{Document, Pos, StoryRef};
-    use wordcraft_engine::Session;
+    use letra_doc::{Document, Pos, StoryRef};
+    use letra_engine::Session;
 
     use super::*;
     use crate::Services;

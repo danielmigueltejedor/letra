@@ -1,6 +1,6 @@
 use super::*;
-use wordcraft_layout::display::page_display;
-use wordcraft_layout::{LayoutCache, LayoutOptions, layout};
+use letra_layout::display::page_display;
+use letra_layout::{LayoutCache, LayoutOptions, layout};
 
 mod color_glyphs;
 
@@ -41,14 +41,14 @@ fn a_tall_ascent_font_list_entry_sits_where_the_others_do() {
     for at in [hhea + 4, os2 + 68, os2 + 74] {
         data[at..at + 2].copy_from_slice(&tall);
     }
-    assert!(wordcraft_fonts::FontDb::global().add_font(data) > 0);
-    let db = wordcraft_fonts::FontDb::global();
+    assert!(letra_fonts::FontDb::global().add_font(data) > 0);
+    let db = letra_fonts::FontDb::global();
     let tall_face = db.face("Talled Sans 3", "Regular");
-    let normal = db.face(wordcraft_fonts::FALLBACK_FAMILY, "Regular");
+    let normal = db.face(letra_fonts::FALLBACK_FAMILY, "Regular");
     assert_eq!(tall_face.family, "Talled Sans 3");
     assert!(tall_face.ascent > normal.ascent * 1.5, "patched ascent {} vs {}", tall_face.ascent, normal.ascent);
     // The font list's entry: 13 pt text in a 244×22 pt row, 2 pt in.
-    let entry = |f: &wordcraft_fonts::FontFace| ink_rows(&render_text_line(f, "Amiri Quran", 13.0, 244.0, 22.0, 2.0, 2.0));
+    let entry = |f: &letra_fonts::FontFace| ink_rows(&render_text_line(f, "Amiri Quran", 13.0, 244.0, 22.0, 2.0, 2.0));
     let (top, bottom) = entry(&normal).unwrap();
     let (tall_top, tall_bottom) = entry(&tall_face).unwrap();
     assert_eq!((tall_top, tall_bottom), (top, bottom), "same glyphs, same place in the row");
@@ -61,9 +61,9 @@ fn a_tall_ascent_font_list_entry_sits_where_the_others_do() {
 /// #299: the caret's background is the page colour, a highlight, or the dark page.
 #[test]
 fn background_at_caret_follows_page_colour_highlight_and_dark_mode() {
-    use wordcraft_doc::Pos;
-    use wordcraft_doc::props::Highlight;
-    let mut d = Document::from_text("Hello WordCraft");
+    use letra_doc::Pos;
+    use letra_doc::props::Highlight;
+    let mut d = Document::from_text("Hello Letra");
     let mid = |d: &Document, off: usize| {
         let l = layout(d, &mut LayoutCache::new(), &LayoutOptions::default());
         let c = l.caret_on(&Pos::body(0, off), 0).unwrap();
@@ -92,9 +92,9 @@ fn background_at_caret_follows_page_colour_highlight_and_dark_mode() {
 fn background_follows_a_shapes_outline_not_its_box() {
     let opts = RenderOptions::default();
     let ellipse = Draw::Shape {
-        rect: wordcraft_geom::Rect::new(100.0, 100.0, 200.0, 100.0),
+        rect: letra_geom::Rect::new(100.0, 100.0, 200.0, 100.0),
         kind: ShapeKind::Ellipse,
-        fill: Some(wordcraft_layout::display::Paint::solid(Rgb::BLACK)),
+        fill: Some(letra_layout::display::Paint::solid(Rgb::BLACK)),
         stroke: None,
         stroke_width: 0.0,
         effects: Default::default(),
@@ -104,7 +104,7 @@ fn background_follows_a_shapes_outline_not_its_box() {
     };
     let at = |x: f32, y: f32| {
         let mut bg = [255.0; 3];
-        blend_backgrounds(std::slice::from_ref(&ellipse), wordcraft_geom::Point::new(x, y), &opts, &mut bg, 0);
+        blend_backgrounds(std::slice::from_ref(&ellipse), letra_geom::Point::new(x, y), &opts, &mut bg, 0);
         bg
     };
     assert_eq!(at(200.0, 150.0), [0.0; 3], "the centre is the fill");
@@ -114,7 +114,7 @@ fn background_follows_a_shapes_outline_not_its_box() {
 
 #[test]
 fn renders_text_dark_pixels() {
-    let d = Document::from_text("Hello WordCraft");
+    let d = Document::from_text("Hello Letra");
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let img = render_page(&d, &l.pages[0], 1.0, &RenderOptions::default());
     assert_eq!((img.width, img.height), (612, 792));
@@ -129,13 +129,13 @@ fn renders_text_dark_pixels() {
 /// cell, not across it.
 #[test]
 fn turned_cell_text_is_painted_turned() {
-    use wordcraft_doc::props::TextDirection;
+    use letra_doc::props::TextDirection;
     let ink = |dir: TextDirection| {
         let mut d = Document::from_text("before\nafter");
-        let mut t = wordcraft_doc::Table::new(1, 2, 400.0);
-        t.rows[0].cells[0].blocks = vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text("WWWWWWWWWWWW", Default::default()))];
+        let mut t = letra_doc::Table::new(1, 2, 400.0);
+        t.rows[0].cells[0].blocks = vec![letra_doc::para_block(letra_doc::Paragraph::with_text("WWWWWWWWWWWW", Default::default()))];
         t.rows[0].cells[0].props.text_direction = dir;
-        d.insert_block(wordcraft_doc::StoryRef::Body, &wordcraft_doc::Path::top(1), wordcraft_doc::Block::Table(t)).unwrap();
+        d.insert_block(letra_doc::StoryRef::Body, &letra_doc::Path::top(1), letra_doc::Block::Table(t)).unwrap();
         let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
         let img = render_page(&d, &l.pages[0], 1.0, &RenderOptions::default());
         // Dark pixels inside the first cell (x 72..272, clear of its borders), well below
@@ -151,15 +151,15 @@ fn turned_cell_text_is_painted_turned() {
 /// cast to, and none on the other; a glow surrounds it.
 #[test]
 fn shape_shadow_is_cast_offset_from_the_shape() {
-    use wordcraft_doc::effects::{Glow, Shadow, ShapeEffects};
-    use wordcraft_doc::para::InlineObject;
+    use letra_doc::effects::{Glow, Shadow, ShapeEffects};
+    use letra_doc::para::InlineObject;
     let draw = |effects: ShapeEffects| {
         let mut d = Document::from_text("");
         let shape = InlineObject::Shape {
             kind: ShapeKind::Rectangle,
             w: 100.0,
             h: 60.0,
-            fill: Some(wordcraft_doc::fill::Fill::solid(Rgb(0, 0, 255))),
+            fill: Some(letra_doc::fill::Fill::solid(Rgb(0, 0, 255))),
             stroke: None,
             stroke_width: 0.0,
             float: Default::default(),
@@ -168,7 +168,7 @@ fn shape_shadow_is_cast_offset_from_the_shape() {
             effects,
             extra: Default::default(),
         };
-        let at = wordcraft_doc::Pos { story: wordcraft_doc::StoryRef::Body, path: wordcraft_doc::Path::top(0), off: 0 };
+        let at = letra_doc::Pos { story: letra_doc::StoryRef::Body, path: letra_doc::Path::top(0), off: 0 };
         d.insert_object(&at, shape, &Default::default()).unwrap();
         let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
         render_page(&d, &l.pages[0], 1.0, &RenderOptions::default())
@@ -208,10 +208,10 @@ fn shape_shadow_is_cast_offset_from_the_shape() {
 /// transparent fill lets what is behind show through.
 #[test]
 fn shape_gradients_and_transparency_are_drawn() {
+    use letra_doc::fill::{Fill, Gradient, GradientFlip, GradientKind, PathShape};
+    use letra_doc::para::{Float, InlineObject, Wrap};
+    use letra_doc::wordart::GradStop;
     use std::sync::Arc;
-    use wordcraft_doc::fill::{Fill, Gradient, GradientFlip, GradientKind, PathShape};
-    use wordcraft_doc::para::{Float, InlineObject, Wrap};
-    use wordcraft_doc::wordart::GradStop;
     let shape = |fill: Fill, x: f32| InlineObject::Shape {
         kind: ShapeKind::Rectangle,
         w: 100.0,
@@ -228,7 +228,7 @@ fn shape_gradients_and_transparency_are_drawn() {
     let stops = vec![GradStop { pos: 0.0, color: Rgb::BLACK, transparency: 0.0 }, GradStop { pos: 100.0, color: Rgb::WHITE, transparency: 0.0 }];
     let grad = |kind| Fill::Gradient(Arc::new(Gradient { stops: stops.clone(), kind, tile: None, rot_with_shape: true, flip: GradientFlip::None }));
     let mut d = Document::from_text("");
-    let at = wordcraft_doc::Pos { story: wordcraft_doc::StoryRef::Body, path: wordcraft_doc::Path::top(0), off: 0 };
+    let at = letra_doc::Pos { story: letra_doc::StoryRef::Body, path: letra_doc::Path::top(0), off: 0 };
     // Left to right: top-to-bottom linear, circular, navy under 30%-opaque white.
     let objs = [
         shape(grad(GradientKind::Linear { angle: 90.0, scaled: false }), 0.0),
@@ -360,14 +360,14 @@ fn page_picture_is_painted_behind_the_text() {
     let mut d = Document::new();
     d.media.insert("bg.png".into(), Arc::new(png));
     for kind in ["tile", "frame"] {
-        d.settings.page_picture = Some(wordcraft_doc::PagePicture { media: "bg.png".into(), fill_type: kind.into(), title: String::new() });
+        d.settings.page_picture = Some(letra_doc::PagePicture { media: "bg.png".into(), fill_type: kind.into(), title: String::new() });
         let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
         let img = render_page(&d, &l.pages[0], 1.0, &RenderOptions::default());
         let i = ((300 * img.width + 300) * 4) as usize;
         assert_eq!(&img.pixels[i..i + 3], &[10, 200, 30], "{kind}");
     }
     // Centred once at its own size (8 px = 6 pt), the rest of the page paper.
-    d.settings.page_picture = Some(wordcraft_doc::PagePicture { media: "bg.png".into(), fill_type: "center".into(), title: String::new() });
+    d.settings.page_picture = Some(letra_doc::PagePicture { media: "bg.png".into(), fill_type: "center".into(), title: String::new() });
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let img = render_page(&d, &l.pages[0], 1.0, &RenderOptions::default());
     let px = |x: u32, y: u32| {
@@ -391,7 +391,7 @@ fn read_paper_replaces_the_page_background() {
     image::RgbaImage::from_pixel(8, 8, image::Rgba([10, 200, 30, 255]))
         .write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png)
         .unwrap();
-    let mut d = Document::from_text("Hello WordCraft");
+    let mut d = Document::from_text("Hello Letra");
     d.media.insert("bg.png".into(), Arc::new(png));
     d.settings.page_color = Some(Rgb(0x10, 0x10, 0x40));
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
@@ -409,7 +409,7 @@ fn read_paper_replaces_the_page_background() {
     assert_eq!(background_at(&d, page, &white, 5.0, 5.0), Rgb::WHITE);
     let inverse = RenderOptions { read_paper: Some(Rgb::WHITE), dark: true, ..Default::default() };
     assert_eq!(background_at(&d, page, &inverse, 5.0, 5.0), Rgb(DARK_PAPER, DARK_PAPER, DARK_PAPER));
-    d.settings.page_picture = Some(wordcraft_doc::PagePicture { media: "bg.png".into(), fill_type: "tile".into(), title: String::new() });
+    d.settings.page_picture = Some(letra_doc::PagePicture { media: "bg.png".into(), fill_type: "tile".into(), title: String::new() });
     assert_eq!(at(&render_page(&d, page, 1.0, &RenderOptions::default()), 300, 300), [10, 200, 30], "the page picture");
     assert_eq!(at(&render_page(&d, page, 1.0, &sepia), 300, 300), [0xE2, 0xD9, 0xD0]);
     // The text is drawn in its own color on sepia paper: its darkest pixel is within 8 levels of its value on white.
@@ -473,14 +473,14 @@ fn decode_budget_is_checked_from_the_header() {
     let img = image::RgbaImage::from_fn(16, 8, |x, y| image::Rgba([x as u8, y as u8, 9, 255]));
     img.write_to(&mut std::io::Cursor::new(&mut buf), image::ImageFormat::Png).unwrap();
     // Decode, the RGBA conversion and the premultiplied copy are charged: two buffers at peak.
-    assert!(decode_pixmap_within(&buf, wordcraft_doc::picfx::PicFx::default(), 1024).is_some());
-    assert!(decode_pixmap_within(&buf, wordcraft_doc::picfx::PicFx::default(), 1023).is_none());
+    assert!(decode_pixmap_within(&buf, letra_doc::picfx::PicFx::default(), 1024).is_some());
+    assert!(decode_pixmap_within(&buf, letra_doc::picfx::PicFx::default(), 1023).is_none());
     // 16-bit RGBA decodes to 8 bytes a pixel, alive with its RGBA8 copy: 12 bytes a pixel.
     let mut wide = Vec::new();
     let img16 = image::ImageBuffer::<image::Rgba<u16>, _>::from_fn(16, 8, |x, y| image::Rgba([x as u16 * 999, y as u16, 9, 65535]));
     image::DynamicImage::ImageRgba16(img16).write_to(&mut std::io::Cursor::new(&mut wide), image::ImageFormat::Png).unwrap();
-    assert!(decode_pixmap_within(&wide, wordcraft_doc::picfx::PicFx::default(), 1024).is_none(), "two RGBA8 buffers' worth is not enough for RGBA16");
-    assert!(decode_pixmap_within(&wide, wordcraft_doc::picfx::PicFx::default(), 1536).is_some());
+    assert!(decode_pixmap_within(&wide, letra_doc::picfx::PicFx::default(), 1024).is_none(), "two RGBA8 buffers' worth is not enough for RGBA16");
+    assert!(decode_pixmap_within(&wide, letra_doc::picfx::PicFx::default(), 1536).is_some());
     // A header (valid CRC) claiming 60000x60000 with no pixel data reads fine, then the budget refuses it.
     let hdr = ihdr_only_png(60_000, 60_000);
     assert_eq!(image_size(&hdr), Some((60_000, 60_000)));
@@ -552,7 +552,7 @@ fn progressive_jpeg_coefficients_count_toward_the_decode_budget() {
     // Two RGBA buffers of 7900 × 7900 fit 512 MB, but RGB output beside three full-size
     // coefficient planes (9 bytes a pixel) doesn't (#3644).
     let jpeg = progressive_jpeg_header(7900, 7900);
-    assert!(wordcraft_geom::decode_fits(7900, 7900, wordcraft_geom::MAX_DECODED_BYTES));
+    assert!(letra_geom::decode_fits(7900, 7900, letra_geom::MAX_DECODED_BYTES));
     assert!(decode_pixmap(&jpeg).is_none());
     let mut baseline = Vec::new();
     image::RgbImage::new(64, 64).write_to(&mut std::io::Cursor::new(&mut baseline), image::ImageFormat::Jpeg).unwrap();
@@ -596,8 +596,8 @@ fn dimmed_header_image_renders() {
     let mut png = Vec::new();
     image::RgbaImage::from_pixel(4, 4, image::Rgba([200, 0, 0, 255])).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
     let media = d.add_media(png, "png");
-    let mut hp = wordcraft_doc::Paragraph::new();
-    let obj = wordcraft_doc::para::InlineObject::Image {
+    let mut hp = letra_doc::Paragraph::new();
+    let obj = letra_doc::para::InlineObject::Image {
         media,
         w: 40.0,
         h: 40.0,
@@ -608,7 +608,7 @@ fn dimmed_header_image_renders() {
         ole: None,
     };
     hp.insert_object(0, obj, &Default::default()).unwrap();
-    let id = d.add_part(wordcraft_doc::PartKind::Header, vec![wordcraft_doc::para_block(hp)]);
+    let id = d.add_part(letra_doc::PartKind::Header, vec![letra_doc::para_block(hp)]);
     d.last_section.headers.default = Some(id);
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let opts = RenderOptions::default();
@@ -621,8 +621,8 @@ fn dimmed_header_image_renders() {
 /// behind text; one with transparency is faded (and both, the same picture, side by side).
 #[test]
 fn picture_brightness_contrast_transparency() {
-    use wordcraft_doc::para::{Anchor, Float, InlineObject, Wrap};
-    use wordcraft_doc::picfx::PicFx;
+    use letra_doc::para::{Anchor, Float, InlineObject, Wrap};
+    use letra_doc::picfx::PicFx;
     let mut d = Document::from_text("");
     let mut png = Vec::new();
     image::RgbaImage::from_pixel(4, 4, image::Rgba([100, 100, 100, 255]))
@@ -639,7 +639,7 @@ fn picture_brightness_contrast_transparency() {
         fx,
         ole: None,
     };
-    let mut p = wordcraft_doc::Paragraph::new();
+    let mut p = letra_doc::Paragraph::new();
     p.insert_object(0, pic(PicFx::default(), 100.0), &Default::default()).unwrap();
     p.insert_object(0, pic(PicFx::new(80_000, -80_000, 0), 200.0), &Default::default()).unwrap();
     p.insert_object(0, pic(PicFx::new(0, 0, 50_000), 300.0), &Default::default()).unwrap();
@@ -649,7 +649,7 @@ fn picture_brightness_contrast_transparency() {
         *float = Float::default();
     }
     p.insert_object(0, inline, &Default::default()).unwrap();
-    d.body = vec![wordcraft_doc::para_block(p)];
+    d.body = vec![letra_doc::para_block(p)];
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let img = render_page(&d, &l.pages[0], 1.0, &RenderOptions::default());
     let grey = |x: u32| img.pixel(x, 420);
@@ -673,7 +673,7 @@ fn picture_brightness_contrast_transparency() {
 fn a_thick_rule_ends_flat_not_round() {
     let d = Document::new();
     let rule = |stroke| Draw::Line { x0: 10.0, y0: 10.0, x1: 30.0, y1: 10.0, width: 8.0, color: Rgb::BLACK, stroke, alpha: 1.0, text_bg: None };
-    let shot = |stroke| render_items(&d, &[rule(stroke)], wordcraft_geom::Rect::new(0.0, 0.0, 40.0, 20.0), 1.0, &RenderOptions::default());
+    let shot = |stroke| render_items(&d, &[rule(stroke)], letra_geom::Rect::new(0.0, 0.0, 40.0, 20.0), 1.0, &RenderOptions::default());
     let ink = |img: &Rendered, x: u32, y: u32| img.pixel(x, y)[3] > 128;
     // An 8 pt rule from x=10 to x=30 covers y 6..14, and nothing beyond either end.
     let img = shot(Stroke::Solid);
@@ -691,9 +691,9 @@ fn a_thick_rule_ends_flat_not_round() {
 #[test]
 fn dimmed_header_borders_dont_darken_where_they_meet() {
     let mut d = Document::from_text("");
-    let t = wordcraft_doc::Table::new(2, 2, 200.0);
-    let blocks = vec![std::sync::Arc::new(wordcraft_doc::Block::Table(t)), wordcraft_doc::para_block(wordcraft_doc::Paragraph::new())];
-    let id = d.add_part(wordcraft_doc::PartKind::Header, blocks);
+    let t = letra_doc::Table::new(2, 2, 200.0);
+    let blocks = vec![std::sync::Arc::new(letra_doc::Block::Table(t)), letra_doc::para_block(letra_doc::Paragraph::new())];
+    let id = d.add_part(letra_doc::PartKind::Header, blocks);
     d.last_section.headers.default = Some(id);
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let render = |dim_header: bool| {
@@ -723,15 +723,15 @@ fn dimmed_header_borders_keep_one_tone_where_they_meet() {
     let mut d = Document::from_text("Body");
     // Two rows and two columns: the middle border is drawn by both cells beside it, and a cell's
     // top and left rules cross at its top-left corner.
-    let header = vec![std::sync::Arc::new(wordcraft_doc::Block::Table(wordcraft_doc::Table::new(2, 2, 300.0)))];
-    let id = d.add_part(wordcraft_doc::PartKind::Header, header);
+    let header = vec![std::sync::Arc::new(letra_doc::Block::Table(letra_doc::Table::new(2, 2, 300.0)))];
+    let id = d.add_part(letra_doc::PartKind::Header, header);
     d.last_section.headers.default = Some(id);
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let page = &l.pages[0];
     let rules: Vec<(f32, f32, f32, f32)> = page
         .header
         .iter()
-        .filter_map(|it| if let wordcraft_layout::Placed::Rule { x0, y0, x1, y1, .. } = it { Some((*x0, *y0, *x1, *y1)) } else { None })
+        .filter_map(|it| if let letra_layout::Placed::Rule { x0, y0, x1, y1, .. } = it { Some((*x0, *y0, *x1, *y1)) } else { None })
         .collect();
     let (vx, vy0, _, vy1) = *rules.iter().filter(|(x0, _, x1, _)| x0 == x1).min_by(|a, b| a.0.total_cmp(&b.0)).expect("a vertical rule");
     let (hx0, hy, hx1, _) = *rules.iter().find(|(_, y0, _, y1)| y0 == y1 && (y0 - vy0).abs() < 0.01).expect("the horizontal rule at the cell's top");
@@ -768,7 +768,7 @@ fn dark_page_inverts_lightness() {
     // Pure hues keep their colour; dark blue turns light blue.
     assert_eq!(invert_lightness(Rgb(255, 0, 0)), Rgb(255, 0, 0));
     assert_eq!(invert_lightness(Rgb(0, 0, 0x80)), Rgb(0x7F, 0x7F, 0xFF));
-    let d = Document::from_text("Hello WordCraft");
+    let d = Document::from_text("Hello Letra");
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let opts = RenderOptions { dark: true, ..Default::default() };
     assert_eq!(opts.ink(Rgb::WHITE), Rgb(DARK_PAPER, DARK_PAPER, DARK_PAPER));
@@ -783,17 +783,17 @@ fn dark_page_inverts_lightness() {
 /// ones have a grey copy down-right, imprinted ones up-left.
 #[test]
 fn legacy_font_effects_are_drawn() {
-    use wordcraft_doc::CharProps;
-    use wordcraft_doc::wordart::{TextEffects, TextFill};
+    use letra_doc::CharProps;
+    use letra_doc::wordart::{TextEffects, TextFill};
     const SIZE: f32 = 40.0;
     const SCALE: f32 = 2.0;
     const MIN_DIRECTION_PIXELS: usize = 100;
     let shot = |c: CharProps, offset: f32| {
         let mut d = Document::from_text("x");
         let cp = CharProps { size: Some(SIZE), bold: Some(true), ..c };
-        d.body = vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text("HHHH", cp))];
+        d.body = vec![letra_doc::para_block(letra_doc::Paragraph::with_text("HHHH", cp))];
         let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
-        render_area(&d, &l.pages[0], wordcraft_geom::Rect::new(-offset, -offset, 400.0, 150.0), SCALE, &RenderOptions::default())
+        render_area(&d, &l.pages[0], letra_geom::Rect::new(-offset, -offset, 400.0, 150.0), SCALE, &RenderOptions::default())
     };
     let counts = |img: &Rendered| {
         let (mut dark, mut grey) = (0usize, 0usize);
@@ -843,10 +843,10 @@ fn legacy_font_effects_are_drawn() {
 }
 
 /// A document whose only text is a yellow-highlighted run.
-fn yellow_highlight_doc() -> (Document, wordcraft_layout::DocLayout) {
-    let cp = wordcraft_doc::CharProps { highlight: Some(wordcraft_doc::props::Highlight::Yellow), size: Some(24.0), ..Default::default() };
+fn yellow_highlight_doc() -> (Document, letra_layout::DocLayout) {
+    let cp = letra_doc::CharProps { highlight: Some(letra_doc::props::Highlight::Yellow), size: Some(24.0), ..Default::default() };
     let mut d = Document::from_text("x");
-    d.body = vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text("HHHH HHHH", cp))];
+    d.body = vec![letra_doc::para_block(letra_doc::Paragraph::with_text("HHHH HHHH", cp))];
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     (d, l)
 }
@@ -878,8 +878,8 @@ fn dark_page_dims_a_highlight_raster() {
 /// (Automatic and explicit black text both draw white); a light page is the identity.
 #[test]
 fn dark_page_text_backgrounds_keep_text_readable() {
-    use wordcraft_doc::props::{Highlight, TextColor};
-    use wordcraft_layout::display::text_color;
+    use letra_doc::props::{Highlight, TextColor};
+    use letra_layout::display::text_color;
     let dark = RenderOptions { dark: true, ..Default::default() };
     let light = RenderOptions::default();
     let colours: Vec<Rgb> = Highlight::ALL.iter().filter_map(|h| h.rgb()).collect();
@@ -907,7 +907,7 @@ fn dark_page_text_backgrounds_keep_text_readable() {
 /// dimmed highlight still reaches 4.5:1 on a dark page.
 #[test]
 fn dark_page_coloured_text_on_highlights_reads() {
-    use wordcraft_doc::props::Highlight;
+    use letra_doc::props::Highlight;
     let dark = RenderOptions { dark: true, ..Default::default() };
     let colours: Vec<Rgb> = Highlight::ALL.iter().filter_map(|h| h.rgb()).collect();
     let texts: Vec<Rgb> = [Rgb(0, 0, 255), Rgb(255, 0, 0)].into_iter().chain(colours.iter().copied()).collect();
@@ -925,11 +925,10 @@ fn dark_page_coloured_text_on_highlights_reads() {
 /// like the text it underlines, not the dark grey plain inversion gives white.
 #[test]
 fn dark_page_underline_on_a_dark_highlight_reads() {
-    use wordcraft_doc::props::{Highlight, Underline};
-    let cp =
-        wordcraft_doc::CharProps { highlight: Some(Highlight::Black), underline: Some(Underline::Thick), size: Some(24.0), ..Default::default() };
+    use letra_doc::props::{Highlight, Underline};
+    let cp = letra_doc::CharProps { highlight: Some(Highlight::Black), underline: Some(Underline::Thick), size: Some(24.0), ..Default::default() };
     let mut d = Document::from_text("x");
-    d.body = vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text("HHHH HHHH", cp))];
+    d.body = vec![letra_doc::para_block(letra_doc::Paragraph::with_text("HHHH HHHH", cp))];
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let items = page_display(&d, &l.pages[0], &DisplayOptions::default());
     let (x0, x1, y, w) = items
@@ -950,10 +949,10 @@ fn dark_page_underline_on_a_dark_highlight_reads() {
 /// highlight draws light on a dark page, like plain text does, not dark grey on near-black.
 #[test]
 fn dark_page_shadowed_text_on_a_dark_highlight_reads() {
-    use wordcraft_doc::props::Highlight;
-    let cp = wordcraft_doc::CharProps { highlight: Some(Highlight::Black), shadow: Some(true), size: Some(24.0), ..Default::default() };
+    use letra_doc::props::Highlight;
+    let cp = letra_doc::CharProps { highlight: Some(Highlight::Black), shadow: Some(true), size: Some(24.0), ..Default::default() };
     let mut d = Document::from_text("x");
-    d.body = vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text("HHHH HHHH", cp))];
+    d.body = vec![letra_doc::para_block(letra_doc::Paragraph::with_text("HHHH HHHH", cp))];
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let items = page_display(&d, &l.pages[0], &DisplayOptions::default());
     let b = items
@@ -961,7 +960,7 @@ fn dark_page_shadowed_text_on_a_dark_highlight_reads() {
         .find_map(|i| match i {
             Draw::Art { path, text_bg, .. } => {
                 assert!(text_bg.is_some(), "the run's highlight is the letters' background");
-                wordcraft_layout::wordart::path_box(path)
+                letra_layout::wordart::path_box(path)
             }
             _ => None,
         })
@@ -1007,8 +1006,8 @@ fn red_right_half_emf() -> Vec<u8> {
 fn metafile_picture_is_drawn_as_vectors() {
     let mut d = Document::new();
     let media = d.add_media(red_right_half_emf(), "emf");
-    let mut p = wordcraft_doc::Paragraph::new();
-    let obj = wordcraft_doc::para::InlineObject::Image {
+    let mut p = letra_doc::Paragraph::new();
+    let obj = letra_doc::para::InlineObject::Image {
         media,
         w: 70.0,
         h: 70.0,
@@ -1019,7 +1018,7 @@ fn metafile_picture_is_drawn_as_vectors() {
         ole: None,
     };
     p.insert_object(0, obj, &Default::default()).unwrap();
-    d.body = vec![wordcraft_doc::para_block(p)];
+    d.body = vec![letra_doc::para_block(p)];
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let opts = RenderOptions::default();
     let rect = page_display(&d, &l.pages[0], &opts.display)
@@ -1051,8 +1050,8 @@ fn a_crop_keeping_a_sliver_fills_the_frame_with_it() {
         for (crop, at, red) in [([0.47, 0.47, 0.5, 0.5], 0.7, false), ([0.5, 0.47, 0.47, 0.5], 0.3, true)] {
             let mut d = Document::new();
             let media = d.add_media(bytes.clone(), ext);
-            let mut p = wordcraft_doc::Paragraph::new();
-            let obj = wordcraft_doc::para::InlineObject::Image {
+            let mut p = letra_doc::Paragraph::new();
+            let obj = letra_doc::para::InlineObject::Image {
                 media,
                 w: 70.0,
                 h: 70.0,
@@ -1063,7 +1062,7 @@ fn a_crop_keeping_a_sliver_fills_the_frame_with_it() {
                 ole: None,
             };
             p.insert_object(0, obj, &Default::default()).unwrap();
-            d.body = vec![wordcraft_doc::para_block(p)];
+            d.body = vec![letra_doc::para_block(p)];
             let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
             let opts = RenderOptions::default();
             let rect = page_display(&d, &l.pages[0], &opts.display)
@@ -1089,8 +1088,8 @@ fn cosmetic_metafile_pen_is_one_device_pixel_wide() {
     emf.extend([emf_rec(27, &le32(&[0, 50])), emf_rec(54, &le32(&[100, 50])), emf_rec(14, &[0; 12])].concat());
     let mut d = Document::new();
     let media = d.add_media(emf, "emf");
-    let mut p = wordcraft_doc::Paragraph::new();
-    let obj = wordcraft_doc::para::InlineObject::Image {
+    let mut p = letra_doc::Paragraph::new();
+    let obj = letra_doc::para::InlineObject::Image {
         media,
         w: 70.0,
         h: 70.0,
@@ -1101,7 +1100,7 @@ fn cosmetic_metafile_pen_is_one_device_pixel_wide() {
         ole: None,
     };
     p.insert_object(0, obj, &Default::default()).unwrap();
-    d.body = vec![wordcraft_doc::para_block(p)];
+    d.body = vec![letra_doc::para_block(p)];
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let opts = RenderOptions::default();
     let rect = page_display(&d, &l.pages[0], &opts.display)
@@ -1136,8 +1135,8 @@ fn metafile_text_records_are_painted() {
     emf.extend([font, emf_rec(37, &le32(&[1])), emf_rec(24, &le32(&[0])), text, emf_rec(14, &[0; 12])].concat());
     let mut d = Document::new();
     let media = d.add_media(emf, "emf");
-    let mut p = wordcraft_doc::Paragraph::new();
-    let obj = wordcraft_doc::para::InlineObject::Image {
+    let mut p = letra_doc::Paragraph::new();
+    let obj = letra_doc::para::InlineObject::Image {
         media,
         w: 70.0,
         h: 70.0,
@@ -1148,7 +1147,7 @@ fn metafile_text_records_are_painted() {
         ole: None,
     };
     p.insert_object(0, obj, &Default::default()).unwrap();
-    d.body = vec![wordcraft_doc::para_block(p)];
+    d.body = vec![letra_doc::para_block(p)];
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let opts = RenderOptions::default();
     let rect = page_display(&d, &l.pages[0], &opts.display)
@@ -1183,8 +1182,8 @@ fn metafile_text_with_a_huge_font_is_left_out() {
     emf.extend([font, emf_rec(37, &le32(&[1])), emf_rec(24, &le32(&[0])), text, emf_rec(14, &[0; 12])].concat());
     let mut d = Document::new();
     let media = d.add_media(emf, "emf");
-    let mut p = wordcraft_doc::Paragraph::new();
-    let obj = wordcraft_doc::para::InlineObject::Image {
+    let mut p = letra_doc::Paragraph::new();
+    let obj = letra_doc::para::InlineObject::Image {
         media,
         w: 70.0,
         h: 70.0,
@@ -1195,7 +1194,7 @@ fn metafile_text_with_a_huge_font_is_left_out() {
         ole: None,
     };
     p.insert_object(0, obj, &Default::default()).unwrap();
-    d.body = vec![wordcraft_doc::para_block(p)];
+    d.body = vec![letra_doc::para_block(p)];
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let start = std::time::Instant::now();
     let img = render_page(&d, &l.pages[0], 1.0, &RenderOptions::default());
@@ -1222,8 +1221,8 @@ fn unreadable_metafile_keeps_the_grey_box() {
     let mut d = Document::new();
     // The header alone has no records, so the metafile does not parse.
     let media = d.add_media(red_right_half_emf()[..88].to_vec(), "emf");
-    let mut p = wordcraft_doc::Paragraph::new();
-    let obj = wordcraft_doc::para::InlineObject::Image {
+    let mut p = letra_doc::Paragraph::new();
+    let obj = letra_doc::para::InlineObject::Image {
         media,
         w: 70.0,
         h: 70.0,
@@ -1234,7 +1233,7 @@ fn unreadable_metafile_keeps_the_grey_box() {
         ole: None,
     };
     p.insert_object(0, obj, &Default::default()).unwrap();
-    d.body = vec![wordcraft_doc::para_block(p)];
+    d.body = vec![letra_doc::para_block(p)];
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let opts = RenderOptions::default();
     let rect = page_display(&d, &l.pages[0], &opts.display)
@@ -1269,7 +1268,7 @@ fn shapes_have_paths() {
 
 #[test]
 fn dashed_outline_has_gaps() {
-    use wordcraft_doc::{
+    use letra_doc::{
         connector::ShapeExtra,
         line_dash::LineDash,
         para::{Anchor, Float, InlineObject, Wrap},
@@ -1288,10 +1287,10 @@ fn dashed_outline_has_gaps() {
             effects: Default::default(),
             extra: ShapeExtra { dash, ..Default::default() },
         };
-        let mut p = wordcraft_doc::Paragraph::new();
+        let mut p = letra_doc::Paragraph::new();
         p.insert_object(0, shape, &Default::default()).unwrap();
         let mut d = Document::new();
-        d.body = vec![wordcraft_doc::para_block(p)];
+        d.body = vec![letra_doc::para_block(p)];
         let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
         render_page(&d, &l.pages[0], 4.0, &RenderOptions::default())
     };
@@ -1305,7 +1304,7 @@ fn dashed_outline_has_gaps() {
 /// Distinguish flat, square and round endpoints for both preset lines and connector paths.
 #[test]
 fn shape_line_caps_reach_the_screen() {
-    use wordcraft_doc::{
+    use letra_doc::{
         connector::{LineCap, ShapeExtra},
         para::{Anchor, Float, InlineObject, Wrap},
     };
@@ -1325,10 +1324,10 @@ fn shape_line_caps_reach_the_screen() {
                 effects: Default::default(),
                 extra: ShapeExtra { cap, ..Default::default() },
             };
-            let mut p = wordcraft_doc::Paragraph::new();
+            let mut p = letra_doc::Paragraph::new();
             p.insert_object(0, shape, &Default::default()).unwrap();
             let mut d = Document::new();
-            d.body = vec![wordcraft_doc::para_block(p)];
+            d.body = vec![letra_doc::para_block(p)];
             let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
             let image = render_page(&d, &l.pages[0], 4.0, &RenderOptions::default());
             let painted = |x, y| image.pixel(x, y)[0] < 80;
@@ -1341,7 +1340,7 @@ fn shape_line_caps_reach_the_screen() {
 
 #[test]
 fn zero_width_connector_dashes() {
-    use wordcraft_doc::{
+    use letra_doc::{
         connector::ShapeExtra,
         line_dash::LineDash,
         para::{Anchor, Float, InlineObject, Wrap},
@@ -1359,10 +1358,10 @@ fn zero_width_connector_dashes() {
         effects: Default::default(),
         extra: ShapeExtra { dash: LineDash::Dash, ..Default::default() },
     };
-    let mut p = wordcraft_doc::Paragraph::new();
+    let mut p = letra_doc::Paragraph::new();
     p.insert_object(0, shape, &Default::default()).unwrap();
     let mut d = Document::new();
-    d.body = vec![wordcraft_doc::para_block(p)];
+    d.body = vec![letra_doc::para_block(p)];
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let image = render_page(&d, &l.pages[0], 8.0, &RenderOptions::default());
     // A 0.75 pt stroke has a 3 pt dash followed by a 2.25 pt gap.
@@ -1375,7 +1374,7 @@ fn zero_width_connector_dashes() {
 /// and non-finite ones. A normal dash pattern still dashes.
 #[test]
 fn hostile_dash_patterns_draw_solid_and_finish() {
-    use wordcraft_doc::graphic::PathSeg;
+    use letra_doc::graphic::PathSeg;
     let line = |dash: Vec<f32>| Draw::Path {
         segs: vec![PathSeg::Move(10.0, 20.0), PathSeg::Line(90.0, 20.0)],
         fill: None,
@@ -1386,14 +1385,13 @@ fn hostile_dash_patterns_draw_solid_and_finish() {
     };
     let start = std::time::Instant::now();
     for dash in [vec![1e-30, 1e-30], vec![1e-30], vec![-1.0, 2.0], vec![f32::NAN, 1.0], vec![f32::INFINITY, 1.0], vec![0.0, 0.0]] {
-        let img =
-            render_items(&Document::new(), &[line(dash.clone())], wordcraft_geom::Rect::new(0.0, 0.0, 100.0, 40.0), 1.0, &RenderOptions::default());
+        let img = render_items(&Document::new(), &[line(dash.clone())], letra_geom::Rect::new(0.0, 0.0, 100.0, 40.0), 1.0, &RenderOptions::default());
         assert!(img.pixel(50, 20)[3] > 200, "{dash:?} draws solid");
     }
     // Milliseconds drawn solid; drawn as dashes they ran past 4 minutes without finishing.
     assert!(start.elapsed() < std::time::Duration::from_secs(10), "{:?}", start.elapsed());
     let dashed =
-        render_items(&Document::new(), &[line(vec![10.0, 10.0])], wordcraft_geom::Rect::new(0.0, 0.0, 100.0, 40.0), 1.0, &RenderOptions::default());
+        render_items(&Document::new(), &[line(vec![10.0, 10.0])], letra_geom::Rect::new(0.0, 0.0, 100.0, 40.0), 1.0, &RenderOptions::default());
     assert!(dashed.pixel(15, 20)[3] > 200 && dashed.pixel(25, 20)[3] == 0, "a normal pattern dashes");
     assert!(safe_dashes([3.0, 1.0], 1000.0).len() == 2);
     assert!(safe_dashes([1e-3, 1e-3], 1000.0).is_empty(), "a million pieces");
@@ -1417,26 +1415,26 @@ fn flowchart_or_spokes() {
 /// square, left white with the default corner; turned a quarter, the same.
 #[test]
 fn rendered_rounded_rectangles_follow_their_corner() {
-    use wordcraft_doc::para::{Anchor, Float, ShapeKind, Wrap};
+    use letra_doc::para::{Anchor, Float, ShapeKind, Wrap};
     let rendered = |corner: Option<u32>, rot: f32| {
         let float = Float { wrap: Wrap::InFrontOfText, h_rel: Anchor::Page, v_rel: Anchor::Page, x: 100.0, y: 100.0, rot, ..Default::default() };
-        let shape = wordcraft_doc::para::InlineObject::Shape {
+        let shape = letra_doc::para::InlineObject::Shape {
             kind: ShapeKind::RoundedRectangle,
             w: 200.0,
             h: 200.0,
-            fill: Some(wordcraft_doc::fill::Fill::solid(wordcraft_doc::props::Rgb(0, 0, 0))),
+            fill: Some(letra_doc::fill::Fill::solid(letra_doc::props::Rgb(0, 0, 0))),
             stroke: None,
             stroke_width: 0.0,
             float,
             story: None,
             freeform: None,
             effects: Default::default(),
-            extra: wordcraft_doc::connector::ShapeExtra { corner, ..Default::default() },
+            extra: letra_doc::connector::ShapeExtra { corner, ..Default::default() },
         };
-        let mut p = wordcraft_doc::Paragraph::new();
+        let mut p = letra_doc::Paragraph::new();
         p.insert_object(0, shape, &Default::default()).unwrap();
         let mut d = Document::new();
-        d.body = vec![wordcraft_doc::para_block(p)];
+        d.body = vec![letra_doc::para_block(p)];
         let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
         render_page(&d, &l.pages[0], 1.0, &RenderOptions::default())
     };
@@ -1499,11 +1497,11 @@ fn undecodable_pictures_keep_their_grey_box_pixels() {
     let cut = whole.len() - 24;
     whole.truncate(cut);
     let mut d = Document::new();
-    let mut p = wordcraft_doc::Paragraph::new();
+    let mut p = letra_doc::Paragraph::new();
     for (bytes, ext) in [(b"this is not a picture at all".to_vec(), "bin"), (whole, "png"), (vec![1, 0, 0, 0, 88, 0, 0, 0], "emf")] {
         let media = d.add_media(bytes, ext);
         let n = p.len();
-        let obj = wordcraft_doc::para::InlineObject::Image {
+        let obj = letra_doc::para::InlineObject::Image {
             media,
             w: 60.0,
             h: 40.0,
@@ -1515,7 +1513,7 @@ fn undecodable_pictures_keep_their_grey_box_pixels() {
         };
         p.insert_object(n, obj, &Default::default()).unwrap();
     }
-    d.body = vec![wordcraft_doc::para_block(p)];
+    d.body = vec![letra_doc::para_block(p)];
     let l = layout(&d, &mut LayoutCache::new(), &LayoutOptions::default());
     let opts = RenderOptions::default();
     let img = render_page(&d, &l.pages[0], 1.0, &opts);

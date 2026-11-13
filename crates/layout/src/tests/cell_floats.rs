@@ -1,8 +1,8 @@
 //! Synthetic letterhead geometry. No external documents or image assets are used.
 use super::*;
-use wordcraft_doc::para::{Anchor, Float, Wrap};
-use wordcraft_doc::props::VAlign;
-use wordcraft_doc::{Paragraph, PartKind};
+use letra_doc::para::{Anchor, Float, Wrap};
+use letra_doc::props::VAlign;
+use letra_doc::{Paragraph, PartKind};
 
 fn picture(name: &str, w: f32, h: f32, x: f32, y: f32, wrap: Wrap, dist: f32) -> InlineObject {
     InlineObject::Image {
@@ -39,7 +39,7 @@ fn cell_letterhead_keeps_picture_offsets_inside_the_outer_edges() {
     t.props.borders = Some(Borders { top: border, left: border, bottom: border, right: border, ..Default::default() });
     t.rows[0].props.height = Some(63.75);
     let mut p = Paragraph::default();
-    let box_story = d.add_part(PartKind::TextBox, vec![wordcraft_doc::para_block(Paragraph::with_text("Synthetic letterhead", Default::default()))]);
+    let box_story = d.add_part(PartKind::TextBox, vec![letra_doc::para_block(Paragraph::with_text("Synthetic letterhead", Default::default()))]);
     let mut central = rect_shape(332.25, 52.5, Float { wrap: Wrap::InFrontOfText, x: 59.9, y: 5.8, dist: 9.0, ..Default::default() });
     if let InlineObject::Shape { story, .. } = &mut central {
         *story = Some(box_story);
@@ -47,7 +47,7 @@ fn cell_letterhead_keeps_picture_offsets_inside_the_outer_edges() {
     p.insert_object(0, central, &Default::default()).unwrap();
     p.insert_object(0, picture("right", 47.25, 61.6, 395.95, 1.4, Wrap::Through, 9.0), &Default::default()).unwrap();
     p.insert_object(0, picture("left", 63.75, 56.25, -5.15, 2.0, Wrap::Through, 9.0), &Default::default()).unwrap();
-    t.rows[0].cells[0].blocks = vec![wordcraft_doc::para_block(p)];
+    t.rows[0].cells[0].blocks = vec![letra_doc::para_block(p)];
     d.insert_block(StoryRef::Body, &Path::top(0), Block::Table(t)).unwrap();
     let layout = lay(&d);
     let items = &layout.pages[0].items;
@@ -90,7 +90,7 @@ fn cell_letterhead_pulls_an_outside_picture_to_the_outer_left_edge() {
         t.rows[0].cells[0].props.valign = Some(VAlign::Center);
         let mut p = Paragraph::with_text("Synthetic header", Default::default());
         p.insert_object(0, picture("logo", 79.0, 47.55, -94.7, 2.3, Wrap::BehindText, dist), &Default::default()).unwrap();
-        t.rows[0].cells[0].blocks = vec![wordcraft_doc::para_block(p)];
+        t.rows[0].cells[0].blocks = vec![letra_doc::para_block(p)];
         let header = d.add_part(PartKind::Header, vec![Arc::new(Block::Table(t))]);
         d.last_section.headers.default = Some(header);
         let layout = lay(&d);
@@ -117,7 +117,7 @@ fn cell_float_outer_edges_include_asymmetric_and_mirrored_margins() {
             t.props.cell_margins = Some([0.0, 12.0, 0.0, 3.0]);
             let mut p = Paragraph::default();
             p.insert_object(0, picture("logo", 40.0, 20.0, offset, 2.0, Wrap::BehindText, 9.0), &Default::default()).unwrap();
-            t.rows[0].cells[1].blocks = vec![wordcraft_doc::para_block(p)];
+            t.rows[0].cells[1].blocks = vec![letra_doc::para_block(p)];
             d.insert_block(StoryRef::Body, &Path::top(0), Block::Table(t)).unwrap();
             let layout = lay(&d);
             let items = &layout.pages[0].items;

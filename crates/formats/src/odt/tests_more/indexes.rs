@@ -1,13 +1,13 @@
 //! Tables of contents and other generated indexes (ODF 1.3 §8: `text:table-of-content`,
 //! `text:illustration-index`, `text:table-index`, `text:alphabetical-index`,
-//! `text:bibliography`): opened as WordCraft's (Word's `TOC`, `INDEX` and `BIBLIOGRAPHY`
+//! `text:bibliography`): opened as Letra's (Word's `TOC`, `INDEX` and `BIBLIOGRAPHY`
 //! fields around their entries, in the TOC styles), so Update Table works on them, and written
 //! back as ODF indexes LibreOffice updates.
 
 use crate::odt::tests::{NS_T, content_of, package, styles_of};
 use crate::odt::{export, import};
-use wordcraft_doc::para::{InlineObject, OBJ};
-use wordcraft_doc::{Document, Paragraph, para_block};
+use letra_doc::para::{InlineObject, OBJ};
+use letra_doc::{Document, Paragraph, para_block};
 
 const NS_X: &str = r#"xmlns:xlink="http://www.w3.org/1999/xlink""#;
 
@@ -49,19 +49,19 @@ const TOC: &str = r##"<text:table-of-content text:style-name="Sect1" text:protec
 const TOC_INSTR: &str = r#"TOC \o "1-3" \h \z \u"#;
 
 #[test]
-fn a_table_of_contents_opens_as_wordcrafts() {
+fn a_table_of_contents_opens_as_letras() {
     let d = open(TOC);
     assert_eq!(
         paras(&d),
         [
-            // Its title carries the field, as a table WordCraft inserts does.
+            // Its title carries the field, as a table Letra inserts does.
             ("Table of Contents".to_string(), "TOCHeading".to_string(), vec![TOC_INSTR.to_string()]),
             ("Chapter 1\t1".into(), "TOC1".into(), vec![]),
             ("Section 1.1\t2".into(), "TOC2".into(), vec![]),
             ("After.".into(), String::new(), vec![]),
         ]
     );
-    // LibreOffice's Contents styles are WordCraft's TOC styles, with their look from the file.
+    // LibreOffice's Contents styles are Letra's TOC styles, with their look from the file.
     let toc2 = d.styles.get("TOC2").unwrap();
     assert_eq!(toc2.name, "TOC 2");
     assert!(toc2.para.indent_left.is_some_and(|l| (l - 14.4).abs() < 0.01), "{:?}", toc2.para.indent_left);
@@ -95,7 +95,7 @@ fn indexes_round_trip() {
 }
 
 #[test]
-fn a_wordcraft_table_of_contents_is_written_as_an_odf_one() {
+fn a_letra_table_of_contents_is_written_as_an_odf_one() {
     // As References › Table of Contents makes it: a heading holding the field, then entries.
     let mut head = Paragraph::with_text("Contents", Default::default()).styled("TOCHeading");
     head.insert_object(
@@ -149,7 +149,7 @@ fn index_marks_are_xe_fields_and_written_back() {
         .iter()
         .filter_map(|b| b.as_para())
         .flat_map(|p| p.objects.iter())
-        .filter_map(|o| if let wordcraft_doc::para::InlineObject::Field { instr, .. } = o { Some(instr.clone()) } else { None })
+        .filter_map(|o| if let letra_doc::para::InlineObject::Field { instr, .. } = o { Some(instr.clone()) } else { None })
         .collect();
     assert_eq!(xe, [r#"XE "Fruit:apple""#, r#"XE "bananas""#, r#"XE "a quoted one here""#]);
     // The marked text stays text.

@@ -11,8 +11,8 @@
 //! colour needs nothing new below the UI.
 
 use egui::{Color32, Id, Pos2, Rect, Sense, Stroke, Ui, pos2, vec2};
+use letra_doc::Rgb;
 use serde_json::{Value, json};
-use wordcraft_doc::Rgb;
 
 use crate::WordApp;
 use crate::theme::{Tokens, c32};
@@ -249,17 +249,17 @@ pub enum Pick {
 
 /// Stable storage id for the Recent Colors list.
 fn recent_id() -> Id {
-    Id::unique("wordcraft.recentColors")
+    Id::unique("letra.recentColors")
 }
 
 /// Stable storage id for the pending More Colors request.
 fn request_id() -> Id {
-    Id::unique("wordcraft.moreColorsRequest")
+    Id::unique("letra.moreColorsRequest")
 }
 
 /// Stable storage id for the Colors dialog's open flag.
 fn open_flag_id() -> Id {
-    Id::unique("wordcraft.colorsDialogOpen")
+    Id::unique("letra.colorsDialogOpen")
 }
 
 /// Removes and returns a temporary value.
@@ -452,7 +452,7 @@ pub fn show(app: &mut WordApp, ctx: &egui::Context) {
         ctx.data_mut(|m| m.insert_temp(open_flag_id(), false));
         return;
     };
-    let resp = egui::Modal::new(Id::unique("wordcraft.colorsDialog")).show(ctx, |ui| body(ui, &mut d));
+    let resp = egui::Modal::new(Id::unique("letra.colorsDialog")).show(ctx, |ui| body(ui, &mut d));
     // egui's Modal blocks the window behind it, but not the document's keyboard.
     crate::dialogs::release_keyboard(app, ctx);
     crate::dialogs::drag_by_title_bar(ctx, &resp.backdrop_response, resp.response.rect);
@@ -747,7 +747,7 @@ fn custom(ui: &mut Ui, d: &mut ColorsDialog) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wordcraft_engine::Session;
+    use letra_engine::Session;
 
     #[test]
     fn parse_accepts_hex_short_hex_and_rgb_triples() {
@@ -837,7 +837,7 @@ mod tests {
     /// first in Recent Colors.
     #[test]
     fn custom_font_color_applies_and_joins_recent_colors() {
-        let mut app = WordApp::new(Session::new(wordcraft_doc::Document::new()), crate::Services::default());
+        let mut app = WordApp::new(Session::new(letra_doc::Document::new()), crate::Services::default());
         let _ = app.run("document.setText", json!({"text": "Custom colour"}));
         let _ = app.run("select.all", json!({}));
         let _ = app.run("format.color", json!({"color": "112233"}));

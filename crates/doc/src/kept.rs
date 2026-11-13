@@ -2,7 +2,7 @@
 //! back as it was: a paragraph keeps its source XML, which a writer uses as long as the
 //! paragraph still is what the reader made of it (its [`fingerprint`] unchanged). Anything the
 //! model has no place for (an unknown element, an attribute nobody reads) survives a save that
-//! way. Never saved with the document (WordCraft's own format), and not part of its content
+//! way. Never saved with the document (Letra's own format), and not part of its content
 //! (`==` ignores it).
 
 use std::collections::{BTreeMap, HashMap};
@@ -51,7 +51,7 @@ pub struct KeptXml {
     pub indexes: HashMap<u64, (usize, u64, Arc<str>)>,
     /// While reading: by the first paragraph's `rev`, how many paragraphs, and the markup.
     pub pending_indexes: HashMap<u64, (usize, Arc<str>)>,
-    /// The group of paragraphs written as read together (see `wordcraft_formats::model::Group`)
+    /// The group of paragraphs written as read together (see `letra_formats::model::Group`)
     /// each paragraph kept belongs to, by its fingerprint: the group's id and size.
     pub groups: HashMap<u64, (u32, u32)>,
     /// While reading: the same by paragraph `rev`, until `seal_kept`.

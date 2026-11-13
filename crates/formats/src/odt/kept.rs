@@ -1,11 +1,11 @@
-//! Markup kept from the file an ODT document was opened from (see `wordcraft_doc::kept`): the
+//! Markup kept from the file an ODT document was opened from (see `letra_doc::kept`): the
 //! definitions kept paragraphs refer to, read here, and written back with them.
 //!
 //! A kept paragraph names its automatic styles (`P12`, `T5`), and through them common styles,
 //! list styles, data styles and font faces. They are kept as read, by name: `auto:` for
 //! `content.xml`'s automatic styles, `common:` for `styles.xml`'s common styles, `font:` for
 //! font faces. On save, the ones a written paragraph needs (and what they need in turn) go back
-//! in; WordCraft's own automatic styles take another prefix, so names can't meet.
+//! in; Letra's own automatic styles take another prefix, so names can't meet.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -57,7 +57,7 @@ pub(super) fn defs(xml: &[u8], content: bool) -> Vec<(String, Arc<str>)> {
                     }
                 }
             }
-            // A reference mark (§6.6.2), which `text:reference-ref` names: WordCraft reads it as a
+            // A reference mark (§6.6.2), which `text:reference-ref` names: Letra reads it as a
             // bookmark, and writes it as both.
             if content
                 && matches!(q.as_str(), "text:reference-mark" | "text:reference-mark-start")
@@ -191,7 +191,7 @@ fn space(q: &str, family: &str) -> String {
     }
 }
 
-/// Whether `xml` (a part WordCraft wrote) already defines what `def` (a kept definition) does:
+/// Whether `xml` (a part Letra wrote) already defines what `def` (a kept definition) does:
 /// an element of its kind by its name (a list style and a paragraph style may share one).
 pub(super) fn defined(xml: &str, def: &str) -> bool {
     let head = def.split('>').next().unwrap_or("");
@@ -227,7 +227,7 @@ pub(super) fn raw_attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
     }
 }
 
-/// The children of `container` (a child of the root) in `xml` (a part WordCraft wrote): each
+/// The children of `container` (a child of the root) in `xml` (a part Letra wrote): each
 /// one's key in `group` (as [`defs`] gives it) and its markup's byte range; and the range of
 /// the container's content (`None` when there is no such container).
 pub(super) fn children(xml: &str, container: &str, group: &str) -> (Vec<(String, (usize, usize))>, Option<(usize, usize)>) {
@@ -268,9 +268,9 @@ pub(super) fn children(xml: &str, container: &str, group: &str) -> (Vec<(String,
     (out, content)
 }
 
-/// `xml` (a part WordCraft wrote) with `container`'s children as read: the file's (those of
-/// `group` in `defs`, in `order`; `pick` may choose WordCraft's instead, or neither), then
-/// WordCraft's own the file had none of by that key.
+/// `xml` (a part Letra wrote) with `container`'s children as read: the file's (those of
+/// `group` in `defs`, in `order`; `pick` may choose Letra's instead, or neither), then
+/// Letra's own the file had none of by that key.
 fn with_as_read(
     xml: &str,
     container: &str,
@@ -302,29 +302,29 @@ fn with_as_read(
     format!("{head}{body}{tail}")
 }
 
-/// Whether a definition (its markup) is a dash, gradient, marker or fill picture: WordCraft's
+/// Whether a definition (its markup) is a dash, gradient, marker or fill picture: Letra's
 /// where both have one by that name, as the drawings it writes from the model name theirs. A
 /// graphic style (the `Graphics` and `Frame` styles drawings derive from) is the file's: its
 /// drawings written as read derive from it, and those written from the model derived from it
-/// when read (what WordCraft models of it is in theirs).
+/// when read (what Letra models of it is in theirs).
 fn drawing_def(xml: &str) -> bool {
     xml.split('>').next().unwrap_or("").starts_with("<draw:")
 }
 
-/// `styles` (a `styles.xml` WordCraft wrote) with its `office:styles` as read: every kept
-/// child of the file's, then WordCraft's own children the file had no such of. A drawing's
-/// definition both have stays WordCraft's (see [`drawing_def`]). For a document whose style
+/// `styles` (a `styles.xml` Letra wrote) with its `office:styles` as read: every kept
+/// child of the file's, then Letra's own children the file had no such of. A drawing's
+/// definition both have stays Letra's (see [`drawing_def`]). For a document whose style
 /// definitions are as read.
 pub(super) fn with_common_as_read(styles: &str, defs: &BTreeMap<String, Arc<str>>, order: &[String]) -> String {
     with_as_read(styles, "office:styles", "common", defs, order, &|_, d, ours| match ours {
         Some(o) if drawing_def(o) => Some(o.to_string()),
-        // (The default graphic style is the file's: WordCraft's drawings say what they need.)
+        // (The default graphic style is the file's: Letra's drawings say what they need.)
         _ => Some(d.to_string()),
     })
 }
 
-/// `styles` (a `styles.xml` WordCraft wrote) with its page layouts, master pages and their
-/// automatic styles as read, WordCraft's own added where the file had none by that name. For a
+/// `styles` (a `styles.xml` Letra wrote) with its page layouts, master pages and their
+/// automatic styles as read, Letra's own added where the file had none by that name. For a
 /// document whose page setup is as read.
 pub(super) fn with_pages_as_read(styles: &str, defs: &BTreeMap<String, Arc<str>>, order: &[String]) -> String {
     let keep_file = |_: &str, d: &str, _: Option<&str>| Some(d.to_string());
@@ -427,7 +427,7 @@ fn inside_package(h: &str) -> bool {
     !h.is_empty() && !h.contains(':') && !h.starts_with(['#', '/']) && !h.contains("..")
 }
 
-/// The document properties WordCraft writes from its model (§4.3); the file's others are kept.
+/// The document properties Letra writes from its model (§4.3); the file's others are kept.
 const META_MODELLED: [&str; 11] = [
     "meta:generator",
     "dc:title",
@@ -442,7 +442,7 @@ const META_MODELLED: [&str; 11] = [
     "meta:user-defined",
 ];
 
-/// The children of `meta.xml`'s `office:meta` WordCraft doesn't model (the template, the
+/// The children of `meta.xml`'s `office:meta` Letra doesn't model (the template, the
 /// statistics, the editing time, the printing…), as read, in order.
 pub(super) fn meta_defs(xml: &[u8]) -> Vec<(String, Arc<str>)> {
     let mut out = Vec::new();
@@ -469,7 +469,7 @@ pub(super) fn meta_defs(xml: &[u8]) -> Vec<(String, Arc<str>)> {
     out
 }
 
-/// `meta` (a `meta.xml` WordCraft wrote) with the file's document properties WordCraft doesn't
+/// `meta` (a `meta.xml` Letra wrote) with the file's document properties Letra doesn't
 /// model (`defs`' `meta~` ones) added, in their order.
 pub(super) fn with_kept_meta(meta: String, defs: &BTreeMap<String, Arc<str>>, order: &[String]) -> String {
     let kept: String = order.iter().filter(|k| k.starts_with("meta~")).filter_map(|k| defs.get(k)).map(|d| &**d).collect();
@@ -512,8 +512,8 @@ fn children_at(xml: &str, at_depth: usize) -> Vec<(String, Option<String>, &str)
     out
 }
 
-/// Control `ours` (as WordCraft writes it) with what the file's control `theirs` had that
-/// WordCraft doesn't model and so can't have changed: its other attributes (not its ids) and its
+/// Control `ours` (as Letra writes it) with what the file's control `theirs` had that
+/// Letra doesn't model and so can't have changed: its other attributes (not its ids) and its
 /// properties and event listeners.
 fn with_unmodelled(ours: &str, theirs: &str) -> String {
     let attrs_of = |xml: &str| {
@@ -559,7 +559,7 @@ fn with_unmodelled(ours: &str, theirs: &str) -> String {
 }
 
 /// The document's forms (`office:forms`, §13.2) as the file had them (`orig`), with the
-/// controls WordCraft writes (`ours`, its own `office:forms`): the file's forms element and each
+/// controls Letra writes (`ours`, its own `office:forms`): the file's forms element and each
 /// form's own start tag, properties and event listeners as read; the controls the document has
 /// in the first form (the file's controls are the document's, read into it and written back);
 /// `ours` alone when the file had none, its own form when the file had none.
@@ -569,7 +569,7 @@ pub(super) fn merge_forms(orig: Option<&str>, ours: String) -> String {
     let ours_controls = children_at(&ours, 3);
     let orig_controls: Vec<(String, Option<String>, &str)> = children_at(orig, 3).into_iter().filter(|(q, ..)| is_control(q)).collect();
     // Each of ours with what the file's control by that name (else in that place) had and
-    // WordCraft doesn't model.
+    // Letra doesn't model.
     let mut used = vec![false; orig_controls.len()];
     let mut controls = String::new();
     for (i, (q, name, xml)) in ours_controls.iter().enumerate() {
@@ -633,7 +633,7 @@ pub(super) fn merge_forms(orig: Option<&str>, ours: String) -> String {
 }
 
 /// A list of declarations as the file had it (`orig`, a `text:variable-decls` or the like),
-/// with those of WordCraft's (`ours`, the same list) it doesn't have by name; `ours` alone when
+/// with those of Letra's (`ours`, the same list) it doesn't have by name; `ours` alone when
 /// the file had none.
 pub(super) fn merge_decls(orig: Option<&str>, ours: String) -> String {
     let Some(orig) = orig else { return ours };
@@ -740,7 +740,7 @@ pub(super) fn sequences(xml: &str) -> BTreeSet<String> {
 
 /// The kept definitions markup naming `start` needs, each once, what they name included:
 /// `(automatic, common, font faces)`, by name (with its name space's suffix, see `space`), as kept. `None` when one of them makes a page
-/// start (`style:master-page-name`): WordCraft names its master pages afresh, so such markup is
+/// start (`style:master-page-name`): Letra names its master pages afresh, so such markup is
 /// written from the model instead.
 pub(super) type Needed = (BTreeMap<String, Arc<str>>, BTreeMap<String, Arc<str>>, BTreeMap<String, Arc<str>>);
 

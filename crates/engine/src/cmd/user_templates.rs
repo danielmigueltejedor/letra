@@ -229,7 +229,7 @@ mod tests {
 
     /// A real template written by the engine, with `title` as its core title (empty: none).
     fn template(path: &std::path::Path, text: &str, title: &str) {
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         s.run("document.setText", &json!({"text": text})).unwrap();
         s.doc.core.title = title.into();
         crate::io::save_path(path, &s.doc).unwrap();
@@ -259,7 +259,7 @@ mod tests {
         template(&d.join("Legal/Deeper/Too deep.dotx"), "x", "");
         std::fs::create_dir_all(d.join("Empty")).unwrap();
 
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         let r = s.run("file.listTemplates", &json!({"dir": d.to_string_lossy()})).unwrap();
         assert_eq!(
             labels(&r),
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn refuses_network_relative_and_missing_folders() {
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         for dir in [r"\\host\share\Templates", "//host/share/Templates", "relative/Templates", "", "   "] {
             assert!(matches!(s.run("file.listTemplates", &json!({"dir": dir})), Err(CmdError::Params(_))), "{dir:?}");
         }
@@ -300,7 +300,7 @@ mod tests {
     fn the_saved_folder_is_listed_without_dir() {
         let d = scratch("saved");
         template(&d.join("Saved.dotx"), "x", "");
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         s.run("file.options", &json!({"userTemplatesFolder": d.to_string_lossy()})).unwrap();
         let r = s.run("file.listTemplates", &json!({})).unwrap();
         assert_eq!(labels(&r), [("".to_string(), "Saved".to_string())]);
@@ -327,13 +327,13 @@ mod tests {
         let d = scratch("new");
         let path = d.join("Memo.dotx");
         template(&path, "Memo text", "");
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         s.path = Some(d.join("Earlier.docx"));
         s.run("file.newFromTemplate", &json!({"path": path.to_string_lossy()})).unwrap();
         assert_eq!(s.path, None);
         assert!(s.dirty);
         assert_eq!(s.doc.settings.attached_template.as_deref(), Some(path.to_string_lossy().as_ref()));
-        assert!(s.doc.plain_text(wordcraft_doc::StoryRef::Body).contains("Memo text"));
+        assert!(s.doc.plain_text(letra_doc::StoryRef::Body).contains("Memo text"));
         let _ = std::fs::remove_dir_all(&d);
     }
 
@@ -349,13 +349,13 @@ mod tests {
         let bytes = std::fs::read(&path).unwrap();
         let from = json!({"path": path.to_string_lossy(), "replaceBlank": true});
 
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         s.run("file.newFromTemplate", &from).unwrap();
         assert_eq!(s.documents().len(), 1, "the untouched blank document gave way");
         assert_eq!(s.path, None);
         assert!(s.dirty);
         assert_eq!(s.doc.settings.attached_template.as_deref(), Some(path.to_string_lossy().as_ref()));
-        assert!(s.doc.plain_text(wordcraft_doc::StoryRef::Body).contains("Letterhead text"));
+        assert!(s.doc.plain_text(letra_doc::StoryRef::Body).contains("Letterhead text"));
         let saved = s.run("file.save", &json!({})).unwrap();
         assert_eq!(saved["saved"], json!(false), "no file to save to: Save As asks where");
         assert_eq!(std::fs::read(&path).unwrap(), bytes, "the template is never written over");
@@ -364,7 +364,7 @@ mod tests {
         s.run("file.newFromTemplate", &from).unwrap();
         assert_eq!(s.documents().len(), 2);
         // Without the flag, even an untouched blank document stays (File › New).
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         s.run("file.newFromTemplate", &json!({"path": path.to_string_lossy()})).unwrap();
         assert_eq!(s.documents().len(), 2);
         assert_eq!(std::fs::read(&path).unwrap(), bytes);
@@ -379,26 +379,26 @@ mod tests {
     fn new_from_template_reads_a_protected_template_and_bytes_like_file_open() {
         let d = scratch("protected");
         let path = d.join("Locked.dotx");
-        let mut t = Session::new(wordcraft_doc::Document::from_text("Locked template"));
+        let mut t = Session::new(letra_doc::Document::from_text("Locked template"));
         t.run("file.save", &json!({"path": path.to_string_lossy(), "password": "sesame"})).unwrap();
         let name = path.to_string_lossy();
 
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         let e = s.run("file.newFromTemplate", &json!({"path": name})).unwrap_err().to_string();
         assert!(crate::io::needs_password(&e), "{e}");
         let e = s.run("file.newFromTemplate", &json!({"path": name, "password": "wrong"})).unwrap_err().to_string();
         assert!(crate::io::wrong_password(&e), "{e}");
         assert_eq!(s.documents().len(), 1, "nothing opened yet");
         s.run("file.newFromTemplate", &json!({"path": name, "password": "sesame", "replaceBlank": true})).unwrap();
-        assert!(s.doc.plain_text(wordcraft_doc::StoryRef::Body).contains("Locked template"));
+        assert!(s.doc.plain_text(letra_doc::StoryRef::Body).contains("Locked template"));
         assert_eq!((s.path.as_ref(), s.password.is_some()), (None, false));
 
         let plain = d.join("Plain.dotx");
         template(&plain, "From bytes", "");
         let data = crate::cmd::insert::base64_encode(&std::fs::read(&plain).unwrap());
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         s.run("file.newFromTemplate", &json!({"path": "Pl\u{FFFD}in.dotx", "data": data, "replaceBlank": true})).unwrap();
-        assert!(s.doc.plain_text(wordcraft_doc::StoryRef::Body).contains("From bytes"));
+        assert!(s.doc.plain_text(letra_doc::StoryRef::Body).contains("From bytes"));
         assert_eq!(s.doc.settings.attached_template.as_deref(), Some("Pl\u{FFFD}in.dotx"));
         assert_eq!(s.path, None);
         let _ = std::fs::remove_dir_all(&d);
@@ -407,7 +407,7 @@ mod tests {
     #[test]
     fn the_templates_folder_option_is_saved_and_checked() {
         let d = scratch("option");
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         for bad in [json!(r"\\host\share"), json!("//host/share"), json!("relative/x"), json!(7)] {
             assert!(s.run("file.options", &json!({"userTemplatesFolder": bad})).is_err(), "{bad}");
         }
@@ -446,7 +446,7 @@ mod tests {
     #[test]
     fn save_template_keeps_a_template_extension() {
         let d = scratch("save");
-        let mut s = Session::new(wordcraft_doc::Document::new());
+        let mut s = Session::new(letra_doc::Document::new());
         for (asked, saved) in [("A.dotm", "A.dotm"), ("B.DOTX", "B.DOTX"), ("C", "C.dotx"), ("D.docx", "D.docx.dotx")] {
             let r = s.run("file.saveTemplate", &json!({"path": d.join(asked).to_string_lossy()})).unwrap();
             assert_eq!(r["path"], json!(d.join(saved).to_string_lossy()));

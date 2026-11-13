@@ -7,7 +7,7 @@ or the optional `CRAFT_FONTS_DIR` input. No download or extra font checkout is r
 
 Every layout unit test starts with `crate::test_fonts();`, before constructing its fixture or
 resolving a font. This initializes the process-wide database once, including when a single test is
-run by name. The `wordcraft-fonts/test-support` development feature exposes the initializer;
+run by name. The `letra-fonts/test-support` development feature exposes the initializer;
 enabling the feature alone has no effect. Initialization fails if an application database already
 exists, rather than replacing a database whose faces may be in the shaping or math caches.
 Other test binaries and application builds keep their normal font discovery behavior.
@@ -21,8 +21,8 @@ fix still makes the regression test fail.
 
 The fixed set does not cover every script or include an OpenType math font. Tests with an
 existing unavailable-script guard still take that guard. Additional script or math font fixtures
-belong in `storytold/craft-fonts`, with a reproducible test input before enabling them here.
+belong in `getnodalia/foundation (vendor/craft-fonts)`, with a reproducible test input before enabling them here.
 
-Run the suite with `cargo test -p wordcraft-layout`. The isolated font initialization regression
-runs with `cargo test -p wordcraft-fonts --features test-support --test fixed_test_fonts`.
+Run the suite with `cargo test -p letra-layout`. The isolated font initialization regression
+runs with `cargo test -p letra-fonts --features test-support --test fixed_test_fonts`.
 `cargo xtask ci` also runs it through the layout crate's development dependency.

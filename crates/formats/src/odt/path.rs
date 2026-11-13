@@ -1,8 +1,8 @@
 //! Geometry of polygons, polylines, paths and regular polygons (ODF 1.3 §10.3.4–10.3.7, §19.1xx
 //! `draw:points`, `svg:d`, `svg:viewBox`): their points, in their view box's coordinates, into
-//! a WordCraft freeform (straight segments: curves and arcs are followed by short steps).
+//! a Letra freeform (straight segments: curves and arcs are followed by short steps).
 
-use wordcraft_doc::freeform::{FreePath, Freeform, MAX_PATHS, MAX_POINTS};
+use letra_doc::freeform::{FreePath, Freeform, MAX_PATHS, MAX_POINTS};
 
 /// Steps a curve or arc is followed by.
 const CURVE_STEPS: usize = 16;

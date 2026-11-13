@@ -208,10 +208,10 @@ fn custom_char_styles(blocks: &mut [FBlock], styles: &Styles, para_ids: &[String
 fn add_char_styles(doc: &mut Document, found: &[(String, String)], defs: &[(String, Option<String>, model::Fmt, [bool; 4])]) {
     for ((_, id), (name, parent, fmt, off)) in found.iter().zip(defs) {
         let based_on = parent.as_ref().and_then(|p| found.iter().find(|(o, _)| o == p).map(|(_, id)| id.clone())).filter(|b| b != id);
-        Arc::make_mut(&mut doc.styles).upsert(wordcraft_doc::styles::Style {
+        Arc::make_mut(&mut doc.styles).upsert(letra_doc::styles::Style {
             id: id.clone(),
             name: name.clone(),
-            kind: wordcraft_doc::styles::StyleKind::Character,
+            kind: letra_doc::styles::StyleKind::Character,
             based_on,
             chr: turned_off(model::char_props(fmt), *off),
             ..Default::default()
@@ -244,7 +244,7 @@ fn custom_styles(blocks: &mut [FBlock], styles: &Styles, odt: Vec<String>) -> (V
             odt.push(n);
             defs.push(def);
         }
-        // A custom style, or an index style WordCraft has under its own id (TOC 1…).
+        // A custom style, or an index style Letra has under its own id (TOC 1…).
         if (odt.contains(&name) || super::writer::generating_style(&name).is_some())
             && let Some(x) = p.extra.as_mut()
         {
@@ -255,7 +255,7 @@ fn custom_styles(blocks: &mut [FBlock], styles: &Styles, odt: Vec<String>) -> (V
 }
 
 /// Add the custom styles `named` (ODF names `odt`, parents first) to the document: each with its
-/// name, the style it is based on and its own formatting. A style WordCraft has under the same id
+/// name, the style it is based on and its own formatting. A style Letra has under the same id
 /// takes the file's definition.
 fn add_custom_styles(doc: &mut Document, named: &[super::styles::NamedStyle], odt: &[String], tabs_from_indent: bool) {
     use super::styles::{Parent, style_id};
@@ -272,7 +272,7 @@ fn add_custom_styles(doc: &mut Document, named: &[super::styles::NamedStyle], od
         };
         let look = &def.look;
         let sp = &look.spacing;
-        let para = wordcraft_doc::props::ParaProps {
+        let para = letra_doc::props::ParaProps {
             space_before: sp.before,
             space_after: sp.after,
             line_spacing: sp.line,
@@ -301,10 +301,10 @@ fn add_custom_styles(doc: &mut Document, named: &[super::styles::NamedStyle], od
             ..Default::default()
         };
         let name = super::writer::generating_style(name).map_or_else(|| def.name.clone(), |(_, n)| n);
-        let style = wordcraft_doc::styles::Style {
+        let style = letra_doc::styles::Style {
             id: id.clone(),
             name,
-            kind: wordcraft_doc::styles::StyleKind::Paragraph,
+            kind: letra_doc::styles::StyleKind::Paragraph,
             based_on: (based_on != id).then_some(based_on),
             para,
             chr: turned_off(model::char_props(&look.fmt), def.off),
@@ -317,7 +317,7 @@ fn add_custom_styles(doc: &mut Document, named: &[super::styles::NamedStyle], od
 /// `chr` with what a style turns off (`off`: bold, italic, underline, strike-through) said so:
 /// otherwise the style it is based on would show through (LibreOffice's agenda dates, not bold
 /// under bold titles).
-fn turned_off(mut chr: wordcraft_doc::props::CharProps, off: [bool; 4]) -> wordcraft_doc::props::CharProps {
+fn turned_off(mut chr: letra_doc::props::CharProps, off: [bool; 4]) -> letra_doc::props::CharProps {
     let [bold, italic, underline, strike] = off;
     if bold {
         chr.bold = Some(false);
@@ -326,7 +326,7 @@ fn turned_off(mut chr: wordcraft_doc::props::CharProps, off: [bool; 4]) -> wordc
         chr.italic = Some(false);
     }
     if underline {
-        chr.underline = Some(wordcraft_doc::props::Underline::None);
+        chr.underline = Some(letra_doc::props::Underline::None);
     }
     if strike {
         (chr.strike, chr.double_strike) = (Some(false), Some(false));
@@ -335,7 +335,7 @@ fn turned_off(mut chr: wordcraft_doc::props::CharProps, off: [bool; 4]) -> wordc
 }
 
 /// Give the document's style for paragraph kind `kind` the look the file gives its own: its text
-/// formatting, spacing, alignment and keep with next replace WordCraft's (a heading the file
+/// formatting, spacing, alignment and keep with next replace Letra's (a heading the file
 /// leaves black isn't blue). Its outline level and other settings stay.
 fn apply_look(doc: &mut Document, kind: model::Kind, look: &super::styles::ParaLook) {
     let id = match kind {
@@ -362,8 +362,8 @@ fn apply_look(doc: &mut Document, kind: model::Kind, look: &super::styles::ParaL
 /// levels carry the outline's formats, each linked to its heading style, which numbers its
 /// paragraphs through it, as Word's numbered headings do. Levels without a number are left so.
 fn number_headings(doc: &mut Document, levels: &[super::styles::ListLevel]) {
-    use wordcraft_doc::numbering::{AbstractNum, ListKind, Num, levels_for};
-    use wordcraft_doc::props::NumRef;
+    use letra_doc::numbering::{AbstractNum, ListKind, Num, levels_for};
+    use letra_doc::props::NumRef;
     let numbered: Vec<bool> = (0..9).map(|i| levels.get(i).is_some_and(|l| l.ordered)).collect();
     if !numbered.contains(&true) {
         return;
@@ -384,7 +384,7 @@ fn number_headings(doc: &mut Document, levels: &[super::styles::ListLevel]) {
                 level.start = src.start;
             }
             None => {
-                level.format = wordcraft_doc::section::NumFormat::None;
+                level.format = letra_doc::section::NumFormat::None;
                 level.text = String::new();
             }
         }
@@ -410,8 +410,8 @@ fn number_headings(doc: &mut Document, levels: &[super::styles::ListLevel]) {
         }
     }
     // A style at a level the outline doesn't number doesn't take its parent's number from it.
-    let of_outline = |st: &wordcraft_doc::styles::Style| {
-        let at = wordcraft_doc::props::ParaProps { style: Some(st.id.clone()), ..Default::default() };
+    let of_outline = |st: &letra_doc::styles::Style| {
+        let at = letra_doc::props::ParaProps { style: Some(st.id.clone()), ..Default::default() };
         st.para.numbering.is_none()
             && st.para.outline_level.is_some_and(|l| numbered.get(usize::from(l)) != Some(&true))
             && styles.resolve_para(&at).numbering.is_some_and(|n| n.num == nid)
@@ -428,7 +428,7 @@ fn number_headings(doc: &mut Document, levels: &[super::styles::ListLevel]) {
     let styles = doc.styles.clone();
     each_body_para(&mut doc.body, 0, &mut |p| {
         let Some(l) = p.props.outline_level.filter(|_| p.props.numbering.is_none()) else { return };
-        let style = styles.resolve_para(&wordcraft_doc::props::ParaProps { style: p.props.style.clone(), ..Default::default() });
+        let style = styles.resolve_para(&letra_doc::props::ParaProps { style: p.props.style.clone(), ..Default::default() });
         if style.outline_level.is_none() {
             return;
         }
@@ -441,16 +441,16 @@ fn number_headings(doc: &mut Document, levels: &[super::styles::ListLevel]) {
 }
 
 /// Each paragraph of `blocks`, those in tables too (to 16 levels deep).
-fn each_body_para(blocks: &mut [Arc<wordcraft_doc::Block>], depth: usize, f: &mut dyn FnMut(&mut wordcraft_doc::Paragraph)) {
+fn each_body_para(blocks: &mut [Arc<letra_doc::Block>], depth: usize, f: &mut dyn FnMut(&mut letra_doc::Paragraph)) {
     for b in blocks {
         match Arc::make_mut(b) {
-            wordcraft_doc::Block::Para(p) => f(p),
-            wordcraft_doc::Block::Table(t) if depth < 16 => {
+            letra_doc::Block::Para(p) => f(p),
+            letra_doc::Block::Table(t) if depth < 16 => {
                 for cell in t.rows.iter_mut().flat_map(|r| r.cells.iter_mut()) {
                     each_body_para(&mut cell.blocks, depth + 1, f);
                 }
             }
-            wordcraft_doc::Block::Table(_) => {}
+            letra_doc::Block::Table(_) => {}
         }
     }
 }
@@ -459,7 +459,7 @@ fn each_body_para(blocks: &mut [Arc<wordcraft_doc::Block>], depth: usize, f: &mu
 /// and complex size it states (as bits).
 type SizeSource<'a> = (Option<&'a str>, Option<&'a str>, Option<u32>, Option<u32>);
 
-/// A complex-script size the same as the text's (what WordCraft writes for every script) is no size
+/// A complex-script size the same as the text's (what Letra writes for every script) is no size
 /// of its own: a later change of size takes it along. The default's and the styles' go together,
 /// unless a run's complex size would change: a size stated alone, or another complex size between
 /// them, shows what's above it, so they stay as the file says. A run's goes where its stays the same.
@@ -468,9 +468,9 @@ fn one_size_for_all_scripts(doc: &mut Document) {
     for blocks in std::iter::once(&doc.body).chain(doc.parts.values().map(|part| &part.blocks)) {
         size_sources(blocks, 0, &mut sources);
     }
-    let sizes = |styles: &wordcraft_doc::styles::StyleSheet| -> Vec<f32> {
+    let sizes = |styles: &letra_doc::styles::StyleSheet| -> Vec<f32> {
         let of = |(para, chr, size, size_cs): &SizeSource| {
-            let run = wordcraft_doc::props::CharProps {
+            let run = letra_doc::props::CharProps {
                 style: chr.map(str::to_string),
                 size: size.map(f32::from_bits),
                 size_cs: size_cs.map(f32::from_bits),
@@ -483,7 +483,7 @@ fn one_size_for_all_scripts(doc: &mut Document) {
     let as_read = Arc::clone(&doc.styles);
     let was = sizes(&as_read);
     let styles = Arc::make_mut(&mut doc.styles);
-    let one_size = |c: &mut wordcraft_doc::props::CharProps| {
+    let one_size = |c: &mut letra_doc::props::CharProps| {
         if c.size.is_some() && c.size_cs == c.size {
             c.size_cs = None;
         }
@@ -501,10 +501,10 @@ fn one_size_for_all_scripts(doc: &mut Document) {
 }
 
 /// What the runs in `blocks` (and their tables, to 16 levels deep) take their complex sizes from.
-fn size_sources<'a>(blocks: &'a [Arc<wordcraft_doc::Block>], depth: usize, out: &mut std::collections::BTreeSet<SizeSource<'a>>) {
+fn size_sources<'a>(blocks: &'a [Arc<letra_doc::Block>], depth: usize, out: &mut std::collections::BTreeSet<SizeSource<'a>>) {
     for b in blocks {
         match &**b {
-            wordcraft_doc::Block::Para(p) => {
+            letra_doc::Block::Para(p) => {
                 for r in &p.runs {
                     out.insert((
                         p.props.style.as_deref(),
@@ -514,21 +514,21 @@ fn size_sources<'a>(blocks: &'a [Arc<wordcraft_doc::Block>], depth: usize, out: 
                     ));
                 }
             }
-            wordcraft_doc::Block::Table(t) if depth < 16 => {
+            letra_doc::Block::Table(t) if depth < 16 => {
                 for cell in t.rows.iter().flat_map(|r| r.cells.iter()) {
                     size_sources(&cell.blocks, depth + 1, out);
                 }
             }
-            wordcraft_doc::Block::Table(_) => {}
+            letra_doc::Block::Table(_) => {}
         }
     }
 }
 
 /// [`one_size_for_all_scripts`] for the runs in `blocks` (and their tables, to 16 levels deep).
-fn runs_one_size(blocks: &mut [Arc<wordcraft_doc::Block>], depth: usize, styles: &wordcraft_doc::styles::StyleSheet) {
+fn runs_one_size(blocks: &mut [Arc<letra_doc::Block>], depth: usize, styles: &letra_doc::styles::StyleSheet) {
     for b in blocks {
         match Arc::make_mut(b) {
-            wordcraft_doc::Block::Para(p) => {
+            letra_doc::Block::Para(p) => {
                 let style = p.props.style.clone();
                 for r in &mut p.runs {
                     let Some(said) = r.props.size_cs.filter(|s| Some(*s) == r.props.size) else { continue };
@@ -538,12 +538,12 @@ fn runs_one_size(blocks: &mut [Arc<wordcraft_doc::Block>], depth: usize, styles:
                     }
                 }
             }
-            wordcraft_doc::Block::Table(t) if depth < 16 => {
+            letra_doc::Block::Table(t) if depth < 16 => {
                 for cell in t.rows.iter_mut().flat_map(|r| r.cells.iter_mut()) {
                     runs_one_size(&mut cell.blocks, depth + 1, styles);
                 }
             }
-            wordcraft_doc::Block::Table(_) => {}
+            letra_doc::Block::Table(_) => {}
         }
     }
 }
@@ -778,7 +778,7 @@ struct Parsed {
     /// The document's default font size, points.
     size: Option<f32>,
     /// The document's default text colour.
-    color: Option<wordcraft_doc::props::Rgb>,
+    color: Option<letra_doc::props::Rgb>,
     /// The custom paragraph styles the paragraphs use, parents included, parents first.
     named: Vec<super::styles::NamedStyle>,
     /// Their ODF names, alongside.
@@ -800,7 +800,7 @@ struct Parsed {
     /// Widow and orphan control the document states for every paragraph, if it does.
     widows: Option<bool>,
     /// The document's default Asian and complex-script fonts and languages.
-    scripts: wordcraft_doc::props::CharProps,
+    scripts: letra_doc::props::CharProps,
     /// The document's default language, if it states one.
     default_lang: Option<String>,
     /// The default tab interval, points.
@@ -813,10 +813,10 @@ struct Parsed {
     /// Some paragraph hyphenates: the document hyphenates (see [`hyphenation`]).
     hyphenate: bool,
     /// Custom document properties (`meta:user-defined`) and user fields.
-    custom: Vec<wordcraft_doc::CustomProp>,
+    custom: Vec<letra_doc::CustomProp>,
     /// The bibliography sources the citations carry.
-    sources: Vec<wordcraft_doc::Source>,
-    /// The package's parts WordCraft doesn't read itself (macros…), kept for the next save.
+    sources: Vec<letra_doc::Source>,
+    /// The package's parts Letra doesn't read itself (macros…), kept for the next save.
     kept: super::parts::Kept,
     /// Hidden form controls, kept for the next save.
     hidden_controls: Vec<String>,
@@ -824,7 +824,7 @@ struct Parsed {
     page_image: Option<(Vec<u8>, &'static str)>,
 }
 
-/// Hyphenation is a paragraph's in ODF (`fo:hyphenate`) and the document's in WordCraft (as in
+/// Hyphenation is a paragraph's in ODF (`fo:hyphenate`) and the document's in Letra (as in
 /// Word): when any paragraph of `blocks` hyphenates (its `suppress_hyphens` read as
 /// `Some(false)`), the document does, and every other paragraph opts out; otherwise nothing is
 /// marked. Whether the document hyphenates.
@@ -845,7 +845,7 @@ fn hyphenation(blocks: &mut [FBlock]) -> bool {
 /// The content of a package that has none: an empty text.
 const EMPTY_CONTENT: &str = r#"<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"><office:body><office:text><text:p/></office:text></office:body></office:document-content>"#;
 
-/// The page size of a page layout that states none: WordCraft's default page's.
+/// The page size of a page layout that states none: Letra's default page's.
 fn default_paper() -> (f32, f32) {
     let d = SectionProps::default();
     (d.page_w, d.page_h)
@@ -854,7 +854,7 @@ fn default_paper() -> (f32, f32) {
 /// [`parse_full`], plus what the document holds outside the flow. A page layout that states no
 /// size (§20.215 `fo:page-width` is optional) is `paper` (width, height) in size.
 fn parse_tracked(bytes: &[u8], paper: (f32, f32)) -> Result<Parsed, String> {
-    wordcraft_doc::zip_guard::check(bytes, crate::MAX_ZIP_ENTRIES).map_err(|e| format!("ODT: {e}"))?;
+    letra_doc::zip_guard::check(bytes, crate::MAX_ZIP_ENTRIES).map_err(|e| format!("ODT: {e}"))?;
     let mut z = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| format!("ODT: not a valid package ({e})"))?;
     if let Some(mt) = read_entry(&mut z, "mimetype") {
         let mt = String::from_utf8_lossy(&mt);
@@ -1078,26 +1078,26 @@ pub fn import_on(bytes: &[u8], page: &SectionProps) -> Result<Document, String> 
         Arc::make_mut(&mut doc.styles).default_chr.size = size;
     }
     if let Some(c) = color {
-        Arc::make_mut(&mut doc.styles).default_chr.color = Some(wordcraft_doc::props::TextColor::Rgb(c));
+        Arc::make_mut(&mut doc.styles).default_chr.color = Some(letra_doc::props::TextColor::Rgb(c));
     }
     Arc::make_mut(&mut doc.styles).default_chr.kern = kern.then_some(1.0);
     Arc::make_mut(&mut doc.styles).default_chr.overlay(&scripts);
     // The file's own, or none when it states none (each application then uses its own default):
-    // not the English of WordCraft's new documents.
+    // not the English of Letra's new documents.
     Arc::make_mut(&mut doc.styles).default_chr.lang = default_lang;
     if let Some(t) = default_tab {
         doc.settings.default_tab = t;
     }
     doc.settings.page_color = page_doc.page_color;
     // Laid out with the standard's rules, its tab stops measured as the file says.
-    doc.settings.odf = Some(wordcraft_doc::OdfLayout { tabs_from_indent });
+    doc.settings.odf = Some(letra_doc::OdfLayout { tabs_from_indent });
     doc.settings.sum_paragraph_spacing = sum_spacing;
     // The page background picture (Design › Page Color › Fill Effects › Picture).
     if let Some((bytes, fill)) = page_image
         && let Some(ext) = model::sniff_image(&bytes)
     {
         let media = doc.add_media(bytes, ext);
-        doc.settings.page_picture = Some(wordcraft_doc::PagePicture { media, fill_type: fill.to_string(), title: String::new() });
+        doc.settings.page_picture = Some(letra_doc::PagePicture { media, fill_type: fill.to_string(), title: String::new() });
     }
     if let Some((fmt, props)) = page_doc.notes[0] {
         (doc.settings.footnote_format, doc.settings.footnote_pr) = (fmt, props);
@@ -1129,7 +1129,7 @@ pub fn import_on(bytes: &[u8], page: &SectionProps) -> Result<Document, String> 
     }
     // The markup kept for paragraphs nothing changed while reading, filed for the writer.
     if doc.kept.get().is_none() {
-        doc.kept = wordcraft_doc::kept::Kept::new(Default::default());
+        doc.kept = letra_doc::kept::Kept::new(Default::default());
     }
     if let Some(k) = doc.kept.get_mut() {
         k.format = "odt".into();
@@ -1142,7 +1142,7 @@ pub fn import_on(bytes: &[u8], page: &SectionProps) -> Result<Document, String> 
         k.section_masters = section_masters;
     }
     doc.seal_kept();
-    let (fp, pages) = (wordcraft_doc::kept::styles_fingerprint(&doc), wordcraft_doc::kept::pages_fingerprint(&doc));
+    let (fp, pages) = (letra_doc::kept::styles_fingerprint(&doc), letra_doc::kept::pages_fingerprint(&doc));
     if let Some(k) = doc.kept.get_mut() {
         (k.styles_fp, k.pages_fp) = (Some(fp), Some(pages));
     }
@@ -1164,23 +1164,23 @@ pub(super) struct Pages {
     pub(super) doc: PageDoc,
 }
 
-/// Page settings that are the document's in WordCraft (and Word): the page colour (the first
+/// Page settings that are the document's in Letra (and Word): the page colour (the first
 /// page style's background), footnote and endnote numbering (`text:notes-configuration`).
 #[derive(Clone, Default)]
 pub(super) struct PageDoc {
-    pub(super) page_color: Option<wordcraft_doc::props::Rgb>,
+    pub(super) page_color: Option<letra_doc::props::Rgb>,
     /// The first page style's background picture (§17.3 `style:background-image`): its package
-    /// path and WordCraft's fill for its repeat (tiled, stretched, or centred at its size).
+    /// path and Letra's fill for its repeat (tiled, stretched, or centred at its size).
     pub(super) page_image: Option<(String, &'static str)>,
     /// Footnotes', then endnotes', number format and options.
-    pub(super) notes: [Option<(wordcraft_doc::section::NumFormat, wordcraft_doc::section::NoteProps)>; 2],
+    pub(super) notes: [Option<(letra_doc::section::NumFormat, letra_doc::section::NoteProps)>; 2],
 }
 
 /// A `text:notes-configuration` (ODF 1.3 §16.29): which notes it is for (endnotes: true), their
 /// number format, first number (ODF counts from 0), restart, and footnotes at the page's foot
 /// or the document's end.
-fn notes_config(a: &Attrs) -> (bool, wordcraft_doc::section::NumFormat, wordcraft_doc::section::NoteProps) {
-    use wordcraft_doc::section::{MAX_NOTE_START, NotePos, NoteProps, NoteRestart};
+fn notes_config(a: &Attrs) -> (bool, letra_doc::section::NumFormat, letra_doc::section::NoteProps) {
+    use letra_doc::section::{MAX_NOTE_START, NotePos, NoteProps, NoteRestart};
     let endnote = get(a, "text:note-class").is_some_and(|c| c.trim() == "endnote");
     let fmt = super::styles::num_format(get(a, "style:num-format").unwrap_or("1"));
     let num_start =
@@ -1200,8 +1200,8 @@ fn notes_config(a: &Attrs) -> (bool, wordcraft_doc::section::NumFormat, wordcraf
 
 /// A `text:linenumbering-configuration` (ODF 1.3 §16.31) that numbers lines: every how many,
 /// how far from the text, restarting on each page or not.
-fn line_numbering(a: &Attrs) -> Option<wordcraft_doc::section::LineNumbering> {
-    use wordcraft_doc::section::{LineNumberRestart, LineNumbering};
+fn line_numbering(a: &Attrs) -> Option<letra_doc::section::LineNumbering> {
+    use letra_doc::section::{LineNumberRestart, LineNumbering};
     // On unless it says otherwise (§19.845).
     if get(a, "text:number-lines").is_some_and(|v| v.trim() == "false") {
         return None;
@@ -1296,7 +1296,7 @@ fn read_pages(xml: &[u8], paper: (f32, f32)) -> Pages {
                 }
             }
             // A page background picture (§17.3, in `style:page-layout-properties`): §20.249
-            // `style:repeat` (repeat is the default) as WordCraft's tile, stretch, or centre.
+            // `style:repeat` (repeat is the default) as Letra's tile, stretch, or centre.
             "background-image" if q.starts_with("style:") => {
                 if let (Some(l), Some(href)) =
                     (cur.as_ref().and_then(|n| layouts.get_mut(n)), get(&a, "xlink:href").map(str::trim).filter(|h| !h.is_empty() && h.len() <= 1024))
@@ -1483,21 +1483,21 @@ fn apply_layout(a: &Attrs, sec: &mut SectionProps) {
     let side = |s: &str| {
         let b = get(a, &format!("fo:border-{s}")).or_else(|| get(a, "fo:border")).and_then(super::styles::parse_border)?;
         let pad = get(a, &format!("fo:padding-{s}")).or_else(|| get(a, "fo:padding")).and_then(length).filter(|v| v.is_finite());
-        (b.style != wordcraft_doc::props::BorderStyle::None)
+        (b.style != letra_doc::props::BorderStyle::None)
             // Any distance on the page (Word's 31 pt limit is for its own measure, from the edge).
-            .then(|| wordcraft_doc::props::Border { space: pad.map_or(0.0, |p| p.clamp(0.0, 1584.0)), ..b })
+            .then(|| letra_doc::props::Border { space: pad.map_or(0.0, |p| p.clamp(0.0, 1584.0)), ..b })
     };
-    // ODF's border is at the margin, the text inside its padding; WordCraft measures the border
+    // ODF's border is at the margin, the text inside its padding; Letra measures the border
     // from the page edge and the text margin from the edge too.
     let limit = sec.page_w.max(sec.page_h);
-    let inset = |b: Option<wordcraft_doc::props::Border>, margin: &mut f32| {
+    let inset = |b: Option<letra_doc::props::Border>, margin: &mut f32| {
         b.map(|b| {
             let edge = *margin;
             *margin = (edge + b.width + b.space).min(limit);
-            wordcraft_doc::props::Border { space: edge, ..b }
+            letra_doc::props::Border { space: edge, ..b }
         })
     };
-    let borders = wordcraft_doc::props::Borders {
+    let borders = letra_doc::props::Borders {
         top: inset(side("top"), &mut sec.margin_top),
         bottom: inset(side("bottom"), &mut sec.margin_bottom),
         left: inset(side("left"), &mut sec.margin_left),

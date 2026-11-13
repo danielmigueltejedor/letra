@@ -62,7 +62,7 @@ struct ParagraphSpacing<'a> {
 struct TableBlockContext<'ctx, 'state, 'doc> {
     ctx: &'ctx mut Ctx<'doc>,
     story: StoryRef,
-    table: &'state wordcraft_doc::Table,
+    table: &'state letra_doc::Table,
     path: &'state [u32],
     width: f32,
     frame: Option<PageFrame<'state>>,
@@ -151,7 +151,7 @@ fn layout_table_block(input: TableBlockContext<'_, '_, '_>) -> bool {
     // Page tables do not contribute to the footer text's intrinsic height.
     if frame.is_none()
         && !in_cell
-        && matches!(story, StoryRef::Part(id) if ctx.doc.parts.get(&id).is_some_and(|p| p.kind == wordcraft_doc::PartKind::Footer))
+        && matches!(story, StoryRef::Part(id) if ctx.doc.parts.get(&id).is_some_and(|p| p.kind == letra_doc::PartKind::Footer))
         && t.props.float.is_some_and(|f| f.v_rel == Anchor::Page)
     {
         return false;
@@ -227,7 +227,7 @@ pub(crate) fn layout_box(ctx: &mut Ctx, input: BoxInput<'_>) -> BoxLayout {
     let mut last_top = 0.0f32;
     // Word has no frames in a text box: a framed paragraph there (its style's frame, usually)
     // runs with the box's text (#2357).
-    let frames = !matches!(story, StoryRef::Part(id) if ctx.doc.parts.get(&id).is_some_and(|p| p.kind == wordcraft_doc::PartKind::TextBox));
+    let frames = !matches!(story, StoryRef::Part(id) if ctx.doc.parts.get(&id).is_some_and(|p| p.kind == letra_doc::PartKind::TextBox));
     // The bottom of the last paragraph's lines.
     let mut prev_end = 0.0f32;
     for (i, b) in blocks.iter().enumerate() {
@@ -419,7 +419,7 @@ fn natural_width(pl: &ParaLayout) -> f32 {
 }
 
 /// A text frame's placement as a floating object's (`w:framePr` → anchors, alignment, wrap).
-fn frame_float(fr: &wordcraft_doc::props::TextFrame) -> Float {
+fn frame_float(fr: &letra_doc::props::TextFrame) -> Float {
     let anchor = |a: &str, text: Anchor| match a {
         "page" => Anchor::Page,
         "margin" => Anchor::Margin,
@@ -550,7 +550,7 @@ pub(crate) fn keep_in_cell(x: f32, w: f32, left: f32, right: f32) -> f32 {
 }
 
 /// A text box's default internal margins (Word's: 0.1" left/right, 0.05" top/bottom); a box's
-/// own come from its [`wordcraft_doc::TextBody`].
+/// own come from its [`letra_doc::TextBody`].
 #[cfg(test)]
 pub(crate) const BOX_INSET_X: f32 = 7.2;
 
@@ -613,13 +613,13 @@ pub(crate) fn fit_box(items: Vec<Placed>, height: f32) -> Vec<Placed> {
 /// Word joins neighbouring paragraphs with the same borders and indents into one box: the top
 /// border goes above the first of them only, the bottom one below the last, and the shading and
 /// side borders run on through the space between them (`table`: the cell's paragraph properties).
-fn border_group(doc: &Document, a: &Paragraph, b: &Paragraph, table: Option<&wordcraft_doc::props::ParaProps>) -> bool {
+fn border_group(doc: &Document, a: &Paragraph, b: &Paragraph, table: Option<&letra_doc::props::ParaProps>) -> bool {
     let (a, b) = (doc.styles.resolve_para_in(&a.props, table), doc.styles.resolve_para_in(&b.props, table));
     a.borders.is_some() && a.borders == b.borders && a.indent_left == b.indent_left && a.indent_right == b.indent_right
 }
 
 /// Whether paragraph `i` of `blocks` and the one at `j` are of one border group.
-pub(crate) fn joined(doc: &Document, blocks: &Blocks, i: usize, j: Option<usize>, table: Option<&wordcraft_doc::props::ParaProps>) -> bool {
+pub(crate) fn joined(doc: &Document, blocks: &Blocks, i: usize, j: Option<usize>, table: Option<&letra_doc::props::ParaProps>) -> bool {
     match (blocks.get(i).map(|b| &**b), j.and_then(|j| blocks.get(j)).map(|b| &**b)) {
         (Some(Block::Para(a)), Some(Block::Para(b))) => border_group(doc, a, b, table),
         _ => false,

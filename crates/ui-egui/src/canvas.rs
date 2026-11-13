@@ -6,10 +6,10 @@ use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 
 use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, pos2, vec2};
+use letra_doc::{PartKind, Pos, StoryRef};
+use letra_layout::display::CommentDisplay;
+use letra_layout::{DocLayout, Page, Placed};
 use serde_json::json;
-use wordcraft_doc::{PartKind, Pos, StoryRef};
-use wordcraft_layout::display::CommentDisplay;
-use wordcraft_layout::{DocLayout, Page, Placed};
 
 use crate::WordApp;
 use crate::theme::{Tokens, regular, semibold};
@@ -187,7 +187,7 @@ pub struct CanvasState {
     pub(crate) ime_preedit_range: Option<std::ops::Range<usize>>,
     /// Document faces added to the interface fonts so the input method's composition (#565) and a
     /// file name in the window caption can be drawn.
-    pub(crate) ime_faces: Vec<std::sync::Arc<wordcraft_fonts::FontFace>>,
+    pub(crate) ime_faces: Vec<std::sync::Arc<letra_fonts::FontFace>>,
     pub want_focus: bool,
     pub context_issue: Option<serde_json::Value>,
     pub context_synonyms: Option<serde_json::Value>,
@@ -204,11 +204,11 @@ pub struct CanvasState {
     pub mini_anchor: Option<Rect>,
     /// The selection the mini toolbar was put away for by a click outside the document (the
     /// ribbon, a pane, the status bar); it comes back when the selection changes.
-    pub mini_dismissed: Option<wordcraft_engine::Selection>,
+    pub mini_dismissed: Option<letra_engine::Selection>,
     /// A picture, shape or text box being dragged by its frame.
     pub(crate) obj_drag: Option<crate::objects::ObjectDrag>,
     /// Crop mode (Picture Format › Crop) is on for the picture here (`crop`).
-    pub(crate) crop: Option<wordcraft_doc::Pos>,
+    pub(crate) crop: Option<letra_doc::Pos>,
     /// A crop handle being dragged.
     pub(crate) crop_drag: Option<crate::crop::CropDrag>,
     /// An ink stroke being drawn with a pen (Draw tab).
@@ -265,7 +265,7 @@ pub struct CanvasState {
     /// An input method's `DeleteSurrounding` just erased text with this formatting: the text it
     /// sends next replaces it, keeps the formatting and joins the same undo step
     /// (`keys::delete_surrounding`, #1480).
-    pub(crate) ime_join_text: Option<wordcraft_doc::props::CharProps>,
+    pub(crate) ime_join_text: Option<letra_doc::props::CharProps>,
     /// An automatic change (AutoCorrect, AutoFormat) altered the text around the caret: the
     /// input method is asked to start afresh (#1480).
     pub(crate) ime_reset: bool,
@@ -278,7 +278,7 @@ pub struct CanvasState {
     pub(crate) ime_interrupted_preedit: bool,
     /// The last bounded surrounding window and the `(revision, cursor, anchor)` it was built
     /// from. An idle pass reuses it instead of walking a long paragraph again.
-    pub(crate) ime_window_cache: Option<(u64, wordcraft_doc::Pos, wordcraft_doc::Pos, Option<wordcraft_doc::ime_text::ImeWindow>)>,
+    pub(crate) ime_window_cache: Option<(u64, letra_doc::Pos, letra_doc::Pos, Option<letra_doc::ime_text::ImeWindow>)>,
     /// Per-viewport IME owner, generation and change-cause state.
     pub(crate) ime_tracker: egui::ImeContextTracker,
     /// The viewport whose IME state [`Self::ime_tracker`] holds, so closing one releases it.
@@ -291,13 +291,13 @@ pub struct CanvasState {
     /// Alt+numpad entry in the focused text box, while the page doesn't have the keyboard (#4403).
     pub(crate) field_alt_code: crate::keys::FieldAltCode,
     /// Create Link is waiting for a click on the text box to link to: the linking box's object.
-    pub(crate) link_from: Option<wordcraft_doc::Pos>,
+    pub(crate) link_from: Option<letra_doc::Pos>,
     /// What screen readers were last told about the document (#488).
     pub(crate) a11y: crate::a11y::A11yCache,
     /// A press on a table's selection area or move handle, held (`table_mouse`).
     pub(crate) table_drag: Option<crate::table_mouse::TableDrag>,
     /// The kind of tab stop a click on the ruler sets (the selector in the rulers' corner).
-    pub tab_kind: wordcraft_doc::props::TabAlign,
+    pub tab_kind: letra_doc::props::TabAlign,
     /// A tab stop being placed or dragged on the ruler (`ruler_tabs`).
     pub(crate) tab_drag: Option<crate::ruler_tabs::TabDrag>,
     /// Whether the I-beam over the page is drawn rather than the system's (`ibeam`).
@@ -318,10 +318,10 @@ pub struct CanvasState {
     /// what it was laid out for (command, params, document id, revision, selection, and the
     /// document's own layout, which a view change replaces), so a still pointer doesn't lay the
     /// document out every frame. Set only while the page shows the preview.
-    table_preview_layout: Option<(TablePreviewKey, wordcraft_doc::Document, wordcraft_engine::Selection, std::sync::Arc<DocLayout>)>,
+    table_preview_layout: Option<(TablePreviewKey, letra_doc::Document, letra_engine::Selection, std::sync::Arc<DocLayout>)>,
 }
 
-type TablePreviewKey = ((String, serde_json::Value, u64, u64, wordcraft_engine::Selection), std::sync::Arc<DocLayout>);
+type TablePreviewKey = ((String, serde_json::Value, u64, u64, letra_engine::Selection), std::sync::Arc<DocLayout>);
 
 impl CanvasState {
     /// Another document is shown in the window: everything about the page that was shown (drags,
@@ -363,7 +363,7 @@ impl CanvasState {
     /// A dragged object's page is not laid out again while it is dragged (that would relayout the
     /// whole document every frame), so the page's raster still shows it where it was — the user
     /// sees it twice: once in place, once under the pointer. Rendering the page without that one
-    /// object fixes it (see [`wordcraft_layout::display::DisplayOptions::hide_object`]); erasing
+    /// object fixes it (see [`letra_layout::display::DisplayOptions::hide_object`]); erasing
     /// the page would make the other objects blink.
     fn dragged_off_page(&self) -> Option<(usize, Pos)> {
         crate::objects::dragged_off_page(self.obj_drag.as_ref())
@@ -504,7 +504,7 @@ fn update_viewport(app: &mut WordApp, ui: &Ui, full: Rect, now: f64) -> Option<P
             reflow_anchor = app.canvas.read_first_visible.clone();
         }
     } else {
-        if app.session.view.mode == wordcraft_layout::ViewMode::Web {
+        if app.session.view.mode == letra_layout::ViewMode::Web {
             // Web Layout wraps to the work area (#1876): at once on entry or a zoom (the viewport
             // holds still), after a window drag has settled, and only on a real change.
             let scale = app.session.view.zoom.clamp(0.1, 5.0) * PX_PER_PT;
@@ -543,7 +543,7 @@ struct CanvasView {
     geo: Geometry,
     dim_body: bool,
     grid_story: Option<StoryRef>,
-    caret: Option<wordcraft_layout::hit::Caret>,
+    caret: Option<letra_layout::hit::Caret>,
     /// The zoom changed this frame (#322): the scroll offset moved with it, nobody scrolled.
     rescaled: bool,
 }
@@ -557,7 +557,7 @@ fn prepare_view(app: &mut WordApp, ui: &Ui, full: Rect, layout: &DocLayout) -> C
         Color32::from_rgb(p.0, p.1, p.2)
     };
     let show_ruler = app.session.view.ruler
-        && app.session.view.mode == wordcraft_layout::ViewMode::Print
+        && app.session.view.mode == letra_layout::ViewMode::Print
         && !read_mode
         && crate::chrome::Screen::of(&app.session.view) == crate::chrome::Screen::Normal;
     let (hruler, vruler, area) = if show_ruler {
@@ -815,7 +815,7 @@ struct CanvasFinish<'a> {
     ui: &'a mut Ui,
     layout: &'a std::sync::Arc<DocLayout>,
     geo: &'a Geometry,
-    caret: Option<wordcraft_layout::hit::Caret>,
+    caret: Option<letra_layout::hit::Caret>,
     ime_geometry: Option<(Rect, Rect)>,
     ime_interrupt: bool,
     area: Rect,
@@ -840,7 +840,7 @@ fn update_canvas_scroll_state(
     ui: &mut Ui,
     layout: &std::sync::Arc<DocLayout>,
     geo: &Geometry,
-    caret: Option<wordcraft_layout::hit::Caret>,
+    caret: Option<letra_layout::hit::Caret>,
     out: &egui::scroll_area::ScrollAreaOutput<(egui::Response, Vec<Rect>)>,
     sync: ScrollSync,
 ) {
@@ -983,7 +983,7 @@ fn stretch_fits(tex_w: usize, page_w: f32, scale_px: f32) -> bool {
 
 fn draw_page_gridlines(app: &WordApp, painter: &egui::Painter, t: &Tokens, page: &Page, visual_sr: Rect, page_scale: f32) {
     // View › Gridlines: the drawing grid over the text area (Print Layout, on screen only).
-    if app.session.view.gridlines && app.session.view.mode == wordcraft_layout::ViewMode::Print && !app.session.view.read_mode {
+    if app.session.view.gridlines && app.session.view.mode == letra_layout::ViewMode::Print && !app.session.view.read_mode {
         let settings = &app.session.doc.settings;
         // A section with a document grid (`w:docGrid`) shows that grid: lines at the line
         // pitch and, for a character grid, columns at the character pitch.
@@ -1072,7 +1072,7 @@ fn paint_pages(pass: PagePaint<'_>) -> PagePaintOutput {
             opts.hinting &= hinted;
             // Only on the page it is on: the `Pos` can't match an object of another page.
             opts.display.hide_object = hidden.as_ref().filter(|(page, _)| *page == i).map(|(_, p)| p.clone());
-            let img = wordcraft_render::render_page(page_doc(app), page, scale_px, &opts);
+            let img = letra_render::render_page(page_doc(app), page, scale_px, &opts);
             let ci = page_image(&img);
             match app.canvas.textures.get_mut(&i) {
                 Some((k, showed, tex)) => {
@@ -1130,10 +1130,10 @@ fn paint_pages(pass: PagePaint<'_>) -> PagePaintOutput {
                     opts.display.hide_object = hidden.as_ref().filter(|(page, _)| *page == i).map(|(_, p)| p.clone());
                     // The tiny subtraction avoids a 1px overshoot from round-tripping f32
                     // pixels through page points and render_area's ceil() conversion.
-                    let img = wordcraft_render::render_area(
+                    let img = letra_render::render_area(
                         page_doc(app),
                         page,
-                        wordcraft_geom::Rect::new(0.0, start_px as f32 / scale_px, page.w, (height_px as f32 - 0.01).max(0.01) / scale_px),
+                        letra_geom::Rect::new(0.0, start_px as f32 / scale_px, page.w, (height_px as f32 - 0.01).max(0.01) / scale_px),
                         scale_px,
                         &opts,
                     );
@@ -1219,7 +1219,7 @@ fn canvas_response(ui: &mut Ui, content: Rect, scroll_target: Option<Rect>) -> e
     // and Escape did nothing in Read Mode until the reader clicked a page (#1772).
     // It also keeps the focus when Focus hides the rulers (#1678).
     ui.advance_cursor_after_rect(content);
-    let response = ui.interact(content, egui::Id::unique("wordcraft_canvas"), Sense::click_and_drag());
+    let response = ui.interact(content, egui::Id::unique("letra_canvas"), Sense::click_and_drag());
     if let Some(target) = scroll_target {
         ui.scroll_to_rect(Rect::from_min_size(ui.min_rect().min + target.min.to_vec2(), target.size()), None);
     }
@@ -1254,7 +1254,7 @@ fn handle_primary_pointer(
     }
     // Double-click the space between two pages (or the line between them) to hide or show it.
     if resp.double_clicked()
-        && app.session.view.mode == wordcraft_layout::ViewMode::Print
+        && app.session.view.mode == letra_layout::ViewMode::Print
         && !app.session.view.read_mode
         && let Some(p) = resp.interact_pointer_pos()
         && on_page_gap(rects, &geo.bands, p)
@@ -1285,11 +1285,11 @@ fn handle_secondary_selection(app: &mut WordApp, resp: &egui::Response, rects: &
         && let Some(p) = resp.interact_pointer_pos()
         && let Some((page, x, y)) = page_at(rects, layout, geo.scale, p)
     {
-        let at = wordcraft_geom::Point::new(x, y);
+        let at = letra_geom::Point::new(x, y);
         let on_cells =
-            wordcraft_engine::cmd::table_mouse::cell_rects(layout, &app.session.doc, range).iter().any(|(pi, r)| *pi == page && r.contains(at));
+            letra_engine::cmd::table_mouse::cell_rects(layout, &app.session.doc, range).iter().any(|(pi, r)| *pi == page && r.contains(at));
         if !on_cells && let Some(pos) = layout.hit(page, x, y, app.session.sel.focus.story) {
-            app.session.sel = wordcraft_engine::Selection::caret(pos);
+            app.session.sel = letra_engine::Selection::caret(pos);
         }
     }
     // Right-click: move the caret there (unless inside the selection), then the context menu.
@@ -1300,7 +1300,7 @@ fn handle_secondary_selection(app: &mut WordApp, resp: &egui::Response, rects: &
     {
         match layout.equation_hit(page, x, y, app.session.sel.focus.story) {
             Some((at, inner)) => {
-                app.session.sel = wordcraft_engine::Selection::caret(at);
+                app.session.sel = letra_engine::Selection::caret(at);
                 let _ = app.run("equation.edit", json!({"pos": serde_json::to_value(&inner).unwrap_or_default()}));
             }
             None if app.session.math.is_some() => {
@@ -1321,7 +1321,7 @@ fn handle_secondary_selection(app: &mut WordApp, resp: &egui::Response, rects: &
         } else if let Some(pos) = layout.hit(page, x, y, app.session.sel.focus.story) {
             let (a, b) = app.session.sel.ordered();
             if !(a <= pos && pos <= b) || app.session.sel.is_collapsed() {
-                app.session.sel = wordcraft_engine::Selection::caret(pos);
+                app.session.sel = letra_engine::Selection::caret(pos);
             }
             context_suggestions(app);
         }
@@ -1439,7 +1439,7 @@ fn finish_canvas_frame(finish: CanvasFinish<'_>, out: egui::scroll_area::ScrollA
             opts.paper_of(&app.session.doc)
         } else {
             let c = Tokens::get(ui.ctx()).canvas;
-            wordcraft_doc::props::Rgb(c.r(), c.g(), c.b())
+            letra_doc::props::Rgb(c.r(), c.g(), c.b())
         };
         crate::ibeam::replace(ui.ctx(), p, bg);
     }
@@ -1504,13 +1504,13 @@ fn live_selection_screen_rects(app: &mut WordApp, rects: &[Rect], scale: f32) ->
     let selected: Vec<_> = if crate::objects::selected(app).is_some() {
         Vec::new()
     } else if let Some(range) = app.session.cell_range() {
-        wordcraft_engine::cmd::table_mouse::cell_rects(&layout, &app.session.doc, range)
+        letra_engine::cmd::table_mouse::cell_rects(&layout, &app.session.doc, range)
     } else if !app.session.sel.is_collapsed() {
         match app.session.column_segments() {
             Some(segs) => segs.iter().flat_map(|(a, b)| layout.selection_rects(&app.session.doc, a, b, app.session.page_hint)).collect(),
             None => {
                 let (a, b) = app.session.sel.ordered();
-                wordcraft_engine::cmd::table_mouse::selection_rects(&layout, &app.session.doc, &a, &b, app.session.page_hint)
+                letra_engine::cmd::table_mouse::selection_rects(&layout, &app.session.doc, &a, &b, app.session.page_hint)
             }
         }
     } else {
@@ -1553,7 +1553,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         let clip = if app.session.view.read_mode { ui.clip_rect().shrink2(vec2(3.0, 0.0)) } else { ui.clip_rect() };
         let painter = ui.painter_at(clip);
         let ppp = ui.ctx().pixels_per_point();
-        let max_tex = ui.ctx().input(|i| i.max_texture_side).min(wordcraft_render::MAX_SIDE as usize).max(1) as f32;
+        let max_tex = ui.ctx().input(|i| i.max_texture_side).min(letra_render::MAX_SIDE as usize).max(1) as f32;
         let content_origin = ui.min_rect().min;
         let hidden = app.canvas.dragged_off_page();
         let page_view = view_key(app, dim_body, hidden.as_ref().map(|(_, p)| p), hinted);
@@ -1625,21 +1625,17 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         // across a table the whole cells of the rows it takes.
         let selected: Vec<_> = if let Some(sel) = preview_sel(app) {
             let (a, b) = sel.ordered();
-            if a == b {
-                Vec::new()
-            } else {
-                wordcraft_engine::cmd::table_mouse::selection_rects(&layout, page_doc(app), &a, &b, app.session.page_hint)
-            }
+            if a == b { Vec::new() } else { letra_engine::cmd::table_mouse::selection_rects(&layout, page_doc(app), &a, &b, app.session.page_hint) }
         } else if crate::objects::selected(app).is_some() {
             Vec::new()
         } else if let Some(range) = app.session.cell_range() {
-            wordcraft_engine::cmd::table_mouse::cell_rects(&layout, &app.session.doc, range)
+            letra_engine::cmd::table_mouse::cell_rects(&layout, &app.session.doc, range)
         } else if !app.session.sel.is_collapsed() {
             match app.session.column_segments() {
                 Some(segs) => segs.iter().flat_map(|(a, b)| layout.selection_rects(&app.session.doc, a, b, app.session.page_hint)).collect(),
                 None => {
                     let (a, b) = app.session.sel.ordered();
-                    wordcraft_engine::cmd::table_mouse::selection_rects(&layout, &app.session.doc, &a, &b, app.session.page_hint)
+                    letra_engine::cmd::table_mouse::selection_rects(&layout, &app.session.doc, &a, &b, app.session.page_hint)
                 }
             }
         } else {
@@ -1770,7 +1766,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                     &app.canvas.ime_preedit,
                     &app.canvas.ime_faces,
                     |c| (c as u32) < 0x250,
-                    |c| wordcraft_fonts::FontDb::global().fallback_for(c, u32::MAX),
+                    |c| letra_fonts::FontDb::global().fallback_for(c, u32::MAX),
                 );
                 if !new.is_empty() {
                     app.canvas.ime_faces.extend(new);

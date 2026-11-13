@@ -4,9 +4,9 @@
 
 use super::lay;
 use crate::{Arc, Placed, StoryRef};
-use wordcraft_doc::para::{Anchor, InlineObject};
-use wordcraft_doc::props::TableFloat;
-use wordcraft_doc::{Block, Document, Paragraph, Table, para_block};
+use letra_doc::para::{Anchor, InlineObject};
+use letra_doc::props::TableFloat;
+use letra_doc::{Block, Document, Paragraph, Table, para_block};
 
 /// Where the lines of body block `block` start on page one.
 fn line_y(d: &Document, block: u32) -> f32 {

@@ -49,8 +49,8 @@ People trust Letra with their writing; a crash loses their work. **This outranks
 | L4 | `engine` | Session, undo, **command registry**, Word feature catalog, samples, I/O dispatch |
 | L5 | `mcp` | MCP server (headless or bridged to the app) |
 | L6 | `ui-egui` | Word-style egui front end (swappable) |
-| apps | `apps/wordcraft`, `apps/wordcraft-cli`, `apps/wordcraft-web` | binaries |
-| external | `craft-proof` (craft-libs, used as `wordcraft-proof`, sits at L1) | proofing: spelling, grammar, hyphenation; its word lists and patterns are craft-i18n's `language-data/` (`CRAFT_I18N_DIR`) |
+| apps | `apps/letra`, `apps/letra-cli`, `apps/letra-web` | binaries |
+| external | `craft-proof` (craft-libs, used as `letra-proof`, sits at L1) | proofing: spelling, grammar, hyphenation; its word lists and patterns are craft-i18n's `language-data/` (`CRAFT_I18N_DIR`) |
 
 - **Everything is a command.** User-visible behaviour = a `CommandSpec` in `crates/engine/src/cmd/*.rs` (id, label, ribbon location, shortcut, params doc, `enabled`, `run`) + tests. UI-only commands (`ui.*`) live in `crates/ui-egui/src/lib.rs`. The ribbon, shortcuts, command search, CLI, control channel and MCP all dispatch by id. Programmatic calls never open dialogs.
 - **Parity is measured:** `crates/engine/src/catalog.rs` lists Word's ribbon/menu features with command ids. `cargo xtask parity` writes `docs/parity-checklist.md`; a test enforces a floor that only rises. Implement missing ids to raise it.
@@ -64,12 +64,12 @@ Before every commit: `cargo xtask ci` (fmt, clippy -D warnings, tests, assets, l
 Typing, Enter, Backspace, Tab, lists, AutoCorrect and AutoFormat follow Word's observed behaviour in [`docs/typing-parity.md`](docs/typing-parity.md), pinned by `crates/engine/src/tests/typing.rs` (keys go through the same commands as the keyboard). Change behaviour, doc and tests together; a typing fix lands with a test there. Compare headlessly (`ui_shot`); don't drive GUIs with keystrokes on the shared machine.
 
 ## Running and looking at the app
-- `cargo run --release -p wordcraft -- --sample --control 7981` (sample document + control channel).
-- Drive it with JSON lines on `127.0.0.1:7981`, each with the window's key from `~/.config/wordcraft/control-key.local-7981` (macOS: `~/Library/Application Support/Letra/`), e.g. `{"id":1,"key":"…","method":"engine.execute","params":{"command":"text.insert","params":{"text":"Hello"}}}` then `{"id":2,"key":"…","method":"ui.screenshot","params":{"path":"/tmp/shot.png"}}`. Methods: `crates/ui-egui/src/control.rs`; docs: `docs/control-protocol.md` (Keys).
-- **Headless window screenshots** (no focus stealing, works with a locked screen): `cargo run --release -p wordcraft-ui-egui --example ui_shot -- script.jsonl` (see the example's header).
+- `cargo run --release -p letra -- --sample --control 7981` (sample document + control channel).
+- Drive it with JSON lines on `127.0.0.1:7981`, each with the window's key from `~/.config/letra/control-key.local-7981` (macOS: `~/Library/Application Support/Letra/`), e.g. `{"id":1,"key":"…","method":"engine.execute","params":{"command":"text.insert","params":{"text":"Hello"}}}` then `{"id":2,"key":"…","method":"ui.screenshot","params":{"path":"/tmp/shot.png"}}`. Methods: `crates/ui-egui/src/control.rs`; docs: `docs/control-protocol.md` (Keys).
+- **Headless window screenshots** (no focus stealing, works with a locked screen): `cargo run --release -p letra-ui-egui --example ui_shot -- script.jsonl` (see the example's header).
 - **For UI work, look at the result** (screenshot, read the PNG) and compare with Word side by side.
-- CLI: `wordcraft-cli convert in.docx out.pdf`, `wordcraft-cli run --template sample --cmd 'select.text={"text":"Studio"}' --cmd format.bold --save out.docx`, `wordcraft-cli commands`, `wordcraft-cli parity`.
-- MCP: `wordcraft-cli mcp` (headless) or `wordcraft-cli mcp --connect 127.0.0.1:7981` (drives the running app). See `docs/mcp.md`.
+- CLI: `letra-cli convert in.docx out.pdf`, `letra-cli run --template sample --cmd 'select.text={"text":"Studio"}' --cmd format.bold --save out.docx`, `letra-cli commands`, `letra-cli parity`.
+- MCP: `letra-cli mcp` (headless) or `letra-cli mcp --connect 127.0.0.1:7981` (drives the running app). See `docs/mcp.md`.
 - Shell gotcha: `mv`/`cp` may be aliased interactive — use `/bin/mv -f` / `/bin/cp -f`.
 - Parallel agents: separate `CARGO_TARGET_DIR` per agent; edit only the crates you own; delete your target dir when done (disk).
 

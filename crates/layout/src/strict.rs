@@ -1,14 +1,14 @@
 //! Pictures a layout draws that the exporters cannot decode, for strict export (#6005).
 //!
 //! The PDF export, the raster renderer and this check decide whether a picture is drawn the same
-//! way (`wordcraft_geom::picture::decode_for_drawing`, and the metafile parser): what fails here
+//! way (`letra_geom::picture::decode_for_drawing`, and the metafile parser): what fails here
 //! is what shows as a grey box there.
 
 use std::collections::{HashMap, HashSet};
 use std::ops::RangeInclusive;
 
-use wordcraft_doc::{Document, MAX_MISSING_PICTURES, MissingPicture, MissingPictureReason, StoryRef, picture_hash};
-use wordcraft_geom::picture::DrawFailure;
+use letra_doc::{Document, MAX_MISSING_PICTURES, MissingPicture, MissingPictureReason, StoryRef, picture_hash};
+use letra_geom::picture::DrawFailure;
 
 use crate::display::{DisplayOptions, Draw, ItemDisplay};
 use crate::{DocLayout, Placed};
@@ -37,13 +37,13 @@ impl StrictOutput {
 }
 
 /// Whether `bytes` are a picture `output` draws: a metafile that parses, or a raster picture that
-/// decodes within the decode budget. The same decision `wordcraft-pdf` and `wordcraft-render`
+/// decodes within the decode budget. The same decision `letra-pdf` and `letra-render`
 /// take, so a picture that fails here is drawn as a grey box (or not at all) by that output.
 pub fn media_check(bytes: &[u8], output: StrictOutput) -> Result<(), DrawFailure> {
-    if wordcraft_metafile::is_metafile(bytes) && wordcraft_metafile::parse(bytes).is_ok_and(|p| p.has_size()) {
+    if letra_metafile::is_metafile(bytes) && letra_metafile::parse(bytes).is_ok_and(|p| p.has_size()) {
         return Ok(());
     }
-    wordcraft_geom::picture::check_for_drawing(bytes, output.max_picture_side())
+    letra_geom::picture::check_for_drawing(bytes, output.max_picture_side())
 }
 
 /// The pictures drawn on `pages` (0-based, `None` for every page) that fail [`media_check`] for
@@ -122,7 +122,7 @@ pub fn undecodable_pictures(
         // which the PDF draws as vector.
         let failure = match doc.media.get(&pic.media) {
             Some(bytes) => media_check(bytes, output).err().or_else(|| {
-                (output == StrictOutput::Png && wordcraft_geom::picture::background_size(bytes).is_none()).then_some(DrawFailure::UnsupportedFormat)
+                (output == StrictOutput::Png && letra_geom::picture::background_size(bytes).is_none()).then_some(DrawFailure::UnsupportedFormat)
             }),
             None => Some(DrawFailure::Undecodable),
         };
@@ -184,7 +184,7 @@ fn story_name(doc: &Document, region: Region, it: &Placed) -> String {
                 StoryRef::Body if names.main.is_empty() => "body".into(),
                 StoryRef::Body => names.main.clone(),
                 StoryRef::Part(id) => known(Some(id)).unwrap_or_else(|| {
-                    use wordcraft_doc::PartKind::*;
+                    use letra_doc::PartKind::*;
                     match doc.parts.get(&id).map(|p| p.kind) {
                         Some(Header) => "header",
                         Some(Footer) => "footer",

@@ -105,7 +105,7 @@ fn row_keeps_next(row: &table::RowLayout) -> bool {
 /// first line (clicks there miss the cell). Only an explicit bottom cell margin or a thick outer
 /// border shows it, never Word's defaults; upgrade with a separate drawing cut in split_row that
 /// moves a nested cell starting between the limit and the cut whole from its top.
-fn nested_keep_cut(doc: &wordcraft_doc::Document, row: &table::RowLayout, room: f32) -> f32 {
+fn nested_keep_cut(doc: &letra_doc::Document, row: &table::RowLayout, room: f32) -> f32 {
     let own = row.items.iter().filter_map(|it| if let Placed::Cell { table, .. } = it { Some(table.0.len()) } else { None }).min();
     // Each nested row's top and bottom when it can't split. A vertically merged cell runs past
     // its own row, so a row ends where its shortest cell does.
@@ -145,11 +145,11 @@ fn nested_keep_cut(doc: &wordcraft_doc::Document, row: &table::RowLayout, room: 
 }
 
 /// [`table::split_row_keeping_cells`] that doesn't split a nested "can't split" row either.
-fn split_keeping_nested(doc: &wordcraft_doc::Document, row: &table::RowLayout, room: f32) -> Option<(table::RowLayout, table::RowLayout)> {
+fn split_keeping_nested(doc: &letra_doc::Document, row: &table::RowLayout, room: f32) -> Option<(table::RowLayout, table::RowLayout)> {
     table::split_row_keeping_cells(row, nested_keep_cut(doc, row, room))
 }
 
-fn row_can_start(doc: &wordcraft_doc::Document, row: &wordcraft_doc::Row, laid: &table::RowLayout, room: f32, page_height: f32) -> bool {
+fn row_can_start(doc: &letra_doc::Document, row: &letra_doc::Row, laid: &table::RowLayout, room: f32, page_height: f32) -> bool {
     if laid.height <= room + 0.01 {
         return true;
     }
@@ -162,7 +162,7 @@ fn row_can_start(doc: &wordcraft_doc::Document, row: &wordcraft_doc::Row, laid: 
     split_keeping_nested(doc, laid, room).is_some()
 }
 
-pub(crate) fn place_table(ctx: &mut Ctx, pb: &mut PageBuilder, t: &wordcraft_doc::Table, block: usize, body_top: f32) {
+pub(crate) fn place_table(ctx: &mut Ctx, pb: &mut PageBuilder, t: &letra_doc::Table, block: usize, body_top: f32) {
     pb.prev = None;
     // A page break before the first row's paragraph moves the whole table to a new page, as
     // Word does (and as an ODT table starting a page opens). Before the table is laid out, so

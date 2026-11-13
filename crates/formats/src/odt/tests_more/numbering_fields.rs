@@ -5,8 +5,8 @@
 
 use crate::odt::tests::{NS_T, content_of, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
-use wordcraft_doc::para::{InlineObject, OBJ};
+use letra_doc::Document;
+use letra_doc::para::{InlineObject, OBJ};
 
 const NS_N: &str = r#"xmlns:number="urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0""#;
 

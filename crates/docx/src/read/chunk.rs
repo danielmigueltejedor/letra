@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use wordcraft_doc::{Block, Blocks, Document};
+use letra_doc::{Block, Blocks, Document};
 
 use super::story::StoryCtx;
 use super::{Reader, part_of};
@@ -65,7 +65,7 @@ impl Reader<'_> {
         let is_docx = bytes.starts_with(b"PK\x03\x04");
         let doc = if is_docx { self.read_nested(bytes, depth) } else { self.chunks.import.and_then(|f| f(&chunk)) };
         let Some(mut doc) = doc else {
-            log::warn!("docx: alternative format chunk {part} ({ct}) is in a format WordCraft can't bring in");
+            log::warn!("docx: alternative format chunk {part} ({ct}) is in a format Letra can't bring in");
             return;
         };
         // The chunk flows in the section it stands in; its own section breaks don't come along.
@@ -148,7 +148,7 @@ impl<'a> ChunkState<'a> {
 mod tests {
     use std::io::Write;
 
-    use wordcraft_doc::{Block, Document, InlineObject};
+    use letra_doc::{Block, Document, InlineObject};
 
     use super::ChunkState;
     use crate::package::Package;

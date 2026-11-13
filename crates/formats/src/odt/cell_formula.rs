@@ -2,7 +2,7 @@
 //!
 //! LibreOffice writes a text table's formulas in its own syntax (prefix `ooow:`): cells and
 //! ranges in angle brackets (`<A1>`, `<A1:B3>`), functions written before their operand
-//! (`sum <A1:A3>`, a list joined by `|`) and some operators as words (`add`, `mul`…). WordCraft,
+//! (`sum <A1:A3>`, a list joined by `|`) and some operators as words (`add`, `mul`…). Letra,
 //! as Word, holds a formula as a field (`=SUM(A1:A3)`, `ABOVE`, `LEFT`). Formulas are turned one
 //! into the other where both can say them; others are left as their value.
 

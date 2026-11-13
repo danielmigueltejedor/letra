@@ -31,7 +31,7 @@ impl WordApp {
     pub fn new(session: Session, services: Services) -> Self {
         // Numeral › System follows the system locale, found here rather than in layout.
         if let Some(tag) = sys_locale::get_locale() {
-            wordcraft_engine::set_system_locale(&tag);
+            letra_engine::set_system_locale(&tag);
         }
         // What the window shows starts as a new window's.
         let window_ui::WindowUi {
@@ -143,7 +143,7 @@ impl WordApp {
             read_aloud_error: None,
             autosave_path: None,
             saves_in_flight: Vec::new(),
-            font_generation: wordcraft_fonts::FontDb::global().generation(),
+            font_generation: letra_fonts::FontDb::global().generation(),
             recovery_seen: false,
             no_document: None,
             comment_drafts: Default::default(),
@@ -239,7 +239,7 @@ impl WordApp {
         let lang = i18n::Lang::from_pref(&self.ui.language);
         i18n::set_current(lang);
         crate::rtl::sync(ctx);
-        // New documents are written in the interface's language when WordCraft can proof it
+        // New documents are written in the interface's language when Letra can proof it
         // (a Polish interface: Polish spelling, grammar and hyphenation from the first word).
         // An English interface writes the region's English (English (UK) on a British system,
         // #1045), a Spanish one the region's Spanish (Spanish (Uruguay) on a Uruguayan system,

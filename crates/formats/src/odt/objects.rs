@@ -1,7 +1,7 @@
-//! Embedded objects WordCraft shows but doesn't edit (ODF 1.3 §10.4.6 `draw:object` holding a
+//! Embedded objects Letra shows but doesn't edit (ODF 1.3 §10.4.6 `draw:object` holding a
 //! sub-document folder, §10.4.7 `draw:object-ole` an OLE file): their files gathered from the
 //! package so the writer can put them back, and a placeholder picture for one whose replacement
-//! picture WordCraft can't show (LibreOffice writes its own metafile format there).
+//! picture Letra can't show (LibreOffice writes its own metafile format there).
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -90,8 +90,8 @@ pub(in crate::odt) fn manifest(xml: &[u8]) -> HashMap<String, String> {
     out
 }
 
-/// A placeholder picture for an object whose own picture WordCraft can't show: a pale panel
-/// with a frame, ruled as a grid for a spreadsheet. Drawn here, in WordCraft's own greys.
+/// A placeholder picture for an object whose own picture Letra can't show: a pale panel
+/// with a frame, ruled as a grid for a spreadsheet. Drawn here, in Letra's own greys.
 pub(in crate::odt) fn placeholder(mime: &str) -> Option<Vec<u8>> {
     let (w, h) = (120u32, 72u32);
     let grid = mime.ends_with("spreadsheet");

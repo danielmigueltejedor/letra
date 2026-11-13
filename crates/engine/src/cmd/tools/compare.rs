@@ -2,7 +2,7 @@ use super::{
     Arc, Block, CharProps, CmdError, CmdResult, Document, InlineObject, Paragraph, RevisionKind, Selection, Session, StoryRef, Value, json, p,
     para_block,
 };
-use wordcraft_doc::para::OBJ;
+use letra_doc::para::OBJ;
 
 /// Compare and Combine take the same settings.
 pub(super) const COMPARE_PARAMS: &str = r#"{"path"?: string (revised document), "text"?: string (revised text), "original"?: string (original document; default: this one), "author"?: string (label changes with), "caseChanges"?: bool, "whiteSpace"?: bool, "formatting"?: bool (default true: differences count), "level"?: "word|character", "showIn"?: "original|revised|new" (revised/new: an untitled document), "moves"|"comments"|"tables"|"headersFooters"|"footnotes"|"textBoxes"|"fields"?: bool (accepted; not honoured yet except tables, always compared)}"#;
@@ -66,16 +66,16 @@ pub(super) fn compare(s: &mut Session, v: &Value) -> CmdResult {
     let author = p::str(v, "author").map(str::trim).filter(|a| !a.is_empty()).map(str::to_string).unwrap_or_else(|| s.author.clone());
     let date = crate::cmd::now_iso();
     let old: Vec<Arc<Block>> = s.doc.body.clone();
-    let new: Vec<Arc<Block>> = if revised.parts.values().any(|p| p.kind == wordcraft_doc::PartKind::TextBox) {
+    let new: Vec<Arc<Block>> = if revised.parts.values().any(|p| p.kind == letra_doc::PartKind::TextBox) {
         // The revised document's text boxes get stories of their own in the result, so its
         // boxes never show a story of the original's (or none at all).
         s.doc.adopt_fragment(&revised.body_fragment()).into_iter().map(Arc::new).collect()
     } else {
         revised.body.clone()
     };
-    s.doc.revisions.push(wordcraft_doc::Revision { kind: RevisionKind::Insert, author: author.clone(), date: date.clone(), move_name: None });
+    s.doc.revisions.push(letra_doc::Revision { kind: RevisionKind::Insert, author: author.clone(), date: date.clone(), move_name: None });
     let ins = (s.doc.revisions.len() - 1) as u32;
-    s.doc.revisions.push(wordcraft_doc::Revision { kind: RevisionKind::Delete, author: author.clone(), date: date.clone(), move_name: None });
+    s.doc.revisions.push(letra_doc::Revision { kind: RevisionKind::Delete, author: author.clone(), date: date.clone(), move_name: None });
     let del = (s.doc.revisions.len() - 1) as u32;
     let key = |b: &Arc<Block>| match &**b {
         Block::Para(p) => opts.key(&p.plain_text()),

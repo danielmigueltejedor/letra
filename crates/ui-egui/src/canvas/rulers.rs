@@ -304,11 +304,11 @@ pub(super) fn ruler_d(x: f32, x0: f32, scale: f32, page_w: f32, rtl: bool) -> f3
 
 /// A ruler's graduation for a unit: points per numbered step, divisions per step, and how much
 /// each step counts (millimetre rulers number every centimetre as 10, 20…).
-fn ruler_scale(u: wordcraft_geom::Unit) -> (f32, i32, i32) {
-    use wordcraft_geom::Unit;
+fn ruler_scale(u: letra_geom::Unit) -> (f32, i32, i32) {
+    use letra_geom::Unit;
     match u {
-        Unit::Centimeters => (wordcraft_geom::PT_PER_CM, 4, 1),
-        Unit::Millimeters => (wordcraft_geom::PT_PER_CM, 4, 10),
+        Unit::Centimeters => (letra_geom::PT_PER_CM, 4, 1),
+        Unit::Millimeters => (letra_geom::PT_PER_CM, 4, 10),
         Unit::Points => (72.0, 8, 72),
         Unit::Picas => (72.0, 8, 6),
         Unit::Inches => (72.0, 8, 1),

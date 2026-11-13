@@ -33,3 +33,13 @@ jobs:
     name: git-sources
     uses: getnodalia/foundation/.github/workflows/git-sources.yml@976581262c95c0d95c0184149c0e1ba55485ccb3 # foundation main
 
+
+  # Letra's own names everywhere; upstream's arrive renamed by the weekly sync.
+  names:
+    name: No upstream names
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 scripts/rebrand.py check

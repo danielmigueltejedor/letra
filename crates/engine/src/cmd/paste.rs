@@ -1,7 +1,7 @@
 //! Paste Special: paste the clipboard in a chosen format (formatted, RTF, HTML, picture,
 //! unformatted), and the formatted content Paste and Merge Formatting take from other programs.
 //!
-//! The clipboard can hold several representations of the same content. WordCraft's own copy keeps
+//! The clipboard can hold several representations of the same content. Letra's own copy keeps
 //! a rich fragment; the system clipboard gives text, and callers (agents, the CLI, a front end
 //! with a richer clipboard) may pass `html`, `rtf` or a `picture` too. Text that is itself RTF or
 //! HTML source can also be pasted as that format. Paste keeps the source formatting of another
@@ -10,9 +10,9 @@
 
 use std::sync::Arc;
 
+use letra_doc::edit::Fragment;
+use letra_doc::{Block, Document, Paragraph};
 use serde_json::{Value, json};
-use wordcraft_doc::edit::Fragment;
-use wordcraft_doc::{Block, Document, Paragraph};
 
 use super::{delete_selection, sel_result};
 use crate::{CmdError, CmdResult, CommandSpec, Selection, Session, p};
@@ -41,7 +41,7 @@ pub fn specs() -> Vec<CommandSpec> {
     ]
 }
 
-/// Clipboard text from the params (system clipboard), else WordCraft's own copy.
+/// Clipboard text from the params (system clipboard), else Letra's own copy.
 fn clip_text(s: &Session, v: &Value) -> Option<String> {
     match p::str(v, "text") {
         Some(t) => Some(t.replace("\r\n", "\n")),
@@ -111,7 +111,7 @@ fn paste_special(s: &mut Session, v: &Value) -> CmdResult {
         return Ok(json!({"formats": formats_json(&ids)}));
     };
     let fmt = match fmt.to_ascii_lowercase().as_str() {
-        "formatted" | "keep" | "wordcraft" => "formatted",
+        "formatted" | "keep" | "letra" => "formatted",
         "rtf" => "rtf",
         "html" => "html",
         "picture" | "png" | "image" => "picture",
@@ -139,7 +139,7 @@ fn paste_special(s: &mut Session, v: &Value) -> CmdResult {
         }
         "formatted" => s.clipboard.clone().ok_or_else(|| CmdError::Failed("the clipboard is empty".into()))?,
         "html" => adopt(s, import_html(&src)),
-        _ => adopt(s, wordcraft_formats::rtf::import(src.as_bytes()).map_err(|e| CmdError::Failed(format!("bad RTF: {e}")))?),
+        _ => adopt(s, letra_formats::rtf::import(src.as_bytes()).map_err(|e| CmdError::Failed(format!("bad RTF: {e}")))?),
     };
     insert(s, frag)?;
     let mut r = sel_result(s)?;
@@ -156,7 +156,7 @@ const BLOCKQUOTE_INDENT: f32 = 36.0;
 /// an inch each side, rather than in the (centred, italic) Quote style. Opening an .html file keeps
 /// `<blockquote>` as Quote, so HTML round-trips.
 fn import_html(html: &str) -> Document {
-    let mut doc = wordcraft_formats::html::import(html_fragment(html));
+    let mut doc = letra_formats::html::import(html_fragment(html));
     let (left, right) = blockquote_margins(html);
     for b in &mut doc.body {
         each_para(Arc::make_mut(b), 0, &mut |p| {
@@ -174,7 +174,7 @@ fn import_html(html: &str) -> Document {
 /// The left and right margins (points) the payload's `<style>` sheets give `blockquote` — LibreOffice
 /// writes `blockquote { margin-left: 1cm; margin-right: 1cm }` — else [`BLOCKQUOTE_INDENT`].
 fn blockquote_margins(html: &str) -> (f32, f32) {
-    let len = |v: &str| wordcraft_formats::html::css_len_pt(v).map(|x| x.clamp(0.0, 1584.0));
+    let len = |v: &str| letra_formats::html::css_len_pt(v).map(|x| x.clamp(0.0, 1584.0));
     let (mut left, mut right) = (BLOCKQUOTE_INDENT, BLOCKQUOTE_INDENT);
     let lower = html.to_ascii_lowercase();
     let mut rest = lower.as_str();
@@ -250,7 +250,7 @@ pub fn rich_fragment(s: &mut Session, v: &Value) -> Option<Fragment> {
         Some(d) => d,
         None => {
             let rtf = fits("rtf").filter(|t| looks_like_rtf(t))?;
-            wordcraft_formats::rtf::import(rtf.as_bytes()).ok().filter(has_content)?
+            letra_formats::rtf::import(rtf.as_bytes()).ok().filter(has_content)?
         }
     };
     Some(adopt(s, doc))
@@ -258,13 +258,13 @@ pub fn rich_fragment(s: &mut Session, v: &Value) -> Option<Fragment> {
 
 /// What a Paste brings in.
 pub enum Pasted {
-    /// WordCraft's own copy, or another program's HTML or RTF: it keeps the formatting it carries.
+    /// Letra's own copy, or another program's HTML or RTF: it keeps the formatting it carries.
     Fragment(Fragment),
     /// The system clipboard's text, lines separated by `\n`.
     Text(String),
 }
 
-/// What Paste inserts: WordCraft's own copy while the system clipboard still holds it, else
+/// What Paste inserts: Letra's own copy while the system clipboard still holds it, else
 /// another program's formatted copy (HTML, RTF), else the system clipboard's text.
 pub fn paste_content(s: &mut Session, v: &Value) -> Result<Pasted, CmdError> {
     let text = p::str(v, "text").map(|t| t.replace("\r\n", "\n"));
@@ -321,7 +321,7 @@ pub fn merge_formatting(s: &Session, frag: &mut Fragment) {
                 if src.italic == Some(true) {
                     run.props.italic = Some(true);
                 }
-                if src.underline.is_some_and(|u| u != wordcraft_doc::props::Underline::None) {
+                if src.underline.is_some_and(|u| u != letra_doc::props::Underline::None) {
                     run.props.underline = src.underline;
                 }
                 if src.strike == Some(true) {
@@ -347,7 +347,7 @@ pub fn insert(s: &mut Session, mut frag: Fragment) -> Result<(), CmdError> {
         // What the last command cut, pasted again: the two ends of a move.
         let r = match super::moves::take_paste(s, &frag) {
             Some(r) => r,
-            None => super::new_revision(s, wordcraft_doc::RevisionKind::Insert),
+            None => super::new_revision(s, letra_doc::RevisionKind::Insert),
         };
         rid = Some(r);
         for b in &mut frag.blocks {

@@ -1,7 +1,7 @@
-//! WordCraft PDF export through the shared `craft-pdf` writer and Krilla drawing primitives.
+//! Letra PDF export through the shared `craft-pdf` writer and Krilla drawing primitives.
 //!
 //! [`export`] lays the document out and draws each page's display list
-//! ([`wordcraft_layout::display::page_display`]) into a PDF page:
+//! ([`letra_layout::display::page_display`]) into a PDF page:
 //!
 //! - **Text as real text:** glyph runs are written with embedded, subsetted fonts and a Unicode
 //!   mapping taken from the paragraph text, so text is selectable, searchable and extractable.
@@ -43,16 +43,16 @@ use krilla::paint::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
 use krilla::surface::Surface;
 use krilla::tagging::{Artifact, ArtifactType, ContentTag, Identifier, Node, SpanTag, Tag, TagGroup, TagKind, TagTree};
 use krilla::text::{Font, GlyphId, KrillaGlyph};
-use wordcraft_doc::graphic::GraphicKind;
-use wordcraft_doc::para::{InlineObject, ShapeKind};
-use wordcraft_doc::{Document, Path as DocPath, Rgb, StoryRef};
-use wordcraft_fonts::FaceRef;
-use wordcraft_geom::Rect;
-use wordcraft_layout::display::Paint;
-use wordcraft_layout::display::{Draw, ItemDisplay, Stroke as LineStyle};
-use wordcraft_layout::para::{ClKind, LineEnd};
-use wordcraft_layout::{DocLayout, LayoutCache, NumeralMode, Page, Placed, layout};
-use wordcraft_metafile::{Picture, PlacedItem};
+use letra_doc::graphic::GraphicKind;
+use letra_doc::para::{InlineObject, ShapeKind};
+use letra_doc::{Document, Path as DocPath, Rgb, StoryRef};
+use letra_fonts::FaceRef;
+use letra_geom::Rect;
+use letra_layout::display::Paint;
+use letra_layout::display::{Draw, ItemDisplay, Stroke as LineStyle};
+use letra_layout::para::{ClKind, LineEnd};
+use letra_layout::{DocLayout, LayoutCache, NumeralMode, Page, Placed, layout};
+use letra_metafile::{Picture, PlacedItem};
 
 mod export;
 mod exporter;

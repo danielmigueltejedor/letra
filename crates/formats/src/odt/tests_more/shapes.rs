@@ -1,12 +1,12 @@
 //! Drawing shapes (ODF 1.3 §10.3: `draw:rect`, `draw:ellipse`, `draw:line`, and
-//! `draw:custom-shape` with its `draw:enhanced-geometry` type): opened as WordCraft shapes with
+//! `draw:custom-shape` with its `draw:enhanced-geometry` type): opened as Letra shapes with
 //! their size, placement, fill, line and text, and written back as the same elements.
 
 use crate::odt::tests::{NS_T, content_of, package};
 use crate::odt::{export, import};
-use wordcraft_doc::para::{InlineObject, OBJ, ShapeKind, Wrap};
-use wordcraft_doc::props::Rgb;
-use wordcraft_doc::{Document, Paragraph, para_block};
+use letra_doc::para::{InlineObject, OBJ, ShapeKind, Wrap};
+use letra_doc::props::Rgb;
+use letra_doc::{Document, Paragraph, para_block};
 
 const NS_D: &str =
     r#"xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0""#;
@@ -56,7 +56,7 @@ fn open() -> Document {
 #[test]
 fn shapes_open_with_their_kind_size_look_and_text() {
     let d = open();
-    // A line width no style states (the standard gives none): WordCraft's 0.25 pt.
+    // A line width no style states (the standard gives none): Letra's 0.25 pt.
     let blue = Some((Rgb(0x34, 0x65, 0xa4), 0.25));
     assert_eq!(
         shapes(&d),
@@ -77,7 +77,7 @@ fn shapes_open_with_their_kind_size_look_and_text() {
             // From (3in, 0) to (1in, 1in): 2in × 1in, rising from its bottom left.
             (ShapeKind::Line, (144.0, 72.0), None, Some((Rgb(0, 0, 0), 2.0)), true, true, String::new()),
             (ShapeKind::Heart, (72.0, 72.0), None, None, true, false, String::new()),
-            // A geometry WordCraft has no shape for: drawn from its own path.
+            // A geometry Letra has no shape for: drawn from its own path.
             (ShapeKind::Freeform, (72.0, 72.0), None, None, true, false, String::new()),
         ]
     );
@@ -104,7 +104,7 @@ fn shapes_round_trip() {
 }
 
 #[test]
-fn every_wordcraft_shape_kind_is_written_and_read_back() {
+fn every_letra_shape_kind_is_written_and_read_back() {
     use ShapeKind::*;
     let kinds = [
         Rectangle,
@@ -129,7 +129,7 @@ fn every_wordcraft_shape_kind_is_written_and_read_back() {
             kind: k,
             w: 50.0,
             h: 40.0,
-            fill: Some(wordcraft_doc::fill::Fill::solid(Rgb(1, 2, 3))),
+            fill: Some(letra_doc::fill::Fill::solid(Rgb(1, 2, 3))),
             stroke: Some(Rgb(4, 5, 6)),
             stroke_width: 1.5,
             float: Default::default(),
@@ -139,7 +139,7 @@ fn every_wordcraft_shape_kind_is_written_and_read_back() {
             extra: Default::default(),
         });
     }
-    p.runs = vec![wordcraft_doc::para::Run { len: p.text.len(), props: Default::default() }];
+    p.runs = vec![letra_doc::para::Run { len: p.text.len(), props: Default::default() }];
     let mut d = Document::new();
     d.body = vec![para_block(p)];
     let back = import(&export(&d).unwrap()).unwrap();

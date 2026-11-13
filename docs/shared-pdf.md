@@ -1,7 +1,7 @@
 # Shared PDF writer
 
 Letra uses `craft-pdf` with default features disabled and `write` enabled. Both that dependency
-and the required root Krilla patch use the immutable `storytold/craft-libs` revision
+and the required root Krilla patch use the immutable `getnodalia/foundation (vendor/craft-libs)` revision
 `b926b5c03e256c86ca10934f58d03f628810b5b7`. Rust 1.95 or newer is required. The revision must be
 available from the remote before a fresh checkout can resolve it. The shared writer checks a
 backend marker at compile time so an unpatched Krilla cannot replace the required backend.

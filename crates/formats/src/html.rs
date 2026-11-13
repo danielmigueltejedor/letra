@@ -18,9 +18,9 @@
 
 use std::sync::Arc;
 
-use wordcraft_doc::props::LineSpacing;
-use wordcraft_doc::props::VAlign;
-use wordcraft_doc::{Align, Document};
+use letra_doc::props::LineSpacing;
+use letra_doc::props::VAlign;
+use letra_doc::{Align, Document};
 
 use crate::model::{
     self, Cell, FBlock, FTable, Flow, Fmt, Inline, Kind, ListInfo, Meta, Para, Spacing, base64_encode, data_uri, make_img, mime_of, parse_color,

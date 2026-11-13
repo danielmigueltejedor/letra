@@ -1,20 +1,20 @@
 //! Format crates registered with the I/O dispatcher.
 
-use wordcraft_doc::Document;
+use letra_doc::Document;
 
 /// Open a format other than plain text / JSON; files that give no page size (Markdown, HTML)
 /// start on `page`.
-pub fn open(ext: &str, bytes: &[u8], page: &wordcraft_doc::SectionProps) -> Option<Result<Document, String>> {
+pub fn open(ext: &str, bytes: &[u8], page: &letra_doc::SectionProps) -> Option<Result<Document, String>> {
     match ext {
         "docx" | "docm" | "dotx" | "dotm" => Some(crate::io::read_docx(bytes, None).map_err(|e| e.to_string())),
-        "doc" | "dot" => Some(wordcraft_docbin::read(bytes).map_err(|e| e.to_string())),
+        "doc" | "dot" => Some(letra_docbin::read(bytes).map_err(|e| e.to_string())),
         // Word XML Document (Flat OPC) or Word 2003 XML, told apart by the root element.
-        "xml" => Some(wordcraft_docx::read_xml(bytes).map_err(|e| e.to_string())),
+        "xml" => Some(letra_docx::read_xml(bytes).map_err(|e| e.to_string())),
         // HTML, Markdown, RTF…: pictures fit the text width (see `io::fit_pictures`). An
         // OpenDocument file says how big they are, and one wider than the text is meant to be;
         // changing it would take its paragraph off being written as read. Its reader fits those
         // that state no size.
-        other => wordcraft_formats::import_on(other, bytes, page).map(|r| {
+        other => letra_formats::import_on(other, bytes, page).map(|r| {
             r.map(|mut doc| {
                 if !matches!(other, "odt" | "ott" | "fodt") {
                     crate::io::fit_pictures(&mut doc);
@@ -29,7 +29,7 @@ pub fn open(ext: &str, bytes: &[u8], page: &wordcraft_doc::SectionProps) -> Opti
 /// Draw the charts a reader left undrawn (ODT charts come as their chart model alone): in the
 /// document's theme colours, at their size.
 fn draw_charts(doc: &mut Document) {
-    use wordcraft_doc::para::InlineObject;
+    use letra_doc::para::InlineObject;
     /// Groups nest at most this deep here (the readers flatten deeper ones).
     const DEPTH: usize = 16;
     fn undrawn(o: &InlineObject, depth: usize) -> bool {
@@ -39,7 +39,7 @@ fn draw_charts(doc: &mut Document) {
             _ => false,
         }
     }
-    fn draw(o: &mut InlineObject, theme: &[wordcraft_doc::Rgb], depth: usize) {
+    fn draw(o: &mut InlineObject, theme: &[letra_doc::Rgb], depth: usize) {
         match o {
             InlineObject::Group { children, .. } if depth < DEPTH => children.iter_mut().for_each(|c| draw(&mut c.obj, theme, depth + 1)),
             o if undrawn(o, depth) => crate::cmd::chart::redraw(o, theme),
@@ -54,12 +54,12 @@ fn draw_charts(doc: &mut Document) {
 /// Save to a format other than plain text / JSON.
 pub fn save(ext: &str, doc: &Document, opts: &crate::io::ExportOptions) -> Option<Result<Vec<u8>, String>> {
     // .docx/.docm/.dotx/.dotm: the extension picks the package flavour Word expects.
-    if let Some(flavor) = wordcraft_docx::Flavor::from_ext(ext) {
-        return Some(wordcraft_docx::write_as(doc, flavor).map_err(|e| e.to_string()));
+    if let Some(flavor) = letra_docx::Flavor::from_ext(ext) {
+        return Some(letra_docx::write_as(doc, flavor).map_err(|e| e.to_string()));
     }
     match ext {
-        "xml" if opts.word2003 => Some(wordcraft_docx::write_wordml2003(doc).map_err(|e| e.to_string())),
-        "xml" => Some(wordcraft_docx::write_flat(doc).map_err(|e| e.to_string())),
+        "xml" if opts.word2003 => Some(letra_docx::write_wordml2003(doc).map_err(|e| e.to_string())),
+        "xml" => Some(letra_docx::write_flat(doc).map_err(|e| e.to_string())),
         "png" => Some(render_png(doc, 0, 2.0, opts)),
         "pdf" => {
             // Output shows the fields Word fills in as it prints (see `output_fields`).
@@ -67,7 +67,7 @@ pub fn save(ext: &str, doc: &Document, opts: &crate::io::ExportOptions) -> Optio
             let doc = out.as_ref().unwrap_or(doc);
             Some(crate::strict::export_pdf(doc, opts))
         }
-        other => wordcraft_formats::export_with(other, doc, &wordcraft_formats::ExportOptions { comments: opts.markup && opts.comments }),
+        other => letra_formats::export_with(other, doc, &letra_formats::ExportOptions { comments: opts.markup && opts.comments }),
     }
 }
 
@@ -76,15 +76,15 @@ pub fn save(ext: &str, doc: &Document, opts: &crate::io::ExportOptions) -> Optio
 pub fn render_png(doc: &Document, page: usize, scale: f32, opts: &crate::io::ExportOptions) -> Result<Vec<u8>, String> {
     let out = crate::cmd::references::output_fields(doc);
     let doc = out.as_ref().unwrap_or(doc);
-    let lo = wordcraft_layout::LayoutOptions { comment_balloons: opts.markup && opts.comments, numeral: opts.numeral, ..Default::default() };
-    let l = wordcraft_layout::layout(doc, &mut wordcraft_layout::LayoutCache::new(), &lo);
+    let lo = letra_layout::LayoutOptions { comment_balloons: opts.markup && opts.comments, numeral: opts.numeral, ..Default::default() };
+    let l = letra_layout::layout(doc, &mut letra_layout::LayoutCache::new(), &lo);
     let p = l.pages.get(page).ok_or_else(|| format!("no page {}", page + 1))?;
     if opts.strict {
-        let report = crate::strict::strict_report(doc, &l, &crate::strict::png_display(), Some(page..=page), wordcraft_layout::StrictOutput::Png);
+        let report = crate::strict::strict_report(doc, &l, &crate::strict::png_display(), Some(page..=page), letra_layout::StrictOutput::Png);
         if !report.passed() {
             return Err(report.refusal());
         }
     }
-    let img = wordcraft_render::render_page(doc, p, scale, &Default::default());
+    let img = letra_render::render_page(doc, p, scale, &Default::default());
     Ok(img.to_png())
 }

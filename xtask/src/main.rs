@@ -175,7 +175,7 @@ fn nextest_available() -> bool {
 
 /// The interface audit, which `cmd_i18n_report` runs on its own so its report is printed.
 const I18N_AUDIT: &str = "i18n::audit::untranslated_interface_text";
-const I18N_AUDIT_FILTER: &str = "package(wordcraft-ui-egui) & test(=i18n::audit::untranslated_interface_text)";
+const I18N_AUDIT_FILTER: &str = "package(letra-ui-egui) & test(=i18n::audit::untranslated_interface_text)";
 
 fn cmd_test() -> Result<(), String> {
     test_run(&["-E", &format!("not ({I18N_AUDIT_FILTER})")], &["--skip", I18N_AUDIT])
@@ -183,7 +183,7 @@ fn cmd_test() -> Result<(), String> {
 
 /// The test `cmd_language` runs.
 const LANGUAGE_CHECK: &str = "packs::tests::the_default_build_embeds_only_english";
-const LANGUAGE_CHECK_FILTER: &str = "package(wordcraft-engine) & test(=packs::tests::the_default_build_embeds_only_english)";
+const LANGUAGE_CHECK_FILTER: &str = "package(letra-engine) & test(=packs::tests::the_default_build_embeds_only_english)";
 
 /// CP4.4: the embedded locales are English plus what the build asked for: `CRAFT_PROOF_EMBED`
 /// (craft-proof's build.rs; `en` alone is the English-only build), else the carry-over locales
@@ -273,7 +273,7 @@ fn cmd_corpus(download: bool) -> Result<(), String> {
         "Test corpora live under {} (git-ignored, never committed).
 Tests that use a corpus skip cleanly when it is absent.
 
-  corpus/pngsuite/   PngSuite (public domain) — wordcraft-codecs compares every file
+  corpus/pngsuite/   PngSuite (public domain) — letra-codecs compares every file
                      against the `image` crate. Fetch: cargo xtask corpus --download
   corpus/psd/        PSD samples from MIT/BSD projects (ag-psd, psd-tools test data).
                      Copy files in manually; licences must be MIT/BSD/CC0.

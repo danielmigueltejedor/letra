@@ -99,7 +99,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         app.ui.tab = prev;
     }
     // Outline view brings up the Outlining tab; closing it goes back.
-    if app.session.view.mode == wordcraft_layout::ViewMode::Outline {
+    if app.session.view.mode == letra_layout::ViewMode::Outline {
         if app.outline_prev_tab.is_none() {
             app.outline_prev_tab = Some(app.ui.tab.clone());
             app.ui.tab = "Outlining".into();
@@ -137,7 +137,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
             .iter()
             .enumerate()
             .map(|(i, (n, _))| (n.as_str(), i))
-            .filter(|(n, _)| wordcraft_engine::ribbon::CONTEXTUAL_TABS.contains(n) && !user_names.contains(n))
+            .filter(|(n, _)| letra_engine::ribbon::CONTEXTUAL_TABS.contains(n) && !user_names.contains(n))
             .collect();
         note_contextual_tabs(ui.ctx(), &contextual, now, animate)
     };
@@ -182,7 +182,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                             text_w: ui.ctx().fonts_mut(|f| f.layout_no_wrap(shown.to_string(), medium(12.5), t.text).size().x),
                             file: tab == "File",
                             active: *tab == app.ui.tab,
-                            contextual: !custom && wordcraft_engine::ribbon::CONTEXTUAL_TABS.contains(&tab.as_str()),
+                            contextual: !custom && letra_engine::ribbon::CONTEXTUAL_TABS.contains(&tab.as_str()),
                         })
                         .collect();
                     let plan = plan_strip(&specs, button_levels, ui.available_width(), MORE_TABS_W + 2.0);
@@ -262,7 +262,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                                 .filter(|(_, ((tab, _), fits))| **fits || ghosts.iter().any(|(n, ..)| n == tab))
                             {
                                 let (tab, custom) = (tab.as_str(), *custom);
-                                let contextual = !custom && wordcraft_engine::ribbon::CONTEXTUAL_TABS.contains(&tab);
+                                let contextual = !custom && letra_engine::ribbon::CONTEXTUAL_TABS.contains(&tab);
                                 // A custom tab's name is the user's own text: shown as typed.
                                 let shown = if custom { tab } else { tl!(tab) };
                                 let w = plan.widths.get(i).copied().unwrap_or(0.0) - 2.0;

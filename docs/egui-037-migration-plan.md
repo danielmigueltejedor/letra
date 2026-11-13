@@ -1,6 +1,6 @@
 # Letra: egui 0.37 migration plan
 
-**Status:** current-main reconciliation through `b4da59f0c38b506c36629b1d812ad7c0519fc238` passed all eight mandatory CI stages on 2026-10-25: 4,270 passing test executions, zero failures and 4 ignored (`egui037-wordcraft-main-refresh-ci-20261025-0603`). This includes main's encrypted-DOCX integrity requirement and selected-paragraph-mark highlight behavior. The dependency pins and lockfile are unchanged. A fresh review verified that the merge preserves the IME documentation and upstream fixes. Earlier counts and source snapshots below are historical.
+**Status:** current-main reconciliation through `b4da59f0c38b506c36629b1d812ad7c0519fc238` passed all eight mandatory CI stages on 2026-10-25: 4,270 passing test executions, zero failures and 4 ignored (`egui037-letra-main-refresh-ci-20261025-0603`). This includes main's encrypted-DOCX integrity requirement and selected-paragraph-mark highlight behavior. The dependency pins and lockfile are unchanged. A fresh review verified that the merge preserves the IME documentation and upstream fixes. Earlier counts and source snapshots below are historical.
 
 Read-only comment balloons now consume the explicit `AlignedGalley` result from craft-ui at
 `25da1314d443171b4adeaad2cd9454b273f35c6f`: height comes from the requested reading area,
@@ -15,7 +15,7 @@ Native GUI/IME/capture/save-reopen traces, package notice verification, paired p
 platform/installer execution and app publication remain separate gates. This records local
 work, not publication or complete platform acceptance. Historical notes below remain history.
 **Scope:** the Letra checkout at
-`/home/codex/work/CraftApps/egui037-migration-20261022/wordcraft-implementation`.
+`/home/codex/work/CraftApps/egui037-migration-20261022/letra-implementation`.
 **Baseline source:** `3a4770ef8ce037d2650c93e2d5764536549357c7` ("Merge pull request #3286 from
 matstrange/fix/protection-inspect-tracking"), workspace version 0.10.0, edition 2024,
 `rust-version = "1.95"`, resolver 3. Baseline `Cargo.lock` SHA-256
@@ -76,12 +76,12 @@ changed by this migration. The app remains `Session`-driven; egui remains a thin
 `Cargo.toml` declares one workspace, `members = ["crates/*", "apps/*", "xtask"]`, with no nested
 workspace and no vendor directory. `cargo metadata --no-deps` lists these packages:
 
-- application: `wordcraft` (`apps/wordcraft`, native eframe app), `wordcraft-web`
-  (`apps/wordcraft-web`, wasm eframe app), `wordcraft-cli` (no egui dependency).
-- UI: `wordcraft-ui-egui` (`crates/ui-egui`, the only direct egui/eframe consumer in the
+- application: `letra` (`apps/letra`, native eframe app), `letra-web`
+  (`apps/letra-web`, wasm eframe app), `letra-cli` (no egui dependency).
+- UI: `letra-ui-egui` (`crates/ui-egui`, the only direct egui/eframe consumer in the
   workspace). It also depends on `craft-ui` for print-page controls and on `egui_kittest` as a
   dev-dependency.
-- lower layers and stand-alone crates: `wordcraft-{geom,doc,fonts,layout,docx,docbin,formats,
+- lower layers and stand-alone crates: `letra-{geom,doc,fonts,layout,docx,docbin,formats,
   render,pdf,proof,engine,mcp,zotero,control-key,metafile}`. None may acquire an egui dependency;
   `cargo xtask layers` enforces this (`xtask/src/layers.rs`, `UI_CRATES`).
 - `xtask` itself has no egui dependency.
@@ -92,8 +92,8 @@ Direct egui-family declarations are only:
 |---|---|---|
 | root `Cargo.toml` | `egui = "0.36"`, `egui_extras = { version = "0.36", default-features = false }`, `eframe = { version = "0.36", default-features = false }`, `egui_kittest = "0.36"` | `egui_extras` is currently unused by source; remove it or pin it deliberately. |
 | `crates/ui-egui/Cargo.toml` | `egui = { workspace = true }`; dev: `egui_kittest = { workspace = true, features = ["wgpu", "snapshot"] }` | `egui` is not given `default_fonts` here; production gets it from the app roots' eframe feature, while the UI test root must declare egui's font features itself because kittest's own dev-dependencies do not propagate. |
-| `apps/wordcraft/Cargo.toml` | `eframe` with `default_fonts`, `wgpu`, `accesskit`, `wayland`, `x11`, `links`; `egui`; Linux/BSD `winit = "0.30"` with `x11` | `eframe` is the native renderer; S1 adds `clipboard` to preserve 0.36’s integration-forced OS text clipboard. |
-| `apps/wordcraft-web/Cargo.toml` | `egui`; wasm `eframe` with `default_fonts`, `wgpu`, `accesskit` | web runner and browser download/inbox shell. |
+| `apps/letra/Cargo.toml` | `eframe` with `default_fonts`, `wgpu`, `accesskit`, `wayland`, `x11`, `links`; `egui`; Linux/BSD `winit = "0.30"` with `x11` | `eframe` is the native renderer; S1 adds `clipboard` to preserve 0.36’s integration-forced OS text clipboard. |
+| `apps/letra-web/Cargo.toml` | `egui`; wasm `eframe` with `default_fonts`, `wgpu`, `accesskit` | web runner and browser download/inbox shell. |
 
 `craft-libs` is pinned in two places: `craft-ui` and `craft-print` at
 `d27646a5f7c8b4fc85d9dd3213b8c88b58e0088d`, and `craft-pdf` at
@@ -103,11 +103,11 @@ strings look uniform.
 
 ### 2.2 Entry points and examples
 
-- Native: `apps/wordcraft/src/main.rs`. `impl eframe::App for App` at `main.rs:44` implements
+- Native: `apps/letra/src/main.rs`. `impl eframe::App for App` at `main.rs:44` implements
   `logic`, `raw_input_hook`, `ui` and `on_exit` (`main.rs:45-120`). `NativeOptions` and the
   winit/platform setup are at `main.rs:376-420`; Windows wgpu backend/probe code is
-  `apps/wordcraft/src/graphics.rs:26-180`.
-- Web: `apps/wordcraft-web/src/web.rs`. `WebShell` implements `eframe::App` at `web.rs:117`;
+  `apps/letra/src/graphics.rs:26-180`.
+- Web: `apps/letra-web/src/web.rs`. `WebShell` implements `eframe::App` at `web.rs:117`;
   `logic` drains browser drops/messages and calls `WordApp::logic`, `ui` calls `WordApp::ui`;
   `WebOptions`/WebGPU-WebGL2 selection is at `web.rs:35-65`.
 - UI library: `WordApp::logic` at `crates/ui-egui/src/lib.rs:2087`, `WordApp::ui` at
@@ -117,7 +117,7 @@ strings look uniform.
 - Performance probe: `crates/ui-egui/examples/perf_probe.rs` (open, typing, wheel/trackpad
   scrolling, zoom, ribbon tabs, resize, accept-all; returns medians, p95 and max, not p99).
 - Large-table benchmark: `crates/ui-egui/src/tests/perf.rs` (`big_table_scroll_bench`, ignored,
-  2000x8 synthetic table by default, `WORDCRAFT_BENCH_DOCX` override).
+  2000x8 synthetic table by default, `LETRA_BENCH_DOCX` override).
 - Control protocol: `crates/ui-egui/src/control.rs`, documented in `docs/control-protocol.md`.
   `ui.screenshot`/`ui.render` reply shapes, request ids, timeouts and paths are public contracts.
 
@@ -127,7 +127,7 @@ Relevant cfgs are all in the UI/app boundary, not in lower layers:
 
 - `cfg(target_os = "linux")`: `zbus = "=5.19.0"` in `crates/ui-egui/Cargo.toml`;
   `desktop_theme.rs` reads the desktop portal. `system_clipboard.rs` and
-  `apps/wordcraft/src/clipboard.rs` use `wl-clipboard-rs` for the **regular** Wayland
+  `apps/letra/src/clipboard.rs` use `wl-clipboard-rs` for the **regular** Wayland
   clipboard (formats/text/pictures); they do not read or write PRIMARY
   (`ClipboardType::Regular` only, `clipboard.rs:135-160`). Middle-click on the canvas is
   Letra's autoscroll, not a PRIMARY paste (`autoscroll.rs:1-10`).
@@ -135,9 +135,9 @@ Relevant cfgs are all in the UI/app boundary, not in lower layers:
   `main.rs:404-413`.
 - `cfg(target_os = "macos")`: `fmv-macos-events`, `objc2-app-kit`, `dispatch2`; termination
   workaround `schedule_macos_terminate` at `main.rs:121-160`; AppKit pasteboard additions in
-  `apps/wordcraft/src/clipboard.rs`.
+  `apps/letra/src/clipboard.rs`.
 - `cfg(target_os = "windows")`: `open`, `windows` 0.62, `clipboard-win`; wgpu DX12/FXC and
-  backend probe in `apps/wordcraft/src/graphics.rs`.
+  backend probe in `apps/letra/src/graphics.rs`.
 - `cfg(target_arch = "wasm32")`: `js-sys`, `web-sys`, browser inbox, `font_store.rs`, browser
   downloads; `sys-locale` with `js`.
 
@@ -185,7 +185,7 @@ Required prerequisites, all in the approved revisions above:
 
 The root `[patch.crates-io]` must contain every crate whose crates.io identity would otherwise
 pull a second egui/winit. A dependency's own `[patch]` table is ignored when it is a dependency,
-so the wordcraft root must repeat the patches. At minimum: `egui`, `eframe`, `egui-winit`,
+so the letra root must repeat the patches. At minimum: `egui`, `eframe`, `egui-winit`,
 `egui-wgpu`, `egui_glow`, `egui_kittest`, `egui_extras`, `epaint`, `emath`, `ecolor`,
 `epaint_default_fonts`, `egui_system_font_provider`, and `winit`. Keep the existing
 `krilla` patch only because `craft-pdf` requires it; it is unrelated to this migration.
@@ -220,7 +220,7 @@ all with the intended `git+...#<sha>` source and no `path` source.
 - **craft-libs #192 / print types** already landed on the path to PR 199: `craft-ui::printing::Printer`
   gains `label`; `craft-print::Printer` gains `description`. Letra must adapt when it moves
   its `craft-ui`/`craft-print` pin:
-  - `apps/wordcraft/src/print.rs:8` builds `printing::Printer` from
+  - `apps/letra/src/print.rs:8` builds `printing::Printer` from
     `craft_print::printers()`; add `label: printer.description`.
   - `crates/ui-egui/src/lib.rs:6038` (test) constructs `Printer { name, default }`; add
     `label: String::new()` or `..Default::default()`.
@@ -264,7 +264,7 @@ revision containing W1-W15 minus W5, plus W17-W27 including W20 as W5’s replac
 W15P PRIMARY path. The inspected `8b35388` `ai-lang` commit is an aiongg research input, not a production
 pin. Letra's existing issue references (#787, #721 and related IME/DPI fixes) depend on
 W1-W15; do not compare only against upstream 0.30.13 and conclude the patches are new. The patch
-table records the removal condition for each. No wordcraft vendor directory exists, so no vendor
+table records the removal condition for each. No letra vendor directory exists, so no vendor
 deletion is part of this plan.
 
 ### 3.4 Pin and lock checks
@@ -285,7 +285,7 @@ Proposed checks, to run through the managed `task.py` workflow after the plans l
    that is not reachable from the approved fork ref. This turns the manual checks into a
    regression.
 5. Feature-identity checks, not just version metadata: `cargo tree -e features --target
-   wasm32-unknown-unknown -p wordcraft-web` and the native `-p wordcraft` tree must show the
+   wasm32-unknown-unknown -p letra-web` and the native `-p letra` tree must show the
    expected `egui/default_fonts`, `egui-winit/clipboard` (required on native, with arboard resolved),
    `accesskit`, `wgpu` and no `system_fonts` resolution for the app root. Record the exact
    feature sets in the lock/evidence manifest.
@@ -298,7 +298,7 @@ Proposed checks, to run through the managed `task.py` workflow after the plans l
 ## 4. Concrete 0.37 API and behavior refactors
 
 The historical compiler audit at
-`/home/codex/work/ssd2/task-evidence/egui037-audit-20261022/{fork,stock}/wordcraft.errors`
+`/home/codex/work/ssd2/task-evidence/egui037-audit-20261022/{fork,stock}/letra.errors`
 lists 42 diagnostics, identical for stock and fork. They are clues, not current acceptance and
 not an exhaustive list. The concrete fixes are:
 
@@ -432,7 +432,7 @@ by the Pliego/Celdas pilots. The callback contract is:
 - The suite has fourteen capture consumers. The eleven existing `craft-ui` consumers require
   CL-1 and CL-2F; only the Pliego/Celdas pilots use the reviewed CL-2 provisional
   revision, and their adapters are reviewed before CL-2F freezes the API. Lámina, FigCraft
-  and ArtCraft Native keep contract-compatible local adapters; `ai-egui` has no capture path.
+  and Nodalia Native keep contract-compatible local adapters; `ai-egui` has no capture path.
   Do not add `craft-ui` solely for capture; if Lámina/FigCraft later adopt it, Letra's
   adapter stays unchanged.
 
@@ -504,7 +504,7 @@ wrong and would force an unintended fallback reorder.
 Concrete fix:
 
 - Keep eframe's `default_fonts` feature in both app manifests.
-- Make `wordcraft-ui-egui` test features explicit with `egui` dev-dependency features
+- Make `letra-ui-egui` test features explicit with `egui` dev-dependency features
   `default_fonts` and `monochrome_emoji_fonts`; these are egui features, not kittest features.
   Do not rely on kittest's private dev-dependencies: without this explicit declaration the
   test root is font-empty apart from Letra's own assets. Do not enable
@@ -571,7 +571,7 @@ egui 0.36:
   text itself, then right-aligns RTL rows.
 - `crates/ui-egui/src/keys.rs:352-390` handles `ImeEvent::Preedit/Commit/DeleteSurrounding`
   (char counts) and `keys.rs:626-680` implements `delete_surrounding` and `type_text`.
-- `apps/wordcraft/src/clipboard.rs` and `crates/ui-egui/src/a11y.rs` use logical text at the
+- `apps/letra/src/clipboard.rs` and `crates/ui-egui/src/a11y.rs` use logical text at the
   OS/accessibility boundary; they must stay logical.
 
 With the fork's E5/E12/E16, egui shapes RTL runs and places rows in visual order. Keeping
@@ -672,7 +672,7 @@ Letra uses wgpu 30 on native and WebGPU/WebGL2 on web; `graphics.rs` configures 
 DX12/FXC and the Intel-Mac indirect-validation skip. wgpu and winit versions do not change, so
 those APIs should compile; revalidate anyway under the new eframe/egui-wgpu:
 
-- `apps/wordcraft/src/graphics.rs:26-120` still reaches `WgpuSetup::CreateNew` and
+- `apps/letra/src/graphics.rs:26-120` still reaches `WgpuSetup::CreateNew` and
   `InstanceDescriptor`; confirm with `cargo check` on Windows.
 - E2/E3 surface fit fixes should remove a class of large-window configure errors. Add a window
   size/DPI test near the surface limit if hardware permits; otherwise record the unresolved
@@ -686,7 +686,7 @@ those APIs should compile; revalidate anyway under the new eframe/egui-wgpu:
 
 ### 4.13 Clipboard and PRIMARY
 
-The app's clipboard is host-owned (`apps/wordcraft/src/clipboard.rs`, `system_clipboard.rs`) and
+The app's clipboard is host-owned (`apps/letra/src/clipboard.rs`, `system_clipboard.rs`) and
 supports text, HTML, RTF, MathML, pictures and format names. It uses `wl-clipboard-rs`
 `ClipboardType::Regular` only; there is no application PRIMARY read/write, and middle-click on
 the canvas is autoscroll, not paste. S1 enables native `eframe/clipboard` to preserve the
@@ -703,7 +703,7 @@ ownership. Do not route `Event::PasteImage` into a new app-level paste path. Ver
   then copy back to the other process; an in-process fallback must fail this regression;
 - no double clipboard owner or last-writer race on X11/Wayland when both egui and the app write;
 - macOS/Windows native pasteboard formats (HTML, MathML, RTF) unchanged;
-- browser paste picture path in `apps/wordcraft-web/src/web.rs:160-220` still receives events;
+- browser paste picture path in `apps/letra-web/src/web.rs:160-220` still receives events;
 - a regression that middle-click on the canvas starts autoscroll and never pastes PRIMARY.
 
 ## 5. Lifecycle, root `Ui`, hidden windows and repeated passes
@@ -734,7 +734,7 @@ because they `take`/`recv`. The audit must prove, not assume:
 - **Dropped files are stale in hidden/forced logic passes.** `lib.rs:2208-2230` reads
   `ctx.input(|i| i.raw.dropped_files.clone())` without taking. A hidden `run_logic` frame or a
   forced hidden full pass can see the last shown frame's drops and open/insert them again.
-  The browser shell already takes the vector in `apps/wordcraft-web/src/web.rs:119`; native
+  The browser shell already takes the vector in `apps/letra-web/src/web.rs:119`; native
   `WordApp::logic` still clones it. Change `WordApp::logic` to
   `ctx.input_mut(|i| std::mem::take(&mut i.raw.dropped_files))` and handle the drained vector.
   Apply the same rule to any future input-derived queue read in `logic`; never poll a
@@ -835,7 +835,7 @@ The engine and command registry are not migrated. Tests must still prove the UI 
 
 ### 6.2 UI geometry and screenshots
 
-Fixtures: `wordcraft_engine::sample::sample_document()`, a large synthetic table
+Fixtures: `letra_engine::sample::sample_document()`, a large synthetic table
 (`tests::perf::big_table_doc`), and a durable evidence `.docx` with Latin/Arabic/Hebrew/CJK/
 Vietnamese/emoji/comments/headers. Fixtures and fonts are licensed and pinned: use
 `CRAFT_FONTS_DIR` at `b076417b5880bd4154bd22f00695b1d28c6bea83` for the app's CI text faces,
@@ -955,28 +955,28 @@ Proposed `task.py run` command bodies (the parent supplies task/job/evidence):
 - `cargo check --workspace --all-targets --locked`
 - `cargo clippy --workspace --all-targets --locked -- -D warnings`
 - `cargo test --workspace --locked`
-- `cargo test -p wordcraft-ui-egui --locked`
-- `cargo test -p wordcraft-engine tests::typing --locked`
-- `cargo test -p wordcraft-ui-egui --release big_table_scroll_bench -- --ignored --nocapture`
-- `cargo run --release -p wordcraft-ui-egui --example perf_probe -- <fixture.docx>`
-- `cargo run --release -p wordcraft-ui-egui --example ui_shot -- <script.jsonl>`
-- `cargo check -p wordcraft-web --target wasm32-unknown-unknown --locked`
-- `cargo build --release -p wordcraft --locked`
+- `cargo test -p letra-ui-egui --locked`
+- `cargo test -p letra-engine tests::typing --locked`
+- `cargo test -p letra-ui-egui --release big_table_scroll_bench -- --ignored --nocapture`
+- `cargo run --release -p letra-ui-egui --example perf_probe -- <fixture.docx>`
+- `cargo run --release -p letra-ui-egui --example ui_shot -- <script.jsonl>`
+- `cargo check -p letra-web --target wasm32-unknown-unknown --locked`
+- `cargo build --release -p letra --locked`
 - `cargo xtask ci` (fmt, clippy, tests, assets, layers, wasm)
 - `cargo xtask parity`, `cargo xtask assets`, `cargo xtask layers`
 - `cargo xtask deps` (proposed new gate) and its negative tests
 
-`cargo xtask wasm` does not include `apps/wordcraft-web`; the separate
-`printing.yml` browser check (`cargo check -p wordcraft-web --target wasm32-unknown-unknown
+`cargo xtask wasm` does not include `apps/letra-web`; the separate
+`printing.yml` browser check (`cargo check -p letra-web --target wasm32-unknown-unknown
 --locked`) is mandatory. A real browser run uses `packaging/web/package.sh` (trunk) or a local
 `dist/web` server, with WebGPU and `?webgl` fallback, and the control/inbox workflows.
 
 ### 7.2 Native Linux
 
 Run the release app with `--sample --control 7981` and a temporary settings dir
-(`WORDCRAFT_NO_PREFS` for agent runs where appropriate). Use `ui.screenshot`, `ui.inspect`,
+(`LETRA_NO_PREFS` for agent runs where appropriate). Use `ui.screenshot`, `ui.inspect`,
 `ui.click`, `ui.key`, `ui.text`, `ui.wheel`, save/open. Observe X11 and a real Wayland
-compositor (record compositor identity); use `WORDCRAFT_WAYLAND=1` where needed. Check regular
+compositor (record compositor identity); use `LETRA_WAYLAND=1` where needed. Check regular
 clipboard, middle-click autoscroll (no PRIMARY paste), file drop, native IME and
 DeleteSurroundingBytes/outgoing surrounding text, real Russian/Arabic/Hebrew keyboard layouts,
 mixed DPI, window resize, a forced hidden screenshot pass, screenshot timeout/cancel and page
@@ -985,7 +985,7 @@ geometry. `ui.key`/kittest injection is not a substitute for OS layout or IME ev
 ### 7.3 Windows
 
 Use a uniquely named `craft-windows` clone, unused SSH/VNC ports, its own source checkout and
-target. Build with `cargo build --release -p wordcraft --locked` (or the repo's documented
+target. Build with `cargo build --release -p letra --locked` (or the repo's documented
 build/test commands), launch through `Launch-CraftDesktop.ps1`/`guest-exec.py`, and perform a
 visible typed/edited/saved/reopened workflow plus print settings. Observe DX12/FXC startup and
 the screenshot path. Do not claim macOS/Metal or physical audio from Windows software rendering.
@@ -1225,7 +1225,7 @@ Immutable or primary sources used for the API and behavior statements above:
   §6 (E4/P2b, E21b) and `winit/docs/egui-037-migration-plan.md` §5.2-5.3 in the planning
   workspace.
 - Pinned font fixtures (craft-fonts `2481a8a...`, Noto Color Emoji v2.047):
-  <https://github.com/storytold/craft-fonts/blob/2481a8a324b986a45954e90045ed1f8f2efaaf3c/fonts/manifest.txt>
+  <https://github.com/getnodalia/foundation/tree/vendor/craft-fonts/main/blob/2481a8a324b986a45954e90045ed1f8f2efaaf3c/fonts/manifest.txt>
   and <https://github.com/googlefonts/noto-emoji/blob/22e564626297b4df0a40570ad81d6c05cc7c38bd/fonts/NotoColorEmoji.ttf>.
 - Upstream reports used as risk hypotheses, not reproduced Letra results:
   <https://github.com/emilk/egui/issues/8731>,
@@ -1237,14 +1237,14 @@ Immutable or primary sources used for the API and behavior statements above:
   <https://github.com/emilk/egui/pull/8657>,
   <https://github.com/emilk/egui/pull/8577>.
 - Historical compiler diagnostics used only as clues:
-  `/home/codex/work/ssd2/task-evidence/egui037-audit-20261022/fork/wordcraft.errors`.
+  `/home/codex/work/ssd2/task-evidence/egui037-audit-20261022/fork/letra.errors`.
 
 ## 12. Revision history
 
 - 2026-10-23: initial plan. Inventory and source anchors from the assigned checkout; dependency
   target, API refactors, lifecycle/root-`Ui` audit, behavior/evidence matrix, performance
   protocol, staged PR DAG, rollback and blocking unknowns. No tests/builds run; no publication.
-- 2026-10-23: revision 2 after independent review `plan-reviews/wordcraft-v1.md`. Corrected the
+- 2026-10-23: revision 2 after independent review `plan-reviews/letra-v1.md`. Corrected the
   aiongg/reachability identity and PR 199 stale-tree rule; added E21b/P7b and W15P/E4/P2b as
   fork prerequisites; replaced the screenshot channel with request-owned weak slots, count/byte
   admission, in-flight budget, resize revalidation and post-unlock wakeup; documented the
@@ -1253,7 +1253,7 @@ Immutable or primary sources used for the API and behavior statements above:
   emoji source; added `scroll.rs:440`; added exact Id counts, feature checks, P0 instrumentation,
   native-vs-kittest boundaries, explicit role assertions, middle-click autoscroll preservation,
   #8763/#8764 selection fix and executable rollback rehearsal. No tests/builds run.
-- 2026-10-23: revision 3 after independent review `plan-reviews/wordcraft-v2.md`. Made S1 one
+- 2026-10-23: revision 3 after independent review `plan-reviews/letra-v2.md`. Made S1 one
   atomic dependency stage including craft-libs CL-1, replacing the S1/S2 cycle; made P8 and the
   completed winit the only production pins; corrected the E21b/P2b/W15P contracts to the full
   shared plans; adopted the 4/128 MiB/256 MiB capture limits and geometry-epoch rule; added
@@ -1271,7 +1271,7 @@ Immutable or primary sources used for the API and behavior statements above:
 
 The user clarified that reviewed plans remain local and implementation proceeds before publication. The earlier requirement to publish/land this plan first is superseded; pushes and PR publication still require explicit approval.
 
-Canonical `storytold/wordcraft` `main` now resolves to `00ccee52354d9dfc48cb21a943b55f258fc76df0`. The owned checkout was fast-forwarded to this revision. Earlier baseline SHAs and line anchors above are retained as historical review evidence; use this new revision and its exact lockfile for current-main integration and paired measurements. The original refs remain reachable.
+Canonical `getnodalia/letra` `main` now resolves to `00ccee52354d9dfc48cb21a943b55f258fc76df0`. The owned checkout was fast-forwarded to this revision. Earlier baseline SHAs and line anchors above are retained as historical review evidence; use this new revision and its exact lockfile for current-main integration and paired measurements. The original refs remain reachable.
 
 Preserve the separate 64-entry engine UI-intent queue, newest Paste Special deduplication, save/export/print view preservation, linear-time unknown settings, finite font preview sizes and Format Painter cursor. Screenshot admission budgets are a separate queue.
 
@@ -1397,7 +1397,7 @@ two ignored and one filtered. The separate i18n-report stage runs that filtered 
 one passed, 4,110 filtered. Those filtered counts are selections over the same test binaries,
 not additional unique tests. The doctest stage selected zero doctests. Earlier narrower runs
 are not added to these totals. Full logs, source hashes and review bindings are retained in the
-local task evidence under `final-landing/wordcraft-local-commit`.
+local task evidence under `final-landing/letra-local-commit`.
 
 A separate normal-dependency production font probe passed for the visible table-style `⊞`
 marker without external/system fonts or dev-dependency font unification. That probe preceded

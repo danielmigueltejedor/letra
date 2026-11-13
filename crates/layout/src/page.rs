@@ -10,7 +10,7 @@ pub(crate) struct PageBuilder<'a> {
     pub(crate) pages: Vec<Page>,
     pub(crate) sect: &'a SectionProps,
     /// The current document section's numbering format, even when reflow uses first-section page geometry.
-    pub(crate) page_format: wordcraft_doc::section::NumFormat,
+    pub(crate) page_format: letra_doc::section::NumFormat,
     pub(crate) sect_idx: usize,
     pub(crate) col: usize,
     pub(crate) cols: Vec<(f32, f32)>,
@@ -55,7 +55,7 @@ pub(crate) struct PageBuilder<'a> {
     pub(crate) block_marks: Vec<usize>,
     /// The vertical alignment of the section the current page started in: a page finished when
     /// the next section starts is aligned as its own section asks, not the next one.
-    pub(crate) page_valign: wordcraft_doc::section::PageVAlign,
+    pub(crate) page_valign: letra_doc::section::PageVAlign,
     /// The document's own footnote separators, laid out for the section's text width.
     pub(crate) seps: NoteSeps,
     /// Where the last paragraph's lines ended: page count, column and y.
@@ -262,10 +262,10 @@ impl PageBuilder<'_> {
     /// blocks out (justified).
     pub(crate) fn apply_valign(&mut self) {
         let k = match self.page_valign {
-            wordcraft_doc::section::PageVAlign::Top => return,
-            wordcraft_doc::section::PageVAlign::Justify => return self.justify_page(),
-            wordcraft_doc::section::PageVAlign::Center => 0.5,
-            wordcraft_doc::section::PageVAlign::Bottom => 1.0,
+            letra_doc::section::PageVAlign::Top => return,
+            letra_doc::section::PageVAlign::Justify => return self.justify_page(),
+            letra_doc::section::PageVAlign::Center => 0.5,
+            letra_doc::section::PageVAlign::Bottom => 1.0,
         };
         if self.web {
             return;
@@ -305,7 +305,7 @@ impl PageBuilder<'_> {
         self.close_column_lines();
         self.apply_valign();
         // The page is aligned once: finishing it again before it is left moves nothing twice.
-        self.page_valign = wordcraft_doc::section::PageVAlign::Top;
+        self.page_valign = letra_doc::section::PageVAlign::Top;
         self.flush_notes();
     }
     pub(crate) fn new_page(&mut self, first_block: usize, body_top: f32) {
@@ -317,7 +317,7 @@ impl PageBuilder<'_> {
         self.excl.extend(early.get(&self.pages.len()).into_iter().flatten().map(|(_, _, a)| a.clone()));
         self.seeded = self.excl.len();
         self.float_tables.clear();
-        if self.sect.line_numbers.as_ref().is_some_and(|l| l.restart == wordcraft_doc::section::LineNumberRestart::Page) {
+        if self.sect.line_numbers.as_ref().is_some_and(|l| l.restart == letra_doc::section::LineNumberRestart::Page) {
             self.line_no = 0;
         }
         let s = self.sect;
@@ -465,7 +465,7 @@ impl PageBuilder<'_> {
 /// order (objects behind the text go first) or place (a floating table of an earlier section can
 /// sit lower).
 fn text_extent(items: &[Placed], first_block: usize) -> Option<(f32, f32)> {
-    let ours = |path: &wordcraft_doc::Path| path.0.first().is_some_and(|b| *b as usize >= first_block);
+    let ours = |path: &letra_doc::Path| path.0.first().is_some_and(|b| *b as usize >= first_block);
     items
         .iter()
         .filter_map(|it| match it {

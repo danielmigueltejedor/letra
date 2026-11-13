@@ -99,7 +99,7 @@ fn finish_alt_code(app: &mut WordApp) {
     let mut params = json!({"code": code});
     if system_composes {
         // Windows: the code pages of the system locale (Polish 1250/852, Russian 1251/866…).
-        let (ansi, oem) = wordcraft_engine::cmd::text::system_code_pages();
+        let (ansi, oem) = letra_engine::cmd::text::system_code_pages();
         params = json!({"code": code, "ansi": ansi, "oem": oem});
         // The system's composed character comes as text after the digits' swallowed text.
         app.canvas.swallow_text = false;
@@ -129,7 +129,7 @@ pub(super) fn alt_code_echoed(app: &mut WordApp, echo: &AltCodeEcho, text: &str)
         let ours =
             start.filter(|_| s.sel.is_collapsed()).filter(|st| s.doc.para_at(&f).and_then(|p| p.text.get(*st..f.off)) == Some(echo.typed.as_str()));
         if let Some(start) = ours {
-            app.session.sel = wordcraft_engine::Selection { anchor: wordcraft_doc::Pos { off: start, ..f.clone() }, focus: f };
+            app.session.sel = letra_engine::Selection { anchor: letra_doc::Pos { off: start, ..f.clone() }, focus: f };
             let _ = app.run("text.insert", json!({"text": text}));
         }
     }
@@ -151,7 +151,7 @@ pub(crate) struct FieldAltCode {
 /// The character an Alt code names in the code pages the page uses for it: the system locale's
 /// on Windows, else `text.typeCode`'s defaults (Windows-1252 and the locale's OEM page).
 fn field_code_char(code: &str) -> Option<char> {
-    use wordcraft_engine::cmd::text::{alt_code_char, system_code_pages, system_oem_code_page};
+    use letra_engine::cmd::text::{alt_code_char, system_code_pages, system_oem_code_page};
     let (ansi, oem) = if cfg!(target_os = "windows") { system_code_pages() } else { (1252, system_oem_code_page()) };
     alt_code_char(code, ansi, oem)
 }

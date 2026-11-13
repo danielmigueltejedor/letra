@@ -14,10 +14,10 @@
 
 use std::collections::HashMap;
 
-use wordcraft_doc::numbering::Counters;
-use wordcraft_doc::para::InlineObject;
-use wordcraft_doc::section::NumFormat;
-use wordcraft_doc::{Document, Path, StoryRef, StyleKind};
+use letra_doc::numbering::Counters;
+use letra_doc::para::InlineObject;
+use letra_doc::section::NumFormat;
+use letra_doc::{Document, Path, StoryRef, StyleKind};
 
 /// The result when no paragraph has the style (or the style doesn't exist).
 pub const NO_TEXT: &str = "Error: no paragraph in this style.";
@@ -207,7 +207,7 @@ impl StyleIndex {
                 if let Some(cs) = &r.props.style
                     && let Some(t) = p.text.get(off..end)
                 {
-                    let t: String = t.chars().filter(|c| *c != wordcraft_doc::para::OBJ).collect();
+                    let t: String = t.chars().filter(|c| *c != letra_doc::para::OBJ).collect();
                     match runs.last_mut() {
                         Some((s, prev)) if s == cs => prev.push_str(&t),
                         _ => runs.push((cs.clone(), t)),
@@ -414,7 +414,7 @@ fn number_span<'w>(word: &'w str, levels: &[(u8, String, bool)]) -> Option<&'w s
 }
 
 /// Does `p` hold a STYLEREF field?
-pub fn has_styleref(p: &wordcraft_doc::Paragraph) -> bool {
+pub fn has_styleref(p: &letra_doc::Paragraph) -> bool {
     p.objects.iter().any(is_styleref)
 }
 

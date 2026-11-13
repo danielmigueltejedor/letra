@@ -48,9 +48,9 @@ const DOCUMENTS: &[&str] =
 pub fn open_filters(purpose: &str) -> &'static [(&'static str, &'static [&'static str])] {
     match purpose {
         "picture" => &[("Pictures", PICTURES)],
-        "font" => &[("Fonts", wordcraft_fonts::FONT_FILE_EXTS)],
+        "font" => &[("Fonts", letra_fonts::FONT_FILE_EXTS)],
         "sources" => &[("Word sources", &["xml"]), ("All files", &["*"])],
-        "recipients" => &[("Recipient lists", wordcraft_engine::cmd::mailings::RECIPIENT_EXTENSIONS), ("All files", &["*"])],
+        "recipients" => &[("Recipient lists", letra_engine::cmd::mailings::RECIPIENT_EXTENSIONS), ("All files", &["*"])],
         _ => &[("Documents", DOCUMENTS), ("Word document", &["docx"]), ("All files", &["*"])],
     }
 }
@@ -401,7 +401,7 @@ impl WordApp {
         // app's own.
         let saved = self.session.prefs.user_templates_folder.as_deref().map(str::trim).filter(|f| !f.is_empty());
         match saved {
-            Some(f) if wordcraft_engine::cmd::user_templates::check_dir(f).is_ok() && std::path::Path::new(f).is_dir() => {
+            Some(f) if letra_engine::cmd::user_templates::check_dir(f).is_ok() && std::path::Path::new(f).is_dir() => {
                 Some(std::path::PathBuf::from(f))
             }
             Some(f) => {

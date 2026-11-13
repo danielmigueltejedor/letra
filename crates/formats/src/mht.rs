@@ -8,7 +8,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use wordcraft_doc::Document;
+use letra_doc::Document;
 
 /// Most parts read from one message (nested multiparts included).
 const MAX_PARTS: usize = 10_000;
@@ -45,11 +45,11 @@ pub fn is_mht(bytes: &[u8]) -> bool {
 /// Import an MHT file. A message without an HTML part reads as its text (an empty document
 /// when there's none).
 pub fn import(bytes: &[u8]) -> Document {
-    import_on(bytes, &wordcraft_doc::SectionProps::default())
+    import_on(bytes, &letra_doc::SectionProps::default())
 }
 
 /// [`import`] onto `page`: like HTML, an MHT file gives no page size (#1381).
-pub fn import_on(bytes: &[u8], page: &wordcraft_doc::SectionProps) -> Document {
+pub fn import_on(bytes: &[u8], page: &letra_doc::SectionProps) -> Document {
     let mut parts = Vec::new();
     let (headers, body) = split_headers(bytes);
     let start = param(header(&headers, "content-type").unwrap_or(""), "start").map(|s| s.trim_matches(['<', '>']).to_string());
@@ -353,7 +353,7 @@ fn quoted_printable(b: &[u8]) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wordcraft_doc::{Block, InlineObject};
+    use letra_doc::{Block, InlineObject};
 
     const PNG_1X1: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
@@ -371,7 +371,7 @@ mod tests {
         let page = "Content-Location: file:///C:/page.htm\r\nContent-Transfer-Encoding: quoted-printable\r\nContent-Type: text/html; charset=\"utf-8\"\r\n\r\n\
                     <html><body><p class=3D\"x\">Dobar dan, gospo=C4=91o, ovo je =\r\njedan red.</p><p><img src=3D\"page_files/dot.png\" width=3D\"10\" height=3D\"10\"></p></body></html>";
         let d = import(message(page).as_bytes());
-        let text = d.plain_text(wordcraft_doc::StoryRef::Body);
+        let text = d.plain_text(letra_doc::StoryRef::Body);
         assert!(text.contains("Dobar dan, gospođo, ovo je jedan red."), "{text:?}");
         let pictures =
             d.body.iter().filter(|b| matches!(&***b, Block::Para(p) if p.objects.iter().any(|o| matches!(o, InlineObject::Image { .. })))).count();
@@ -428,7 +428,7 @@ mod tests {
             let page = "Content-Type: text/html\r\n\r\n<p>Kept content</p>";
             let message = message(page).replace("multipart/related; boundary=", &format!("multipart/related; {name}; boundary="));
             let doc = import(message.as_bytes());
-            assert_eq!(doc.plain_text(wordcraft_doc::StoryRef::Body).trim(), "Kept content", "{name}");
+            assert_eq!(doc.plain_text(letra_doc::StoryRef::Body).trim(), "Kept content", "{name}");
         }
     }
 
@@ -438,7 +438,7 @@ mod tests {
             let page = "Content-Type: text/html\r\n\r\n<p>Kept content</p>";
             let message = message(page).replace("multipart/related; boundary=", &format!("multipart/related {comment}; boundary="));
             let doc = import(message.as_bytes());
-            assert_eq!(doc.plain_text(wordcraft_doc::StoryRef::Body).trim(), "Kept content", "{comment}");
+            assert_eq!(doc.plain_text(letra_doc::StoryRef::Body).trim(), "Kept content", "{comment}");
         }
     }
 
@@ -446,7 +446,7 @@ mod tests {
     fn the_part_charset_decides_the_text() {
         let page = "Content-Type: text/html; charset=windows-1250\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n<p>=E8lanak</p>";
         let d = import(message(page).as_bytes());
-        assert_eq!(d.plain_text(wordcraft_doc::StoryRef::Body).trim(), "članak");
+        assert_eq!(d.plain_text(letra_doc::StoryRef::Body).trim(), "članak");
     }
 
     #[test]
@@ -458,11 +458,11 @@ mod tests {
              --b\nContent-ID: <dot>\nContent-Transfer-Encoding: base64\nContent-Type: image/png\n\n{PNG_1X1}\n--b--\n"
         );
         let d = import(m.as_bytes());
-        assert_eq!(d.plain_text(wordcraft_doc::StoryRef::Body).trim(), "This one");
+        assert_eq!(d.plain_text(letra_doc::StoryRef::Body).trim(), "This one");
         assert_eq!(d.media.len(), 1);
         // Without a page, a message reads as its text.
         let d = import(b"MIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=b\n\n--b\nContent-Type: text/plain\n\nJust text\n--b--\n");
-        assert_eq!(d.plain_text(wordcraft_doc::StoryRef::Body).trim(), "Just text");
+        assert_eq!(d.plain_text(letra_doc::StoryRef::Body).trim(), "Just text");
         assert!(is_mht(m.as_bytes()) && !is_mht(b"<html><p>x</p>"));
     }
 

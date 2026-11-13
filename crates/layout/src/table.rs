@@ -2,11 +2,11 @@
 //! table-style conditional formatting. Rows are laid out as free-standing boxes; pagination
 //! moves whole rows or splits them between lines (`split_row`).
 
-use wordcraft_doc::numbering::Counters;
-use wordcraft_doc::props::{Align, Border, Borders, HeightRule, Rgb, TextDirection, VAlign, VMerge};
-use wordcraft_doc::styles::{PartSet, TablePart, TableStyleProps};
-use wordcraft_doc::{Block, Blocks, Paragraph, Row, StoryRef, Table};
-use wordcraft_geom::Rect;
+use letra_doc::numbering::Counters;
+use letra_doc::props::{Align, Border, Borders, HeightRule, Rgb, TextDirection, VAlign, VMerge};
+use letra_doc::styles::{PartSet, TablePart, TableStyleProps};
+use letra_doc::{Block, Blocks, Paragraph, Row, StoryRef, Table};
+use letra_geom::Rect;
 
 use crate::boxes::BoxContext;
 use crate::para::{CellText, ClKind, ParaLayout};
@@ -136,7 +136,7 @@ fn default_margins(t: &Table, style: Option<&TableStyleProps>) -> [f32; 4] {
 /// table's defaults. The layout uses the left and right ones as they are (the app's ruler
 /// measures a cell's indents from them) but gives every cell in a row the row's largest top and
 /// bottom margins.
-pub fn cell_margins(doc: &wordcraft_doc::Document, t: &Table, row: usize, cell: usize) -> [f32; 4] {
+pub fn cell_margins(doc: &letra_doc::Document, t: &Table, row: usize, cell: usize) -> [f32; 4] {
     let style = t.props.style.as_deref().and_then(|id| doc.styles.table_style(id));
     let defaults = default_margins(t, style.as_ref());
     t.rows.get(row).and_then(|r| r.cells.get(cell)).map_or(defaults, |cell| cell.props.resolved_margins(defaults))
@@ -152,7 +152,7 @@ const EMPTY_TEXT: f32 = 12.0;
 
 /// What one paragraph needs: the longest run of text without a break opportunity (`min`) and
 /// its longest line when nothing wraps (`max`), indents included.
-fn measure_para(p: &wordcraft_doc::Paragraph, env: &crate::para::ParaEnv) -> (f32, f32) {
+fn measure_para(p: &letra_doc::Paragraph, env: &crate::para::ParaEnv) -> (f32, f32) {
     use crate::para::ClKind;
     let pl = crate::para::layout_para(p, env);
     let rp = &pl.rp;
@@ -197,11 +197,11 @@ fn measure_para(p: &wordcraft_doc::Paragraph, env: &crate::para::ParaEnv) -> (f3
 /// wrap), the widest fits every paragraph on one line. A cell spanning several columns spreads
 /// what its columns lack over them. Paragraphs are laid out with the table style's formatting;
 /// after [`MEASURE_BUDGET`] paragraphs the remaining rows are skipped.
-pub fn measure_table_columns(doc: &wordcraft_doc::Document, t: &Table) -> Vec<(f32, f32)> {
-    use wordcraft_doc::Block;
+pub fn measure_table_columns(doc: &letra_doc::Document, t: &Table) -> Vec<(f32, f32)> {
+    use letra_doc::Block;
     let style = t.props.style.as_deref().and_then(|id| doc.styles.table_style(id));
     let margins_def = default_margins(t, style.as_ref());
-    let ncols = grid_cols(t).clamp(1, wordcraft_doc::table::MAX_COLS);
+    let ncols = grid_cols(t).clamp(1, letra_doc::table::MAX_COLS);
     let fields = crate::FieldCtx::default();
     let mut cols = vec![(0.0f32, 0.0f32); ncols];
     // Cells spanning several columns: (first column, span, min, max), applied after the others.
@@ -344,9 +344,9 @@ fn region_look(st: &TableStyleProps, region: Region) -> RegionLook {
     out
 }
 
-/// A cell's borders from the table style's parts it is in ([`wordcraft_doc::styles::part_borders`]).
+/// A cell's borders from the table style's parts it is in ([`letra_doc::styles::part_borders`]).
 fn region_borders(parts: &[(TablePart, Borders)], rows: (usize, usize), edges: (bool, bool)) -> Borders {
-    wordcraft_doc::styles::part_borders(parts, rows, edges)
+    letra_doc::styles::part_borders(parts, rows, edges)
 }
 
 struct CellBox {
@@ -771,7 +771,7 @@ fn finish_table_rows(ctx: &mut Ctx, input: TableRows<'_>) -> TableLayout {
             {
                 let images = cell_picture(pic, rect, story, path);
                 if !images.is_empty() {
-                    items.push(Placed::Clip { rect, spin: wordcraft_geom::Spin::default(), items: images });
+                    items.push(Placed::Clip { rect, spin: letra_geom::Spin::default(), items: images });
                 }
             }
             // Behind-text frames count towards vertical alignment even without inline content.
@@ -780,7 +780,7 @@ fn finish_table_rows(ctx: &mut Ctx, input: TableRows<'_>) -> TableLayout {
                 .items
                 .iter()
                 .filter_map(|item| match item {
-                    Placed::Object { rect, wrap: wordcraft_doc::para::Wrap::BehindText, .. } => Some(rect.bottom()),
+                    Placed::Object { rect, wrap: letra_doc::para::Wrap::BehindText, .. } => Some(rect.bottom()),
                     _ => None,
                 })
                 .fold(c.h, f32::max);
@@ -854,7 +854,7 @@ fn finish_table_rows(ctx: &mut Ctx, input: TableRows<'_>) -> TableLayout {
             items.push(Placed::Cell {
                 rect: Rect::new(c.x, 0.0, c.w, if c.vmerge == VMerge::Continue { rh } else { span_h }),
                 covered: c.vmerge == VMerge::Continue,
-                table: wordcraft_doc::Path(path.to_vec()),
+                table: letra_doc::Path(path.to_vec()),
                 row: ri,
                 cell: ci,
                 story,
@@ -1285,17 +1285,17 @@ const MAX_TILES: usize = 400;
 
 /// A cell's background picture in `rect` (the cell's area): once at its own size where its
 /// alignment puts it, tiled from the cell's top left, or stretched over the cell.
-fn cell_picture(pic: &wordcraft_doc::props::CellPicture, rect: Rect, story: StoryRef, path: &[u32]) -> Vec<Placed> {
-    use wordcraft_doc::props::PictureRepeat;
+fn cell_picture(pic: &letra_doc::props::CellPicture, rect: Rect, story: StoryRef, path: &[u32]) -> Vec<Placed> {
+    use letra_doc::props::PictureRepeat;
     let [w, h] = pic.size;
     let image = |r: Rect| Placed::Image {
         rect: r,
         media: pic.media.clone(),
         crop: [0.0; 4],
         story,
-        path: wordcraft_doc::Path(path.to_vec()),
+        path: letra_doc::Path(path.to_vec()),
         off: usize::MAX,
-        spin: wordcraft_geom::Spin::default(),
+        spin: letra_geom::Spin::default(),
         fx: Default::default(),
     };
     let sized = w.is_finite() && h.is_finite() && w > 0.1 && h > 0.1;
@@ -1347,7 +1347,7 @@ fn region_of(t: &Table, style: Option<&TableStyleProps>, ri: usize, g: usize, sp
 /// The table style's text formatting in `region`: each part's character formatting and paragraph
 /// alignment over the last, lowest precedence first (ECMA-376 §17.7.6).
 fn region_text(st: &TableStyleProps, region: Region) -> CellText {
-    let mut chr = wordcraft_doc::CharProps::default();
+    let mut chr = letra_doc::CharProps::default();
     let mut para = st.para.clone();
     for part in region.iter() {
         let f = st.part(part);
@@ -1465,7 +1465,7 @@ fn blocks_content(ctx: &mut Ctx, blocks: &Blocks, text: Option<&CellText>, depth
 }
 
 /// The list level `p` is in, for its indents (without counting it: measuring isn't laying out).
-fn list_level(ctx: &Ctx, p: &Paragraph) -> Option<wordcraft_doc::numbering::Level> {
+fn list_level(ctx: &Ctx, p: &Paragraph) -> Option<letra_doc::numbering::Level> {
     let n = p.props.numbering.or_else(|| ctx.doc.styles.resolve_para(&p.props).numbering).filter(|n| n.num != 0)?;
     ctx.doc.numbering.level(n.num, n.level).cloned()
 }

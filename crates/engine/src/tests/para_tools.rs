@@ -1,13 +1,13 @@
 //! Advanced paragraph tools (#5043): conversion and cleanup over the selection or the whole
 //! document, one undo step, Track Changes respected.
 
+use letra_doc::{InlineObject, Path, Pos, RevisionKind, SectionProps, StoryRef};
 use serde_json::json;
-use wordcraft_doc::{InlineObject, Path, Pos, RevisionKind, SectionProps, StoryRef};
 
 use crate::Session;
 
 fn s() -> Session {
-    Session::new(wordcraft_doc::Document::new())
+    Session::new(letra_doc::Document::new())
 }
 
 fn run(s: &mut Session, id: &str, v: serde_json::Value) {
@@ -125,7 +125,7 @@ fn a_space_run_at_the_end_collapses() {
 
 #[test]
 fn extra_spaces_collapse_without_removing_tabs_or_page_breaks() {
-    use wordcraft_doc::para::PAGE_BREAK;
+    use letra_doc::para::PAGE_BREAK;
 
     let mut s = s();
     run(&mut s, "document.setText", json!({"text": format!("a  \t  b  {PAGE_BREAK}  c\t  ")}));
@@ -187,7 +187,7 @@ fn a_hanging_indent_that_sums_to_zero_is_still_removed() {
     let p = s.doc.para(StoryRef::Body, &Path::top(0)).unwrap();
     assert_eq!((p.props.indent_left, p.props.indent_first), (Some(0.0), Some(0.0)));
 
-    let mut tracked = Session::new(wordcraft_doc::Document::new());
+    let mut tracked = Session::new(letra_doc::Document::new());
     run(&mut tracked, "document.setText", json!({"text": "a"}));
     run(&mut tracked, "para.indents", json!({"left": 72.0, "firstLine": -72.0}));
     run(&mut tracked, "review.trackChanges", json!({"value": true}));
@@ -475,7 +475,7 @@ fn junk_scope_is_refused() {
 #[test]
 fn too_many_paragraphs_are_refused_before_any_change() {
     let text = "x\n".repeat(15_000);
-    let mut s = Session::new(wordcraft_doc::Document::from_text(&text));
+    let mut s = Session::new(letra_doc::Document::from_text(&text));
     select_all(&mut s);
     let e = s.run("para.blankBetween", &json!({"scope": "all"})).unwrap_err();
     assert!(format!("{e}").contains("at most"), "{e}");

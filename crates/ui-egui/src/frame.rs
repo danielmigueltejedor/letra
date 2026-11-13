@@ -5,7 +5,7 @@
 //! rect share it. A turned frame is the rect turned about its centre.
 
 use egui::{CursorIcon, Painter, Pos2, Stroke, pos2, vec2};
-use wordcraft_geom::Rect;
+use letra_geom::Rect;
 
 use crate::theme::Tokens;
 
@@ -23,7 +23,7 @@ const SNAP_DEG: f32 = 15.0;
 
 /// Screen point `p` turned `deg` degrees clockwise about `c`.
 fn turn(p: Pos2, c: Pos2, deg: f32) -> Pos2 {
-    let (s, k) = wordcraft_geom::normalize_degrees(deg).to_radians().sin_cos();
+    let (s, k) = letra_geom::normalize_degrees(deg).to_radians().sin_cos();
     let (u, v) = (p.x - c.x, p.y - c.y);
     pos2(c.x + u * k - v * s, c.y + u * s + v * k)
 }
@@ -55,7 +55,7 @@ impl Handle {
         // Screen y points down, so the angle counts clockwise like `deg`; an arrow points both
         // ways, so only the angle modulo 180° matters (opposite handles get the same arrow). The
         // handle's own angle is a whole multiple of 45°: rounding it drops atan2's float error.
-        let a = f32::from(self.y).atan2(f32::from(self.x)).to_degrees().round() + wordcraft_geom::normalize_degrees(deg);
+        let a = f32::from(self.y).atan2(f32::from(self.x)).to_degrees().round() + letra_geom::normalize_degrees(deg);
         match (a.rem_euclid(180.0) / 45.0).round() as u8 % 4 {
             0 => CursorIcon::ResizeHorizontal,
             1 => CursorIcon::ResizeNwSe,
@@ -133,7 +133,7 @@ pub fn paint(painter: &Painter, t: &Tokens, f: egui::Rect, deg: f32, dashed: boo
     let c = outline(f, deg);
     if dashed {
         painter.extend(egui::Shape::dashed_line(&c, stroke, 4.0, 3.0));
-    } else if wordcraft_geom::normalize_degrees(deg) == 0.0 {
+    } else if letra_geom::normalize_degrees(deg) == 0.0 {
         painter.rect_stroke(f, 0.0, stroke, egui::StrokeKind::Outside);
     } else {
         painter.add(egui::Shape::line(c.to_vec(), stroke));
@@ -169,7 +169,7 @@ pub fn paint_outline(painter: &Painter, t: &Tokens, f: egui::Rect, deg: f32) {
 /// A frame being turned to `deg`: its outline and the angle beside the rotation handle.
 pub fn paint_turning(painter: &Painter, t: &Tokens, f: egui::Rect, deg: f32) {
     paint_outline(painter, t, f, deg);
-    let label = format!("{:.0}°", wordcraft_geom::normalize_degrees(deg.round()));
+    let label = format!("{:.0}°", letra_geom::normalize_degrees(deg.round()));
     painter.text(rotate_handle(f, deg) + vec2(HANDLE_R + 6.0, 0.0), egui::Align2::LEFT_CENTER, label, egui::FontId::proportional(11.0), t.accent);
 }
 
@@ -194,7 +194,7 @@ pub struct Drag {
 impl Drag {
     /// A drag of the frame at `start` on `page`, turned `deg`, grabbed at screen point `press`.
     pub fn new(grab: Grab, page: usize, start: Rect, deg: f32, press: Pos2) -> Drag {
-        Drag { grab, page, start, press, to_page: page, rect: start, moved: false, deg: wordcraft_geom::normalize_degrees(deg) }
+        Drag { grab, page, start, press, to_page: page, rect: start, moved: false, deg: letra_geom::normalize_degrees(deg) }
     }
 
     /// Move along the dominant pointer axis, keeping the grab point fixed in the document
@@ -226,7 +226,7 @@ impl Drag {
         // The handle is straight up (-90°) when unturned.
         let deg = dy.atan2(dx).to_degrees() + 90.0;
         let step = if snap { SNAP_DEG } else { 1.0 };
-        self.deg = wordcraft_geom::normalize_degrees((deg / step).round() * step);
+        self.deg = letra_geom::normalize_degrees((deg / step).round() * step);
     }
 
     /// Follow the pointer. A move keeps the grabbed point under it, across pages too; a resize
@@ -261,7 +261,7 @@ impl Drag {
 /// [`resized`] for a frame turned `deg`: the drag is taken along the frame's own axes, and the
 /// handle opposite the grabbed one stays where it is on the page.
 pub fn resized_turned(r: Rect, deg: f32, h: Handle, dx: f32, dy: f32, min: f32, keep_aspect: bool) -> Rect {
-    if wordcraft_geom::normalize_degrees(deg) == 0.0 {
+    if letra_geom::normalize_degrees(deg) == 0.0 {
         return resized(r, h, dx, dy, min, keep_aspect);
     }
     let o = pos2(0.0, 0.0);

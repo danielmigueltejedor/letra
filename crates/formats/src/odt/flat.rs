@@ -6,8 +6,8 @@
 use super::limits::MAX_ENTRY;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
+use letra_doc::Document;
 use std::io::{Cursor, Read, Write};
-use wordcraft_doc::Document;
 
 /// The top-level parts of a flat document, in the order a package's files take them.
 const META: &str = "office:meta";
@@ -188,11 +188,11 @@ fn take_out(xml: &str, files: &mut Vec<(String, Vec<u8>)>) -> String {
 
 /// Open a flat OpenDocument text document.
 pub fn import_flat(bytes: &[u8]) -> Result<Document, String> {
-    import_flat_on(bytes, &wordcraft_doc::SectionProps::default())
+    import_flat_on(bytes, &letra_doc::SectionProps::default())
 }
 
 /// [`import_flat`] onto `page` (see [`super::import_on`]).
-pub fn import_flat_on(bytes: &[u8], page: &wordcraft_doc::SectionProps) -> Result<Document, String> {
+pub fn import_flat_on(bytes: &[u8], page: &letra_doc::SectionProps) -> Result<Document, String> {
     let xml = std::str::from_utf8(bytes).map_err(|_| "FODT: not UTF-8 text".to_string())?;
     let root = element(xml, "office:document");
     let [content, styles, meta, settings] = package_parts(root).ok_or("FODT: no office:document")?;

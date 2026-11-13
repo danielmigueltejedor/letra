@@ -4,7 +4,7 @@
 
 use crate::odt::tests::{NS_T, package, zip_of};
 use crate::odt::{CryptError, decrypt, encrypt, export, import, is_encrypted};
-use wordcraft_doc::Document;
+use letra_doc::Document;
 
 fn secret_doc() -> Vec<u8> {
     let content = format!(
@@ -72,7 +72,7 @@ fn unsupported_and_hostile_encryption_is_refused() {
 #[test]
 fn a_package_declaring_too_many_entries_is_refused_before_it_is_decrypted() {
     // #3660: refused before `zip` reserves and parses them, on the password path too.
-    let bomb = wordcraft_doc::zip_guard::zip64_entry_count_sample(crate::MAX_ZIP_ENTRIES + 1);
+    let bomb = letra_doc::zip_guard::zip64_entry_count_sample(crate::MAX_ZIP_ENTRIES + 1);
     assert!(!is_encrypted(&bomb));
     assert!(matches!(decrypt(&bomb, "x"), Err(CryptError::Unsupported(e)) if e.contains("declares")));
 }

@@ -1,6 +1,6 @@
-//! Embedded objects WordCraft doesn't edit (ODF 1.3 §10.4.6 `draw:object`: a spreadsheet,
+//! Embedded objects Letra doesn't edit (ODF 1.3 §10.4.6 `draw:object`: a spreadsheet,
 //! drawing or presentation sub-document; §10.4.7 `draw:object-ole`: an OLE object's binary file)
-//! are kept whole: shown by their replacement picture (or a placeholder WordCraft draws when it
+//! are kept whole: shown by their replacement picture (or a placeholder Letra draws when it
 //! can't show that picture, LibreOffice's own metafile format), and saved back as the same object
 //! with its files, so LibreOffice opens them as before.
 
@@ -10,7 +10,7 @@ use crate::odt::{export, import, parse};
 
 const NS_D: &str = r#"xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink""#;
 
-/// LibreOffice's own metafile format, which WordCraft can't decode: the replacement picture
+/// LibreOffice's own metafile format, which Letra can't decode: the replacement picture
 /// LibreOffice writes for an embedded spreadsheet.
 const METAFILE: &[u8] = b"VCLMTF\x01\x00\x31\x00\x00\x00some drawing records";
 const SHEET: &str = r#"<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"><office:body><office:spreadsheet/></office:body></office:document-content>"#;
@@ -39,7 +39,7 @@ fn an_embedded_spreadsheet_is_kept_with_a_placeholder_picture() {
     let inlines: Vec<&Inline> = paras(&flow).into_iter().flat_map(|p| &p.inlines).collect();
     let imgs: Vec<&crate::model::Img> = inlines.iter().filter_map(|i| if let Inline::Image(img) = i { Some(img) } else { None }).collect();
     assert_eq!(imgs.len(), 2, "both objects are shown");
-    // A placeholder WordCraft can draw, at the frame's size.
+    // A placeholder Letra can draw, at the frame's size.
     assert!(imgs.iter().all(|i| crate::model::sniff_image(&i.data).is_some()));
     assert_eq!((imgs[0].w, imgs[0].h), (216.0, 72.0));
     let sheet = imgs[0].object.as_deref().expect("the spreadsheet is kept");
@@ -161,7 +161,7 @@ fn an_object_in_a_header_is_kept_too() {
     assert!(names.contains(&"Object 1/content.xml") && names.contains(&"ObjectReplacements/Object 1"), "{names:?}");
     assert!(entry(&saved, "styles.xml").contains("<draw:object xlink:href=\"./Object 1\""));
     assert!(entry(&saved, "META-INF/manifest.xml").contains(r#"manifest:full-path="Object 1/""#));
-    // Written from the model: WordCraft's own object, named its way.
+    // Written from the model: Letra's own object, named its way.
     let saved = crate::odt::tests::export_model(&d).unwrap();
     let z = zip::ZipArchive::new(std::io::Cursor::new(&saved)).unwrap();
     assert!(z.file_names().any(|n| n.ends_with("/content.xml") && n.starts_with("Object M")), "{:?}", z.file_names().collect::<Vec<_>>());
@@ -200,7 +200,7 @@ fn a_picture_keeps_the_size_its_frame_states_on_either_side() {
     near((wide.w, wide.h), (468.0, 234.0));
 }
 
-/// A replacement picture may come before its object. It is kept whatever it is, though WordCraft
+/// A replacement picture may come before its object. It is kept whatever it is, though Letra
 /// can't show it, and a save from the model writes it back.
 #[test]
 fn a_replacement_picture_before_its_object_is_kept() {
@@ -227,7 +227,7 @@ fn a_replacement_picture_before_its_object_is_kept() {
     assert_eq!(replacement(&saved).as_deref().map(Vec::as_slice), Some(METAFILE), "written from the model");
 }
 
-/// A readable picture after an unreadable replacement is what WordCraft shows, wherever the object
+/// A readable picture after an unreadable replacement is what Letra shows, wherever the object
 /// comes between them, and a save from the model keeps both.
 #[test]
 fn a_readable_picture_after_an_unreadable_replacement_is_shown() {

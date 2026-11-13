@@ -114,7 +114,7 @@ pub fn import_page(s: &str, images: ImageLoader) -> Document {
 
 /// [`import_page`] onto `page` (its size and margins), which tables size to: HTML gives no page
 /// size, so the caller picks it (the region's paper, #1381).
-pub fn import_on(s: &str, images: ImageLoader, page: &wordcraft_doc::SectionProps) -> Document {
+pub fn import_on(s: &str, images: ImageLoader, page: &letra_doc::SectionProps) -> Document {
     model::begin_import();
     model::to_doc_in(&parse_in(s, images, true), page.clone())
 }

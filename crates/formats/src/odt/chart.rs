@@ -1,6 +1,6 @@
 //! Charts embedded in a document (ODF 1.3 §10.4.3 `draw:object` whose sub-document is an
-//! `office:chart`, Part 3 §11): read into WordCraft's editable chart model when the chart is one
-//! WordCraft can edit as it is (one plot type in two dimensions, its data in the chart's own
+//! `office:chart`, Part 3 §11): read into Letra's editable chart model when the chart is one
+//! Letra can edit as it is (one plot type in two dimensions, its data in the chart's own
 //! table). Anything else returns `None`, and the frame keeps its replacement picture.
 //!
 //! The data comes from the chart's `table:table` (§11.1): the series' and categories' cell range
@@ -9,7 +9,7 @@
 
 use std::collections::HashMap;
 
-use wordcraft_doc::chart::{ChartSeries, ChartSpec, ChartType, LegendPos, MAX_CELLS, MAX_POINTS, MAX_SERIES, MAX_TEXT};
+use letra_doc::chart::{ChartSeries, ChartSpec, ChartType, LegendPos, MAX_CELLS, MAX_POINTS, MAX_SERIES, MAX_TEXT};
 
 use super::xml::Attrs;
 use super::{Ev, events, get};
@@ -208,7 +208,7 @@ impl Reader {
             _ => return None,
         };
         // One plot type on one value axis: a series of another type, or on a second axis, is
-        // a combination chart WordCraft can't edit.
+        // a combination chart Letra can't edit.
         let own = |c: &str| {
             let c = c.trim_start_matches("chart:");
             c == class || (kind == ChartType::Doughnut && c == "circle")
@@ -292,7 +292,7 @@ fn cells_of(addr: &str) -> Vec<(usize, usize)> {
     if r0 == r1 && c0 != c1 { (c0..=c1).take(MAX_POINTS).map(|c| (c, r0)).collect() } else { (r0..=r1).take(MAX_POINTS).map(|r| (c0, r)).collect() }
 }
 
-/// The chart a chart sub-document's `content.xml` holds, when WordCraft can edit it.
+/// The chart a chart sub-document's `content.xml` holds, when Letra can edit it.
 pub(in crate::odt) fn read_chart(xml: &[u8]) -> Option<ChartSpec> {
     let mut r = Reader::default();
     let mut count = 0usize;

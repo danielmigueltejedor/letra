@@ -80,7 +80,7 @@ pub(in crate::odt) struct OpenNote {
     pub(in crate::odt) comment: Option<CommentInfo>,
     /// Set for a text box: the frame it is in, put aside with its placement while its content is
     /// read (a frame inside it is a frame of its own).
-    pub(in crate::odt) text_box: Option<(Option<Frame>, Option<wordcraft_doc::para::Float>, model::BoxLook)>,
+    pub(in crate::odt) text_box: Option<(Option<Frame>, Option<letra_doc::para::Float>, model::BoxLook)>,
     pub(in crate::odt) para: Option<Para>,
     pub(in crate::odt) fmt: Vec<Fmt>,
     pub(in crate::odt) xml_space_end: bool,

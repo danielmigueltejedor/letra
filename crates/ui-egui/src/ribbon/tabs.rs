@@ -1,16 +1,16 @@
 use super::{Stroke, Tokens, Ui, WordApp, json, semibold};
 
-pub const TABS: [&str; 13] = wordcraft_engine::ribbon::TABS;
+pub const TABS: [&str; 13] = letra_engine::ribbon::TABS;
 
 /// True when the caret/selection touches a picture (#147).
-pub fn has_picture_selected(s: &wordcraft_engine::Session) -> bool {
-    matches!(wordcraft_engine::cmd::objects::selected(s), Some((_, wordcraft_doc::para::InlineObject::Image { .. })))
+pub fn has_picture_selected(s: &letra_engine::Session) -> bool {
+    matches!(letra_engine::cmd::objects::selected(s), Some((_, letra_doc::para::InlineObject::Image { .. })))
 }
 
 /// Whether the selection is a shape, text box or Drawing Canvas (so Shape Format is shown).
-pub fn has_shape_selected(s: &wordcraft_engine::Session) -> bool {
-    match wordcraft_engine::cmd::objects::selected(s) {
-        Some((_, o)) => matches!(o, wordcraft_doc::para::InlineObject::Shape { .. }) || o.is_canvas(),
+pub fn has_shape_selected(s: &letra_engine::Session) -> bool {
+    match letra_engine::cmd::objects::selected(s) {
+        Some((_, o)) => matches!(o, letra_doc::para::InlineObject::Shape { .. }) || o.is_canvas(),
         None => false,
     }
 }
@@ -67,7 +67,7 @@ pub(super) fn reading_toolbar(app: &mut WordApp, ui: &mut Ui, t: Tokens) {
                         }
                     });
                     ui.separator();
-                    use wordcraft_engine::cmd::view::ReadPageColor;
+                    use letra_engine::cmd::view::ReadPageColor;
                     let colors = [
                         (ReadPageColor::None, tl!("None"), "none"),
                         (ReadPageColor::Sepia, tl!("Sepia"), "sepia"),
@@ -100,18 +100,18 @@ pub(super) fn reading_toolbar(app: &mut WordApp, ui: &mut Ui, t: Tokens) {
         });
 }
 
-/// Whether the selection is a SmartArt graphic WordCraft can edit (so SmartArt Design is shown).
-pub fn has_smart_art_selected(s: &wordcraft_engine::Session) -> bool {
-    wordcraft_engine::cmd::smart_art::selected_smart_art(s).is_some()
+/// Whether the selection is a SmartArt graphic Letra can edit (so SmartArt Design is shown).
+pub fn has_smart_art_selected(s: &letra_engine::Session) -> bool {
+    letra_engine::cmd::smart_art::selected_smart_art(s).is_some()
 }
 
-/// Whether the selection is a chart WordCraft can edit (so Chart Design is shown).
-pub fn has_chart_selected(s: &wordcraft_engine::Session) -> bool {
-    wordcraft_engine::cmd::chart::selected_chart(s).is_some()
+/// Whether the selection is a chart Letra can edit (so Chart Design is shown).
+pub fn has_chart_selected(s: &letra_engine::Session) -> bool {
+    letra_engine::cmd::chart::selected_chart(s).is_some()
 }
 
 /// Contextual tabs for the current selection (pure, tested).
-pub fn contextual_tabs(s: &wordcraft_engine::Session) -> Vec<&'static str> {
+pub fn contextual_tabs(s: &letra_engine::Session) -> Vec<&'static str> {
     let mut tabs = Vec::new();
     if s.sel.focus.path.cell().is_some() {
         tabs.push("Table Design");
@@ -134,7 +134,7 @@ pub fn contextual_tabs(s: &wordcraft_engine::Session) -> Vec<&'static str> {
         tabs.push("Equation");
     }
     // Outline view (drawn first, next to File, as Word does).
-    if s.view.mode == wordcraft_layout::ViewMode::Outline {
+    if s.view.mode == letra_layout::ViewMode::Outline {
         tabs.push("Outlining");
     }
     tabs

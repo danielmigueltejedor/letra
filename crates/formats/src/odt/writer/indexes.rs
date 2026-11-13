@@ -1,4 +1,4 @@
-//! Tables of contents and other generated indexes written (ODF 1.3 §8): a WordCraft table — a
+//! Tables of contents and other generated indexes written (ODF 1.3 §8): a Letra table — a
 //! `TOC`, `INDEX` or `BIBLIOGRAPHY` field in its heading followed by its entries, or the field
 //! around its entries — becomes the ODF index with its title, its source (what LibreOffice
 //! regenerates it from) and its entries as last generated.
@@ -58,7 +58,7 @@ pub(in crate::odt) fn index_instr(kind: &IndexKind) -> String {
     }
 }
 
-/// Whether `p`'s paragraph style is an index entry's (WordCraft's TOC, table of figures, index
+/// Whether `p`'s paragraph style is an index entry's (Letra's TOC, table of figures, index
 /// and bibliography styles).
 fn is_entry(p: &Para) -> bool {
     let style = p.extra.as_ref().and_then(|x| x.style.as_deref()).unwrap_or("");
@@ -67,7 +67,7 @@ fn is_entry(p: &Para) -> bool {
 
 /// An index starting at `blocks[i]`: how many blocks it takes, its kind, and whether its first
 /// block is its title. Either a paragraph holding an index field followed by its entries (as
-/// WordCraft inserts a table), or a field starting a paragraph and ending in a later one.
+/// Letra inserts a table), or a field starting a paragraph and ending in a later one.
 pub(in crate::odt) fn index_at(blocks: &[FBlock], i: usize) -> Option<(usize, IndexKind, bool)> {
     let Some(FBlock::Para(p)) = blocks.get(i) else { return None };
     // A heading holding the field, anywhere in it.

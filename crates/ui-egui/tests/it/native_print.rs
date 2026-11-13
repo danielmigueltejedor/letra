@@ -1,20 +1,20 @@
 //! Native print onboarding preserves engine PDF generation and submits the selected settings.
+use letra_engine::Session;
+use letra_ui_egui::printing::{Duplex, Feedback, Printer};
+use letra_ui_egui::{Services, WordApp};
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
-use wordcraft_engine::Session;
-use wordcraft_ui_egui::printing::{Duplex, Feedback, Printer};
-use wordcraft_ui_egui::{Services, WordApp};
 
 /// Print command metadata lists engine and app commands, exposes the settings and status fields,
 /// and keeps submission disabled until a printer is selected. It never discovers printers,
 /// submits, opens a dialog or Print page, or dirties the document.
 #[test]
 fn control_print_discovery_reports_metadata_without_host_side_effects() {
+    use letra_ui_egui::control::{ControlRequest, Outcome, handle};
     use std::cell::Cell;
-    use wordcraft_ui_egui::control::{ControlRequest, Outcome, handle};
     let discoveries = Rc::new(Cell::new(0));
     let submissions = Rc::new(Cell::new(0));
-    let mut app = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+    let mut app = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
     let observed = discoveries.clone();
     app.services.printers = Some(Box::new(move || {
         observed.set(observed.get() + 1);
@@ -62,7 +62,7 @@ fn control_print_discovery_reports_metadata_without_host_side_effects() {
 /// becomes Failed feedback and a status message.
 #[test]
 fn native_print_uses_selected_settings_and_reports_spool_errors() {
-    let mut app = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+    let mut app = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
     app.run("text.insert", json!({"text": "A document to print"})).unwrap();
     let jobs = Rc::new(RefCell::new(Vec::new()));
     let observed = jobs.clone();
@@ -99,7 +99,7 @@ fn native_print_uses_selected_settings_and_reports_spool_errors() {
 #[test]
 fn print_settings_are_visible_in_a_narrow_window() {
     use egui_kittest::kittest::{NodeT, Queryable};
-    let mut app = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+    let mut app = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
     // The labels below are English; an integration test otherwise follows the machine's language.
     app.ui.language = "en".into();
     app.run("text.insert", json!({"text": "A document to print"})).unwrap();
@@ -134,7 +134,7 @@ fn print_settings_are_visible_in_a_narrow_window() {
 /// Every invalid settings payload is rejected and leaves the previous settings unchanged.
 #[test]
 fn invalid_print_settings_are_rejected_without_partial_changes() {
-    let mut app = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+    let mut app = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
     app.printing.printers.push(Printer { name: "Queue".into(), label: String::new(), default: true });
     let before = app.run("ui.printSettings", json!({})).unwrap();
     for params in [
@@ -158,7 +158,7 @@ fn invalid_print_settings_are_rejected_without_partial_changes() {
 /// Two fast jobs each surface the same receipt, and consuming it clears the status.
 #[test]
 fn repeated_fast_jobs_each_surface_an_identical_receipt() {
-    let mut app = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+    let mut app = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
     app.printing.printers.push(Printer { name: "Queue".into(), label: String::new(), default: true });
     app.run("ui.printSettings", json!({"printer":"Queue"})).unwrap();
     app.services.print_native = Some(Box::new(|_, _, _, _| {
@@ -185,7 +185,7 @@ fn repeated_fast_jobs_each_surface_an_identical_receipt() {
 fn native_ranges_and_parity_do_not_duplicate_spooler_copies() {
     // A fixed creation date: without one each PDF is stamped with the current time, and the two
     // compared below differ when a clock second ticks over between them (#987).
-    let mut doc = wordcraft_doc::Document::new();
+    let mut doc = letra_doc::Document::new();
     doc.core.created = "2026-01-01T00:00:00Z".into();
     let mut app = WordApp::new(Session::new(doc), Services::default());
     for page in 1..=3 {
@@ -225,7 +225,7 @@ fn native_ranges_and_parity_do_not_duplicate_spooler_copies() {
 #[test]
 fn empty_discovery_reports_no_printers_instead_of_silence() {
     // #1211: a machine with no CUPS destinations must say "no printers", never detour silently.
-    let mut app = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+    let mut app = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
     app.services.printers = Some(Box::new(|| {
         let (sender, receiver) = std::sync::mpsc::channel();
         sender.send(Vec::new()).unwrap();
@@ -242,7 +242,7 @@ fn empty_discovery_reports_no_printers_instead_of_silence() {
 /// `landscape=true`, and portrait sends 3.
 #[test]
 fn native_print_passes_orientation_options_to_spooler() {
-    let mut app = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+    let mut app = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
     app.run("text.insert", json!({"text": "Test orientation"})).unwrap();
     app.printing.printers.push(Printer { name: "Queue".into(), label: String::new(), default: true });
     app.run("ui.printSettings", json!({"printer":"Queue"})).unwrap();
@@ -279,7 +279,7 @@ fn native_print_passes_orientation_options_to_spooler() {
 /// for that media, and the document keeps its own page size.
 #[test]
 fn native_print_scales_to_the_chosen_paper() {
-    let mut app = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+    let mut app = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
     app.run("text.insert", json!({"text": "Scale me"})).unwrap();
     app.printing.printers.push(Printer { name: "Queue".into(), label: String::new(), default: true });
     app.run("ui.printSettings", json!({"printer":"Queue"})).unwrap();
@@ -329,7 +329,7 @@ fn native_print_scales_to_the_chosen_paper() {
 /// Native copies stay in the spooler; booklet pairing and padding happen once in its PDF.
 #[test]
 fn native_booklet_uses_landscape_sheets_without_multiplying_copies() {
-    let mut app = WordApp::new(Session::new(wordcraft_doc::Document::from_text("1\u{c}2\u{c}3\u{c}4\u{c}5")), Services::default());
+    let mut app = WordApp::new(Session::new(letra_doc::Document::from_text("1\u{c}2\u{c}3\u{c}4\u{c}5")), Services::default());
     let jobs = Rc::new(RefCell::new(Vec::new()));
     let observed = jobs.clone();
     app.services.print_native = Some(Box::new(move |bytes, settings, collate, options| {
@@ -354,7 +354,7 @@ fn native_booklet_uses_landscape_sheets_without_multiplying_copies() {
 #[test]
 fn print_booklet_choice_updates_sheet_preview() {
     use egui_kittest::kittest::{By, Queryable};
-    let mut app = WordApp::new(Session::new(wordcraft_doc::Document::from_text("1\u{c}2\u{c}3\u{c}4\u{c}5")), Services::default());
+    let mut app = WordApp::new(Session::new(letra_doc::Document::from_text("1\u{c}2\u{c}3\u{c}4\u{c}5")), Services::default());
     app.ui.language = "en".into();
     app.run("file.print", json!({})).unwrap();
     let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1440.0, 1000.0)).with_pixels_per_point(1.0).build_ui_state(
@@ -398,7 +398,7 @@ fn print_range_changes_start_at_the_first_planned_sheet() {
         [("selection", "Selected pages", "3\u{c}4\u{c}5", "1", 3), ("custom", "Custom range", "9", "2", 5), ("custom", "Custom range", "9", "4", 3)]
     {
         let mut app = WordApp::new(
-            Session::new(wordcraft_doc::Document::from_text("1\u{c}2\u{c}3\u{c}4\u{c}5\u{c}6\u{c}7\u{c}8\u{c}9\u{c}10")),
+            Session::new(letra_doc::Document::from_text("1\u{c}2\u{c}3\u{c}4\u{c}5\u{c}6\u{c}7\u{c}8\u{c}9\u{c}10")),
             Services::default(),
         );
         app.ui.language = "en".into();
@@ -461,7 +461,7 @@ fn print_range_changes_start_at_the_first_planned_sheet() {
 /// Native N-up accepts comment balloons and custom ranges from preferences or an explicit markup override.
 #[test]
 fn native_imposed_print_accepts_comment_markup_and_explicit_overrides() {
-    use wordcraft_doc::{Comment, Document, InlineObject, Paragraph, PartKind, Pos, para_block};
+    use letra_doc::{Comment, Document, InlineObject, Paragraph, PartKind, Pos, para_block};
     let mut doc = Document::from_text("First page\u{c}Second page\u{c}Third page");
     let part = doc.add_part(PartKind::Comment, vec![para_block(Paragraph::with_text("Check these totals", Default::default()))]);
     doc.comments.insert(0, Comment { author: "Synthetic reviewer".into(), part, ..Default::default() });
@@ -503,7 +503,7 @@ fn native_imposed_print_accepts_comment_markup_and_explicit_overrides() {
 #[test]
 fn native_print_job_leaves_out_link_annotations() {
     for mode in [json!(1), json!(2), json!("booklet"), json!("bookletReverse")] {
-        let mut app = WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default());
+        let mut app = WordApp::new(Session::new(letra_doc::Document::new()), Services::default());
         app.run("insert.link", json!({"url": "https://example.com", "text": "a link"})).unwrap();
         app.printing.printers.push(Printer { name: "Queue".into(), label: String::new(), default: true });
         app.run("ui.printSettings", json!({"printer":"Queue"})).unwrap();

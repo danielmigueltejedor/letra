@@ -4,7 +4,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use wordcraft_ui_egui::UPDATE_APP;
+use letra_ui_egui::UPDATE_APP;
 
 fn packaging(path: &str) -> String {
     let file = format!("{}/../../packaging/{path}", env!("CARGO_MANIFEST_DIR"));
@@ -14,26 +14,26 @@ fn packaging(path: &str) -> String {
 #[test]
 fn the_release_scripts_make_the_packages_the_updater_installs() {
     let macos = packaging("macos/package.sh");
-    assert!(macos.contains(r#"APP="$WORK/WordCraft.app""#), "the bundle the updater swaps");
-    assert!(macos.contains(r#"DMG="$DIST/wordcraft-$VERSION-macos-$ARCH.dmg""#));
+    assert!(macos.contains(r#"APP="$WORK/Letra.app""#), "the bundle the updater swaps");
+    assert!(macos.contains(r#"DMG="$DIST/letra-$VERSION-macos-$ARCH.dmg""#));
     assert!(macos.contains("ARCH=universal"));
     let linux = packaging("linux/package.sh");
-    assert!(linux.contains(r#"BASENAME="wordcraft-$VERSION-linux-$ARCH""#));
+    assert!(linux.contains(r#"BASENAME="letra-$VERSION-linux-$ARCH""#));
     assert!(linux.contains("$BASENAME.AppImage"));
-    assert!(packaging("windows/package.ps1").contains(r#""wordcraft-$Version-windows-$Arch.msi""#));
-    assert!(packaging("windows/wordcraft.wxs").contains(r#"Key="Software\WordCraft" Name="InstallDir" Value="[INSTALLFOLDER]""#));
-    assert_eq!(UPDATE_APP.bundle, "WordCraft.app");
+    assert!(packaging("windows/package.ps1").contains(r#""letra-$Version-windows-$Arch.msi""#));
+    assert!(packaging("windows/letra.wxs").contains(r#"Key="Software\Letra" Name="InstallDir" Value="[INSTALLFOLDER]""#));
+    assert_eq!(UPDATE_APP.bundle, "Letra.app");
     assert_eq!(UPDATE_APP.repo, "getnodalia/letra");
 }
 
 #[test]
 fn every_published_package_reaches_the_systems_it_is_for() {
     for (package, systems) in [
-        ("wordcraft-1.0.0-macos-universal.dmg", &[("macos", "aarch64"), ("macos", "x86_64")][..]),
-        ("wordcraft-1.0.0-linux-x86_64.AppImage", &[("linux", "x86_64")]),
-        ("wordcraft-1.0.0-linux-aarch64.AppImage", &[("linux", "aarch64")]),
-        ("wordcraft-1.0.0-windows-x64.msi", &[("windows", "x86_64")]),
-        ("wordcraft-1.0.0-windows-arm64.msi", &[("windows", "aarch64")]),
+        ("letra-1.0.0-macos-universal.dmg", &[("macos", "aarch64"), ("macos", "x86_64")][..]),
+        ("letra-1.0.0-linux-x86_64.AppImage", &[("linux", "x86_64")]),
+        ("letra-1.0.0-linux-aarch64.AppImage", &[("linux", "aarch64")]),
+        ("letra-1.0.0-windows-x64.msi", &[("windows", "x86_64")]),
+        ("letra-1.0.0-windows-arm64.msi", &[("windows", "aarch64")]),
     ] {
         let found = nodalia_update::systems_for_package(package);
         for system in systems {

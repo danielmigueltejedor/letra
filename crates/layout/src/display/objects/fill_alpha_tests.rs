@@ -1,6 +1,6 @@
 use super::*;
-use wordcraft_doc::connector::ShapeExtra;
-use wordcraft_doc::freeform::{FreePath, Freeform, InkTool};
+use letra_doc::connector::ShapeExtra;
+use letra_doc::freeform::{FreePath, Freeform, InkTool};
 
 #[test]
 fn freeform_fill_has_own_alpha() {
@@ -19,7 +19,7 @@ fn freeform_fill_has_own_alpha() {
                 rect,
                 &ShapeLook {
                     kind: ShapeKind::Freeform,
-                    fill: Some(&wordcraft_doc::fill::Fill::Solid { color: Rgb::BLACK, transparency }),
+                    fill: Some(&letra_doc::fill::Fill::Solid { color: Rgb::BLACK, transparency }),
                     stroke: Some(Rgb::WHITE),
                     stroke_width: 2.0,
                     effects: Default::default(),
@@ -47,7 +47,7 @@ fn freeform_fill_has_own_alpha() {
         rect,
         &ShapeLook {
             kind: ShapeKind::Freeform,
-            fill: Some(&wordcraft_doc::fill::Fill::Solid { color: Rgb::BLACK, transparency: 100.0 }),
+            fill: Some(&letra_doc::fill::Fill::Solid { color: Rgb::BLACK, transparency: 100.0 }),
             stroke: Some(Rgb::WHITE),
             stroke_width: 2.0,
             effects: Default::default(),

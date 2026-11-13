@@ -8,7 +8,7 @@ use crate::{Document, LayoutCache, LayoutOptions, Placed, layout};
 fn wide_nbsp_family() -> &'static str {
     crate::test_fonts();
     const FAMILY: &str = "Wnbsp";
-    let inter = wordcraft_fonts::word::resolve("Inter", false, false).face;
+    let inter = letra_fonts::word::resolve("Inter", false, false).face;
     let mut data = inter.data().to_vec();
     let gid = inter.glyph_for('\u{a0}') as usize;
     assert_ne!(gid, inter.glyph_for(' ') as usize, "Inter keeps a glyph of its own for U+00A0");
@@ -31,15 +31,15 @@ fn wide_nbsp_family() -> &'static str {
             }
         }
     }
-    wordcraft_fonts::FontDb::global().add_font(data);
+    letra_fonts::FontDb::global().add_font(data);
     FAMILY
 }
 
 /// The width of the first line of `text` set in the wide-nbsp font.
 fn line_width(text: &str) -> f32 {
-    let chr = wordcraft_doc::CharProps { font: Some(wide_nbsp_family().into()), size: Some(12.0), ..Default::default() };
+    let chr = letra_doc::CharProps { font: Some(wide_nbsp_family().into()), size: Some(12.0), ..Default::default() };
     let mut d = Document::new();
-    d.body = vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text(text, chr))];
+    d.body = vec![letra_doc::para_block(letra_doc::Paragraph::with_text(text, chr))];
     let mut c = LayoutCache::new();
     let l = layout(&d, &mut c, &LayoutOptions::default());
     for p in &l.pages {
@@ -56,7 +56,7 @@ fn line_width(text: &str) -> f32 {
 #[test]
 fn a_no_break_space_is_as_wide_as_a_space() {
     crate::test_fonts();
-    let face = wordcraft_fonts::word::resolve(wide_nbsp_family(), false, false).face;
+    let face = letra_fonts::word::resolve(wide_nbsp_family(), false, false).face;
     assert_eq!(face.family, wide_nbsp_family(), "the test font is installed under its own name");
     assert!(
         face.advance(face.glyph_for('\u{a0}')) > 1.9 * face.advance(face.glyph_for(' ')),

@@ -6,8 +6,8 @@
 use std::sync::Arc;
 
 use egui::{Rect, Sense, Stroke, TextureHandle, Ui, pos2, vec2};
+use letra_layout::DocLayout;
 use serde_json::{Value, json};
-use wordcraft_layout::DocLayout;
 
 use crate::theme::{Tokens, medium, regular};
 use crate::{WordApp, icons};
@@ -76,7 +76,7 @@ impl PrintSettings {
 
     /// The paper pages are scaled to, as (width, height) in points, or `None` for their own size.
     pub fn paper_size(&self) -> Option<(f32, f32)> {
-        wordcraft_geom::paper_by_name(&self.paper).map(|(_, w, h)| (w, h))
+        letra_geom::paper_by_name(&self.paper).map(|(_, w, h)| (w, h))
     }
 }
 
@@ -147,7 +147,7 @@ fn page_texture(app: &WordApp, ctx: &egui::Context, lay: &DocLayout, page: usize
     // Zoomed in, the texture stays within what the GPU takes and is stretched beyond that.
     let max_side = ctx.input(|i| i.max_texture_side) as f32 / pg.w.max(pg.h).max(1.0);
     let scale = (width / pg.w.max(1.0) * ctx.pixels_per_point()).clamp(0.05, 4.0).min(max_side);
-    let img = wordcraft_render::render_page(&app.session.doc, pg, scale, &Default::default());
+    let img = letra_render::render_page(&app.session.doc, pg, scale, &Default::default());
     let color = egui::ColorImage::from_rgba_unmultiplied([img.width as usize, img.height as usize], &img.to_straight());
     let tex = ctx.load_texture("print_page_preview", color, egui::TextureOptions::LINEAR);
     ctx.data_mut(|d| d.insert_temp(id, (key, tex.clone())));
@@ -234,8 +234,8 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                     let copies_label = ui.label(egui::RichText::new(tl!("Copies")).font(medium(13.0)));
                     ui.horizontal(|ui| {
                         let mut n = app.ui.print.copies;
-                        ui.add(egui::DragValue::new(&mut n).range(1..=wordcraft_engine::print::MAX_COPIES).speed(0.2)).labelled_by(copies_label.id);
-                        app.ui.print.copies = n.clamp(1, wordcraft_engine::print::MAX_COPIES);
+                        ui.add(egui::DragValue::new(&mut n).range(1..=letra_engine::print::MAX_COPIES).speed(0.2)).labelled_by(copies_label.id);
+                        app.ui.print.copies = n.clamp(1, letra_engine::print::MAX_COPIES);
                         if app.ui.print.copies > 1 {
                             ui.checkbox(&mut app.ui.print.collate, tl!("Collate copies"));
                         }
@@ -253,7 +253,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                             egui::TextEdit::singleline(&mut app.ui.print.pages)
                                 .hint_text(tl!("Pages like 1-3, 5"))
                                 .desired_width(260.0)
-                                .char_limit(wordcraft_engine::print::MAX_SPEC_CHARS),
+                                .char_limit(letra_engine::print::MAX_SPEC_CHARS),
                         )
                         .labelled_by(pages_label.id)
                         .changed()
@@ -292,10 +292,10 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                 // Word: Pages per sheet › Scale to paper size. Only the printout changes.
                 let paper_label = ui.label(egui::RichText::new(tl!("Scale to paper size")).font(medium(13.0)));
                 let papers: Vec<(&str, &str)> =
-                    std::iter::once((NO_SCALING, "No Scaling")).chain(wordcraft_geom::PAPER_SIZES.iter().map(|(n, _, _)| (*n, *n))).collect();
+                    std::iter::once((NO_SCALING, "No Scaling")).chain(letra_geom::PAPER_SIZES.iter().map(|(n, _, _)| (*n, *n))).collect();
                 choice(ui, "print_paper", &mut app.ui.print.paper, &papers, &paper_label);
 
-                match wordcraft_engine::print::plan(&app.ui.print.params(), total, current) {
+                match letra_engine::print::plan(&app.ui.print.params(), total, current) {
                     Ok(plan) => {
                         let msg = crate::i18n::fmt(
                             tl!("{count} of {total} pages will print"),
@@ -362,7 +362,7 @@ fn zoom_step(z: f32, up: bool) -> f32 {
 fn preview(app: &mut WordApp, ui: &mut Ui, lay: &DocLayout) {
     let t = Tokens::get(ui.ctx());
     let ctx = ui.ctx().clone();
-    let sheets = match wordcraft_engine::print::sheets(&app.ui.print.params(), lay, app.session.current_pages(lay)) {
+    let sheets = match letra_engine::print::sheets(&app.ui.print.params(), lay, app.session.current_pages(lay)) {
         Ok(sheets) => sheets,
         Err(error) => {
             ui.label(error.to_string());
@@ -482,12 +482,12 @@ pub fn export_formats(app: &mut WordApp, ui: &mut Ui) {
 mod tests {
     use super::*;
     use crate::Services;
-    use wordcraft_engine::Session;
+    use letra_engine::Session;
 
     /// Print Markup changes layout and pixels without changing the document revision.
     #[test]
     fn preview_refreshes_layout_and_texture_when_print_markup_toggles() {
-        let mut session = Session::new(wordcraft_doc::Document::from_text("Synthetic print preview"));
+        let mut session = Session::new(letra_doc::Document::from_text("Synthetic print preview"));
         session.run("select.text", &json!({"text": "preview"})).unwrap();
         session.run("review.newComment", &json!({"text": "Synthetic printed comment"})).unwrap();
         session.prefs.markup.comments = true;

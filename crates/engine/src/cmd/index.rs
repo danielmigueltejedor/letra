@@ -3,12 +3,12 @@
 
 use std::collections::BTreeMap;
 
+use letra_doc::collate::{SortKey, heading_letter, sort_key};
+use letra_doc::para::InlineObject;
+use letra_doc::props::{CharProps, TabAlign, TabLeader, TabStop};
+use letra_doc::section::SectionStart;
+use letra_doc::{Block, Paragraph, Path, Pos, StoryRef};
 use serde_json::{Value, json};
-use wordcraft_doc::collate::{SortKey, heading_letter, sort_key};
-use wordcraft_doc::para::InlineObject;
-use wordcraft_doc::props::{CharProps, TabAlign, TabLeader, TabStop};
-use wordcraft_doc::section::SectionStart;
-use wordcraft_doc::{Block, Paragraph, Path, Pos, StoryRef};
 
 use super::references::{FieldCode, field_arg, leader};
 use super::sel_result;
@@ -354,7 +354,7 @@ pub fn rebuild_from(s: &mut Session, i: usize, leader: Option<TabLeader>, instr:
 /// Put the `n` entries after the index field's paragraph `i` in a continuous section with `cols`
 /// columns (the field's paragraph ends the section before), or merge that section back when the
 /// index has one column again.
-fn columns(s: &mut Session, i: usize, n: usize, cols: u32, old: Option<wordcraft_doc::section::SectionProps>) -> Result<(), CmdError> {
+fn columns(s: &mut Session, i: usize, n: usize, cols: u32, old: Option<letra_doc::section::SectionProps>) -> Result<(), CmdError> {
     let last = i + n;
     if cols > 1 && n > 0 {
         // A paragraph after the index keeps the following section from being empty.
@@ -404,7 +404,7 @@ mod tests {
     /// can hold) is quoted in the XE field, so it reads back whole.
     #[test]
     fn mark_entry_trims_and_quotes_its_bookmark() {
-        let mut s = Session::new(wordcraft_doc::Document::from_text("Intro text.\nMore text."));
+        let mut s = Session::new(letra_doc::Document::from_text("Intro text.\nMore text."));
         s.run("select.text", &json!({"text": "Intro"})).unwrap();
         s.run("insert.bookmark", &json!({"name": "Intro"})).unwrap();
         let odd = "My \"Mark\" \\b";
@@ -435,7 +435,7 @@ mod tests {
     /// before right-aligned page numbers, and two columns in a continuous section.
     #[test]
     fn index_switches_shape_the_index() {
-        let mut s = Session::new(wordcraft_doc::Document::from_text("Kilns are hot.\nGlaze the kilns.\nKilns again.\nPresses."));
+        let mut s = Session::new(letra_doc::Document::from_text("Kilns are hot.\nGlaze the kilns.\nKilns again.\nPresses."));
         s.run("select.text", &json!({"text": "Kilns"})).unwrap();
         s.run("references.markEntry", &json!({"subentry": "firing", "bold": true})).unwrap();
         s.run("select.text", &json!({"text": "Presses"})).unwrap();

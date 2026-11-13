@@ -1,0 +1,182 @@
+# What `scripts/rebrand.py` renames: upstream's WordCraft becomes Letra, in file contents and in
+# paths. The weekly upstream sync applies the same rules to upstream's tree before merging it, so
+# a rule added here applies to everything upstream sends from then on.
+#
+# Replacements are literal and case-sensitive, applied in order: put the longer, more specific
+# ones first. Keep spans are found before any replacement, so a replacement never reaches inside
+# one.
+
+# Left as they are wherever they appear (in file contents and in paths).
+keep = [
+    # Links to upstream's issues, pull requests and commits, and to other people's repositories:
+    # history, not branding. Links to upstream's tree and repository page are renamed below.
+    "(https?://)?github\\.com/storytold/[\\w.-]+/(issues|pull|commit|discussions)/[^\\s)\\]\"'<>`]*",
+    "https?://(github\\.com|raw\\.githubusercontent\\.com)/(?!storytold/(wordcraft|craft-fonts|craft-i18n|craft-libs|egui|winit)\\b|getnodalia|danielmigueltejedor)[^\\s)\\]\"'<>`]*",
+    # A Cargo [patch] names the source it overrides, which other crates still point at.
+    "\\[patch\\.\"https://github\\.com/storytold/[^\"]+\"\\]",
+    # Spelling language packs are still downloaded from upstream's translation releases.
+    "https://github\\.com/storytold/craft-i18n/releases/download/[^\\s\"`)]*",
+    # Upstream's issues named without a link (`storytold/wordcraft#123`).
+    "storytold/[\\w.-]+#\\d+",
+    # Upstream's repository in the sync workflow and in the record of what came from it.
+    "(?<=UPSTREAM_REPO: )storytold/wordcraft",
+    # The translation catalog this app reads in the shared translations is named after upstream.
+    "wordcraft\\.tsv",
+    # Credit for work done upstream.
+    "WordCraft contributors",
+    "ArtCraft Team",
+]
+
+# Files left alone entirely.
+skip = [
+    ".github/rebrand.toml",
+    "scripts/rebrand.py",
+    # Licence notices keep upstream's copyright line, which the licences require.
+    "NOTICE",
+    "LICENSE-*",
+    "licenses/*",
+    # The record of what came from upstream, and upstream's own README kept for reference.
+    "docs/upstream.md",
+    "NODALIA_MIGRATION.md",
+    "docs/upstream-readme.md",
+    # Binary Finder layout of the disk image: rebuilt by its own script.
+    "*.DS_Store",
+]
+
+# Run after renaming: shorter names change how rustfmt wraps lines and sorts imports.
+after = [["cargo", "fmt", "--all"]]
+
+# Lines that keep this app's value when upstream's tree is rebranded (the sync passes --pin-from).
+[[pin]]
+file = "Cargo.toml"
+pattern = '^version = "[^"]*"'
+
+# Identity: app id, publisher, installer identities (a product of its own, never WordCraft's).
+[[replace]]
+from = "ai.storyteller.wordcraft"
+to = "dev.danielmiguelt.Letra"
+
+[[replace]]
+from = "WordCraft maintainers <wordcraft@storyteller.ai>"
+to = "Nodalia <https://github.com/getnodalia/letra/issues>"
+
+[[replace]]
+from = "<developer id=\"ai.storyteller\">"
+to = "<developer id=\"dev.danielmiguelt\">"
+
+[[replace]]
+from = "Learning Machines LLC"
+to = "Nodalia"
+
+[[replace]]
+from = "075497F9-E861-45D0-9C7F-A74F8C34E6BA"
+to = "5C0F5D2E-3B8A-4E61-9F2D-7A41C6B9E0D3"
+
+[[replace]]
+from = "855DCEC6-9285-444F-9382-9654B83B34F6"
+to = "A7E2C9B4-1F36-4D85-B0C7-2E9F4A6D1B58"
+
+[[replace]]
+from = "EFF89E6A-F9B8-49F9-B3AE-E243347484B4"
+to = "3D9B7E15-6C2A-4F80-8E4B-D51A07C3F926"
+
+# The shared libraries, fonts and translations: Nodalia keeps them in getnodalia/foundation, on
+# vendor branches.
+[[replace]]
+from = "github.com/storytold/craft-fonts/blob/main/"
+to = "github.com/getnodalia/foundation/blob/vendor/craft-fonts/main/"
+
+[[replace]]
+from = "github.com/storytold/craft-i18n/blob/main/"
+to = "github.com/getnodalia/foundation/blob/vendor/craft-i18n/main/"
+
+[[replace]]
+from = "github.com/storytold/craft-libs/tree/main/"
+to = "github.com/getnodalia/foundation/tree/vendor/craft-libs/main/"
+
+[[replace]]
+from = "github.com/storytold/craft-libs/blob/main/"
+to = "github.com/getnodalia/foundation/blob/vendor/craft-libs/main/"
+
+[[replace]]
+from = "github.com/storytold/egui/blob/"
+to = "github.com/getnodalia/foundation/blob/"
+
+[[replace]]
+from = "github.com/storytold/craft-fonts"
+to = "github.com/getnodalia/foundation/tree/vendor/craft-fonts/main"
+
+[[replace]]
+from = "github.com/storytold/craft-i18n"
+to = "github.com/getnodalia/foundation/tree/vendor/craft-i18n/main"
+
+[[replace]]
+from = "github.com/storytold/craft-libs"
+to = "github.com/getnodalia/foundation/tree/vendor/craft-libs/main"
+
+[[replace]]
+from = "github.com/storytold/egui"
+to = "github.com/getnodalia/foundation/tree/vendor/egui/main"
+
+[[replace]]
+from = "github.com/storytold/winit"
+to = "github.com/getnodalia/foundation/tree/vendor/winit/master"
+
+[[replace]]
+from = "storytold/craft-fonts"
+to = "getnodalia/foundation (vendor/craft-fonts)"
+
+[[replace]]
+from = "storytold/craft-i18n"
+to = "getnodalia/foundation (vendor/craft-i18n)"
+
+[[replace]]
+from = "storytold/craft-libs"
+to = "getnodalia/foundation (vendor/craft-libs)"
+
+[[replace]]
+from = "storytold/winprint.rs"
+to = "getnodalia/foundation (vendor/winprint.rs)"
+
+# Where the app lives: its repository, releases, container images and web page.
+[[replace]]
+from = "ghcr.io/storytold/wordcraft"
+to = "ghcr.io/getnodalia/letra"
+
+[[replace]]
+from = "storytold/wordcraft"
+to = "getnodalia/letra"
+
+[[replace]]
+from = "https://discord.gg/artcraft"
+to = "https://github.com/getnodalia/letra/issues"
+
+[[replace]]
+from = "getartcraft.com/apps/wordcraft"
+to = "getnodalia.com/letra"
+
+[[replace]]
+from = "getartcraft.com"
+to = "getnodalia.com"
+
+# The family the app belongs to: install folders, the About box.
+[[replace]]
+from = "ArtCraft"
+to = "Nodalia"
+
+# The name, in every casing upstream uses.
+[[replace]]
+from = "WordCraft"
+to = "Letra"
+
+[[replace]]
+from = "Wordcraft"
+to = "Letra"
+
+[[replace]]
+from = "wordcraft"
+to = "letra"
+
+[[replace]]
+from = "WORDCRAFT"
+to = "LETRA"

@@ -1,11 +1,11 @@
 //! Mailings tab: mail merge (recipients from CSV/JSON or an Excel/OpenDocument spreadsheet,
 //! filtered and sorted; merge fields, preview, finish), envelopes and labels.
 
+use letra_doc::para::InlineObject;
+use letra_doc::props::{Align, CharProps};
+use letra_doc::section::{SectionProps, SectionStart};
+use letra_doc::{Block, Blocks, Document, Paragraph, Part, PartKind, Pos, StoryRef, Table, para_block};
 use serde_json::{Value, json};
-use wordcraft_doc::para::InlineObject;
-use wordcraft_doc::props::{Align, CharProps};
-use wordcraft_doc::section::{SectionProps, SectionStart};
-use wordcraft_doc::{Block, Blocks, Document, Paragraph, Part, PartKind, Pos, StoryRef, Table, para_block};
 
 use super::references::{field_arg, field_words, quoted};
 use super::{delete_selection, sel_result};

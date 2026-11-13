@@ -1,8 +1,8 @@
 use crate::doc_state::{ColumnBlock, Selection, Undo};
 use std::sync::Arc;
 
-use wordcraft_doc::Document;
-use wordcraft_layout::{DocLayout, NumeralMode, ViewMode};
+use letra_doc::Document;
+use letra_layout::{DocLayout, NumeralMode, ViewMode};
 
 /// What [`Session::restore`] needs to take commands back exactly: the document, the selection,
 /// the undo and redo stacks (also the oldest undo steps the undo limit pushes out meanwhile), the
@@ -68,10 +68,10 @@ pub(super) type LayoutEntry = (
     Option<u32>,
     Arc<DocLayout>,
     bool,
-    Option<wordcraft_layout::outline::OutlineView>,
-    (bool, wordcraft_layout::HideDeleted, bool),
+    Option<letra_layout::outline::OutlineView>,
+    (bool, letra_layout::HideDeleted, bool),
     NumeralMode,
-    Option<wordcraft_layout::TypingWord>,
+    Option<letra_layout::TypingWord>,
     (bool, bool),
 );
 

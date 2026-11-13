@@ -101,7 +101,7 @@ fn compare_keeps_text_boxes_of_the_original() {
             assert_eq!(s.doc.plain_text(StoryRef::Part(*id)), *text);
             let p = s.doc.para(anchor.story, &anchor.path).unwrap();
             assert!(
-                p.props_of_char(anchor.off - wordcraft_doc::para::OBJ.len_utf8()).del.is_some(),
+                p.props_of_char(anchor.off - letra_doc::para::OBJ.len_utf8()).del.is_some(),
                 "{show_in}: the box \"{text}\" is not marked deleted"
             );
         }
@@ -135,7 +135,7 @@ fn compare_with_a_revised_file_keeps_its_text_boxes_backed() {
             for (off, o) in p.objects_with_offsets() {
                 for id in o.text_boxes() {
                     let part = d.parts.get(&id).unwrap_or_else(|| panic!("an anchor shows story {id}, which the result lacks"));
-                    assert_eq!(part.kind, wordcraft_doc::PartKind::TextBox, "story {id}");
+                    assert_eq!(part.kind, letra_doc::PartKind::TextBox, "story {id}");
                     let c = p.props_of_char(off);
                     out.push((d.plain_text(StoryRef::Part(id)), c.del.is_some(), c.ins.is_some()));
                 }

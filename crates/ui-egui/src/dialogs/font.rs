@@ -7,8 +7,8 @@ pub(super) fn preview_size(size: &str) -> f32 {
 }
 
 /// The page colour the sample sits on.
-pub(super) fn sample_paper(app: &WordApp) -> wordcraft_doc::Rgb {
-    app.session.doc.settings.page_color.unwrap_or(wordcraft_doc::Rgb(255, 255, 255))
+pub(super) fn sample_paper(app: &WordApp) -> letra_doc::Rgb {
+    app.session.doc.settings.page_color.unwrap_or(letra_doc::Rgb(255, 255, 255))
 }
 
 const SAMPLE_WIDTH: f32 = 300.0;
@@ -17,19 +17,19 @@ const SAMPLE_WIDTH: f32 = 300.0;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn font_sample_props(
     app: &mut WordApp,
-    paper: wordcraft_doc::Rgb,
+    paper: letra_doc::Rgb,
     font: &str,
     size: &str,
     color: &str,
     (bold, italic, underline, strike): (bool, bool, bool, bool),
     (small_caps, caps, hidden): (bool, bool, bool),
     spacing: f32,
-) -> wordcraft_doc::props::CharProps {
-    use wordcraft_doc::props::{CharProps, TextColor, Underline};
+) -> letra_doc::props::CharProps {
+    use letra_doc::props::{CharProps, TextColor, Underline};
     // Automatic text is black, or white on a dark page.
     let dark = u32::from(paper.0) * 299 + u32::from(paper.1) * 587 + u32::from(paper.2) * 114 < 128_000;
     let auto = if dark { 255 } else { 0 };
-    let ink = wordcraft_doc::Rgb::parse(color).unwrap_or(wordcraft_doc::Rgb(auto, auto, auto));
+    let ink = letra_doc::Rgb::parse(color).unwrap_or(letra_doc::Rgb(auto, auto, auto));
     // A hidden run is dotted, as Word draws hidden text when it is shown.
     let line = if underline {
         Underline::Single
@@ -58,16 +58,16 @@ pub(super) fn font_sample_props(
 pub(super) fn font_sample_box(
     app: &mut WordApp,
     ui: &mut Ui,
-    paper: wordcraft_doc::Rgb,
-    props: &wordcraft_doc::props::CharProps,
+    paper: letra_doc::Rgb,
+    props: &letra_doc::props::CharProps,
     (sup, sub): (bool, bool),
     hidden: bool,
 ) {
-    use wordcraft_doc::props::VertAlign;
+    use letra_doc::props::VertAlign;
     let dark = app.session.view.dark_mode;
     let mut render_options = crate::canvas::screen_render_options();
     render_options.dark = dark;
-    render_options.dark_paper = wordcraft_render::DARK_PAPER;
+    render_options.dark_paper = letra_render::DARK_PAPER;
     let display_paper = render_options.paper_of(&app.session.doc);
     let mark = if sup {
         Some(VertAlign::Superscript)
@@ -152,7 +152,7 @@ pub(super) fn font_props(d: &Dialog) -> serde_json::Map<String, Value> {
     if let Ok(s) = size.trim().parse::<f64>() {
         props.insert("size".into(), json!(s));
     }
-    if let Some(c) = wordcraft_doc::Rgb::parse(color) {
+    if let Some(c) = letra_doc::Rgb::parse(color) {
         props.insert("color".into(), json!({"Rgb": [c.0, c.1, c.2]}));
     } else if color.eq_ignore_ascii_case("auto") {
         // Automatic, from the colour field's drop-down (#606).

@@ -1,12 +1,12 @@
 //! Blocks, paragraphs, runs, objects and tables → WordprocessingML.
 
-use wordcraft_doc::effects::ShapeEffects;
-use wordcraft_doc::fill::{Fill, GradientFlip, GradientKind, PathShape};
-use wordcraft_doc::para::{AltText, Anchor, Float, NoteKind, ShapeKind, Wrap};
-use wordcraft_doc::props::{CharProps, PropChange, Rgb, TextColor};
-use wordcraft_doc::section::{LineNumberRestart, NoteProps, SectionProps, SectionStart};
-use wordcraft_doc::table::Table;
-use wordcraft_doc::{Block, Blocks, InlineObject, Paragraph, RevisionKind};
+use letra_doc::effects::ShapeEffects;
+use letra_doc::fill::{Fill, GradientFlip, GradientKind, PathShape};
+use letra_doc::para::{AltText, Anchor, Float, NoteKind, ShapeKind, Wrap};
+use letra_doc::props::{CharProps, PropChange, Rgb, TextColor};
+use letra_doc::section::{LineNumberRestart, NoteProps, SectionProps, SectionStart};
+use letra_doc::table::Table;
+use letra_doc::{Block, Blocks, InlineObject, Paragraph, RevisionKind};
 
 use super::props::{ChangeAttrs, borders, open_change, ppr_inner, rpr, rpr_inner, tblpr, tcpr, trpr};
 use super::{PartRels, Writer};

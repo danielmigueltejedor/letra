@@ -37,9 +37,9 @@ impl Paint {
         match self {
             Paint::Solid(color, alpha) => {
                 let alpha = if alpha.is_finite() { alpha.clamp(0.0, 1.0) } else { 1.0 };
-                wordcraft_doc::effects::bands(-radius, 0.0, alpha).into_iter().map(|(grow, band)| (grow, Paint::Solid(*color, band))).collect()
+                letra_doc::effects::bands(-radius, 0.0, alpha).into_iter().map(|(grow, band)| (grow, Paint::Solid(*color, band))).collect()
             }
-            _ => wordcraft_doc::effects::bands(-radius, 0.0, 1.0).into_iter().map(|(grow, alpha)| (grow, self.faded(alpha))).collect(),
+            _ => letra_doc::effects::bands(-radius, 0.0, 1.0).into_iter().map(|(grow, alpha)| (grow, self.faded(alpha))).collect(),
         }
     }
     /// The colour and opacity this paint gives the point (`x`, `y`): stops blended, padded past
@@ -69,8 +69,8 @@ impl Paint {
 /// gradient runs from the centre of its focus rectangle out to the farthest corner, drawn
 /// circular whatever its outline (rectangular and shape-following ones are approximated).
 /// `tileRect` and `flip` are kept but not drawn. `None` for no fill.
-pub fn paint_for(fill: &wordcraft_doc::fill::Fill, frame: Rect) -> Option<Paint> {
-    use wordcraft_doc::fill::{Fill, GradientKind};
+pub fn paint_for(fill: &letra_doc::fill::Fill, frame: Rect) -> Option<Paint> {
+    use letra_doc::fill::{Fill, GradientKind};
     let g = match fill.sanitized()? {
         Fill::Solid { color, transparency } => return Some(Paint::Solid(color, 1.0 - transparency / 100.0)),
         Fill::Gradient(g) => g,

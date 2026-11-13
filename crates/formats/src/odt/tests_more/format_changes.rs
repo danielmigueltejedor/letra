@@ -1,12 +1,12 @@
 //! Tracked formatting changes (ODF 1.3 §5.5.7 `text:format-change`, marked by
 //! `text:change-start`/`-end`): the text keeps a formatting revision with its author and date.
 //! ODF records no old formatting, so the old is the text's own (accepting keeps it, rejecting
-//! changes nothing); WordCraft's formatting revisions are written as format changes.
+//! changes nothing); Letra's formatting revisions are written as format changes.
 
 use crate::odt::tests::{NS_T, content_of, package};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
-use wordcraft_doc::RevisionKind;
+use letra_doc::Document;
+use letra_doc::RevisionKind;
 
 const NS_DC: &str = r#"xmlns:dc="http://purl.org/dc/elements/1.1/""#;
 

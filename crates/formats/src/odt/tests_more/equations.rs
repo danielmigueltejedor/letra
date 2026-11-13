@@ -2,14 +2,14 @@
 //! formula sub-document holding MathML), read back by the reader that opens LibreOffice's.
 
 use crate::odt::{export, import};
-use wordcraft_doc::para::{InlineObject, OBJ};
-use wordcraft_doc::{Document, Paragraph, para_block};
+use letra_doc::para::{InlineObject, OBJ};
+use letra_doc::{Document, Paragraph, para_block};
 
-fn eq_para(before: &str, linear: &str, display: bool) -> std::sync::Arc<wordcraft_doc::Block> {
+fn eq_para(before: &str, linear: &str, display: bool) -> std::sync::Arc<letra_doc::Block> {
     let mut p = Paragraph::new();
     p.text = format!("{before}{OBJ}");
     p.objects.push(InlineObject::Equation { linear: linear.into(), display, math: Default::default() });
-    p.runs = vec![wordcraft_doc::para::Run { len: p.text.len(), props: Default::default() }];
+    p.runs = vec![letra_doc::para::Run { len: p.text.len(), props: Default::default() }];
     para_block(p)
 }
 

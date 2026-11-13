@@ -3,11 +3,11 @@
 
 use std::sync::Arc;
 
-use wordcraft_doc::graphic::{Graphic, GraphicItem, GraphicKind, TextAlign};
-use wordcraft_doc::para::InlineObject;
-use wordcraft_doc::props::Rgb;
-use wordcraft_doc::{Block, Document, Path, Pos, StoryRef, Table};
-use wordcraft_fonts::FontDb;
+use letra_doc::graphic::{Graphic, GraphicItem, GraphicKind, TextAlign};
+use letra_doc::para::InlineObject;
+use letra_doc::props::Rgb;
+use letra_doc::{Block, Document, Path, Pos, StoryRef, Table};
+use letra_fonts::FontDb;
 
 use super::{footnote, lay, page_float, text_box_at};
 use crate::display::DisplayOptions;
@@ -18,7 +18,7 @@ use crate::{DocLayout, MAX_MISSING_GLYPHS, MissingGlyphs};
 fn uncovered(n: usize) -> Vec<char> {
     crate::test_fonts();
     let db = FontDb::global();
-    let primary = wordcraft_fonts::word::resolve(&Document::default().settings.minor_font, false, false).face;
+    let primary = letra_fonts::word::resolve(&Document::default().settings.minor_font, false, false).face;
     let out: Vec<char> = (0x40000u32..0x4FFF0)
         .filter_map(char::from_u32)
         .filter(|c| {
@@ -38,8 +38,8 @@ fn chars(m: &MissingGlyphs) -> Vec<char> {
     m.chars.iter().map(|(c, _)| *c).collect()
 }
 
-fn hf_part(d: &mut Document, kind: wordcraft_doc::PartKind, text: &str) -> u32 {
-    d.add_part(kind, vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text(text, Default::default()))])
+fn hf_part(d: &mut Document, kind: letra_doc::PartKind, text: &str) -> u32 {
+    d.add_part(kind, vec![letra_doc::para_block(letra_doc::Paragraph::with_text(text, Default::default()))])
 }
 
 fn chart_with(d: &mut Document, label: &str) {
@@ -58,7 +58,7 @@ fn chart_with(d: &mut Document, label: &str) {
 }
 
 fn equation_with(d: &mut Document, linear: &str) {
-    let math = wordcraft_doc::math::Math { nodes: wordcraft_doc::math::parse_linear(linear), ..Default::default() };
+    let math = letra_doc::math::Math { nodes: letra_doc::math::parse_linear(linear), ..Default::default() };
     let n = d.para_mut(StoryRef::Body, &Path::top(0)).unwrap().len();
     d.para_mut(StoryRef::Body, &Path::top(0))
         .unwrap()
@@ -84,7 +84,7 @@ fn a_character_no_face_covers_is_counted_once_per_occurrence_in_the_body() {
 fn a_missing_glyph_is_found_in_a_header() {
     let c = uncovered(1)[0];
     let mut d = Document::from_text("Body");
-    d.last_section.headers.default = Some(hf_part(&mut d, wordcraft_doc::PartKind::Header, &format!("H{c}{c}")));
+    d.last_section.headers.default = Some(hf_part(&mut d, letra_doc::PartKind::Header, &format!("H{c}{c}")));
     assert_eq!(missing(&d, &lay(&d)).chars, vec![(c, 2)]);
 }
 
@@ -92,7 +92,7 @@ fn a_missing_glyph_is_found_in_a_header() {
 fn a_missing_glyph_is_found_in_a_footer() {
     let c = uncovered(1)[0];
     let mut d = Document::from_text("Body");
-    d.last_section.footers.default = Some(hf_part(&mut d, wordcraft_doc::PartKind::Footer, &format!("F{c}")));
+    d.last_section.footers.default = Some(hf_part(&mut d, letra_doc::PartKind::Footer, &format!("F{c}")));
     assert_eq!(missing(&d, &lay(&d)).chars, vec![(c, 1)]);
 }
 
@@ -117,7 +117,7 @@ fn a_missing_glyph_is_found_in_a_table_cell() {
     let c = uncovered(1)[0];
     let mut d = Document::from_text("before");
     let mut t = Table::new(1, 2, 300.0);
-    t.rows[0].cells[1].blocks = vec![wordcraft_doc::para_block(wordcraft_doc::Paragraph::with_text(&format!("cell {c}"), Default::default()))];
+    t.rows[0].cells[1].blocks = vec![letra_doc::para_block(letra_doc::Paragraph::with_text(&format!("cell {c}"), Default::default()))];
     d.insert_block(StoryRef::Body, &Path::top(1), Block::Table(t)).unwrap();
     assert_eq!(missing(&d, &lay(&d)).chars, vec![(c, 1)]);
 }

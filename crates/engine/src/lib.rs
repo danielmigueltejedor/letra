@@ -1,4 +1,4 @@
-//! WordCraft engine: the editing session and its commands.
+//! Letra engine: the editing session and its commands.
 //!
 //! **Everything is a command.** Each user-visible action is a [`CommandSpec`] with a stable id
 //! (`format.bold`, `insert.table`), a label, the ribbon/menu location, a default shortcut, a
@@ -68,11 +68,11 @@ pub const MAX_EQUATION_TYPE_CHARS: usize = 10_000;
 /// side of the caret. A hostile IME count must not become an unbounded command.
 pub const MAX_EQUATION_DELETE_UNITS: usize = 64;
 
-pub use wordcraft_doc as doc;
-pub use wordcraft_geom::Region;
-pub use wordcraft_layout as layout;
-pub use wordcraft_proof as proof;
-pub use wordcraft_render as render;
+pub use letra_doc as doc;
+pub use letra_geom::Region;
+pub use letra_layout as layout;
+pub use letra_proof as proof;
+pub use letra_render as render;
 
 #[derive(Debug, thiserror::Error, Clone, PartialEq)]
 pub enum CmdError {
@@ -86,8 +86,8 @@ pub enum CmdError {
     Failed(String),
 }
 
-impl From<wordcraft_doc::DocError> for CmdError {
-    fn from(e: wordcraft_doc::DocError) -> Self {
+impl From<letra_doc::DocError> for CmdError {
+    fn from(e: letra_doc::DocError) -> Self {
         CmdError::Failed(e.to_string())
     }
 }

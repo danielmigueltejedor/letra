@@ -3,8 +3,8 @@
 
 use crate::odt::tests::{NS_T, package};
 use crate::odt::{export, import};
-use wordcraft_doc::props::{Border, BorderStyle, Borders, ParaProps};
-use wordcraft_doc::{Document, Paragraph, Rgb, para_block};
+use letra_doc::props::{Border, BorderStyle, Borders, ParaProps};
+use letra_doc::{Document, Paragraph, Rgb, para_block};
 
 fn open(props: &str, text: &str) -> Document {
     let content = format!(
@@ -71,7 +71,7 @@ fn borders_and_background_round_trip() {
     };
     let mut p = Paragraph::new();
     p.text = "Boxed".into();
-    p.runs = vec![wordcraft_doc::para::Run { len: 5, props: Default::default() }];
+    p.runs = vec![letra_doc::para::Run { len: 5, props: Default::default() }];
     p.props = want.clone();
     let mut d = Document::new();
     d.body = vec![para_block(p)];

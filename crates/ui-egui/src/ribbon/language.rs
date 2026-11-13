@@ -20,21 +20,21 @@ pub(crate) const PROOFING_LANGUAGES: [(&str, &str); 16] = [
     ("es-UY", "Spanish (Uruguay)"),
 ];
 
-/// Every language WordCraft has an English name for, by tag: the Language menu's short list, the
+/// Every language Letra has an English name for, by tag: the Language menu's short list, the
 /// Language dialog's built-in list, then the Language pack languages neither has (Bulgarian…).
 fn known() -> impl Iterator<Item = &'static (&'static str, &'static str)> {
     PROOFING_LANGUAGES.iter().chain(crate::dialogs_layout::LANGUAGES.iter()).chain(crate::language_packs::MORE_LANGUAGES.iter())
 }
 
-/// The language tag a document stores for text in a Language pack's language: the tag WordCraft
+/// The language tag a document stores for text in a Language pack's language: the tag Letra
 /// already names for it (`nl` → `nl-NL`, `sr-latn` → `sr-Latn-RS`, `bg` → `bg-BG`), else the
-/// locale in BCP 47 case (`de-at` → `de-AT`). [`wordcraft_engine::packs::pack_for_tag`] finds the
+/// locale in BCP 47 case (`de-at` → `de-AT`). [`letra_engine::packs::pack_for_tag`] finds the
 /// same pack again from it, so text marked in a pack's language is proofed by that pack.
 pub(crate) fn tag_for_pack(locale: &str) -> String {
     let wanted = locale.replace('_', "-");
     let exact = known().find(|(t, _)| t.eq_ignore_ascii_case(&wanted));
-    // A variant WordCraft names with its region (`ca-valencia` is `ca-ES-valencia`).
-    let regioned = || known().find(|(t, _)| t.contains('-') && wordcraft_engine::packs::without_region(t).eq_ignore_ascii_case(&wanted));
+    // A variant Letra names with its region (`ca-valencia` is `ca-ES-valencia`).
+    let regioned = || known().find(|(t, _)| t.contains('-') && letra_engine::packs::without_region(t).eq_ignore_ascii_case(&wanted));
     if let Some((t, _)) = exact.or_else(|| named_starting(&wanted)).or_else(regioned) {
         return (*t).to_string();
     }
@@ -43,7 +43,7 @@ pub(crate) fn tag_for_pack(locale: &str) -> String {
         .enumerate()
         .map(|(i, p)| {
             let alpha = p.chars().all(|c| c.is_ascii_alphabetic());
-            if i > 0 && wordcraft_engine::packs::is_region(p) {
+            if i > 0 && letra_engine::packs::is_region(p) {
                 p.to_ascii_uppercase()
             } else if i > 0 && alpha && p.len() == 4 {
                 let lower = p.to_ascii_lowercase();
@@ -57,7 +57,7 @@ pub(crate) fn tag_for_pack(locale: &str) -> String {
     parts.join("-")
 }
 
-/// The first language WordCraft names whose tag starts with `prefix` and a `-` (`bg` is
+/// The first language Letra names whose tag starts with `prefix` and a `-` (`bg` is
 /// `bg-BG`, `sr-Latn` is `sr-Latn-RS`).
 fn named_starting(prefix: &str) -> Option<&'static (&'static str, &'static str)> {
     known().find(|(t, _)| {
@@ -67,7 +67,7 @@ fn named_starting(prefix: &str) -> Option<&'static (&'static str, &'static str)>
     })
 }
 
-/// A pack language's name for the lists, in English: the name WordCraft has for its tag, else the
+/// A pack language's name for the lists, in English: the name Letra has for its tag, else the
 /// pack's own name (as shown, without format characters), else the tag.
 fn pack_language_name(tag: &str, endonym: &str) -> String {
     let named = language_name(Some(tag));
@@ -79,14 +79,14 @@ fn pack_language_name(tag: &str, endonym: &str) -> String {
 
 /// The installed and available Language packs, as (document tag, pack's own name), installed first.
 fn pack_languages(available: bool) -> Vec<(String, String)> {
-    let installed = wordcraft_engine::packs::installed().into_iter().map(|i| (i.locale, i.name));
+    let installed = letra_engine::packs::installed().into_iter().map(|i| (i.locale, i.name));
     let index: Vec<(String, String)> =
-        if available { wordcraft_engine::packs::available().into_iter().map(|p| (p.locale, p.name)).collect() } else { Vec::new() };
+        if available { letra_engine::packs::available().into_iter().map(|p| (p.locale, p.name)).collect() } else { Vec::new() };
     installed.chain(index).map(|(locale, name)| (tag_for_pack(&locale), name)).collect()
 }
 
 /// Review › Language's and the status bar's short list, as (tag, English name): the languages
-/// WordCraft proofs itself, then each installed Language pack's language not among them, by name.
+/// Letra proofs itself, then each installed Language pack's language not among them, by name.
 pub(crate) fn short_languages() -> Vec<(String, String)> {
     let mut out: Vec<(String, String)> = PROOFING_LANGUAGES.iter().map(|(t, n)| ((*t).to_string(), (*n).to_string())).collect();
     let mut more: Vec<(String, String)> = Vec::new();
@@ -102,7 +102,7 @@ pub(crate) fn short_languages() -> Vec<(String, String)> {
 }
 
 /// The Set Proofing Language dialog's list, as (tag, name in the interface language), sorted by
-/// name: every language WordCraft names, every installed Language pack's and every available
+/// name: every language Letra names, every installed Language pack's and every available
 /// one's, each once.
 pub(crate) fn all_languages() -> Vec<(String, String)> {
     let mut out: Vec<(String, String)> = Vec::new();
@@ -177,7 +177,7 @@ enum NameParts {
     Regioned { language: String, region: String },
 }
 
-/// The English name of a proofing language tag, as the status bar shows it (no tag: WordCraft's
+/// The English name of a proofing language tag, as the status bar shows it (no tag: Letra's
 /// default, US English): a listed language by its name; another region of one by the language
 /// and the region ("French (Canada)"); a bare language subtag by its usual variant; else the tag.
 pub(crate) fn language_name(tag: Option<&str>) -> String {
@@ -205,7 +205,7 @@ pub(super) fn display_name_with(tag: Option<&str>, translate: &dyn Fn(&str) -> S
 }
 
 /// The name a list shows for `tag` whose English name is `name`: [`display_name`] for the name
-/// WordCraft has for the tag, else `name` as it is (a pack's own name for a language WordCraft
+/// Letra has for the tag, else `name` as it is (a pack's own name for a language Letra
 /// has none for).
 pub(crate) fn display_of(tag: &str, name: &str) -> String {
     if name == language_name(Some(tag)) { display_name(Some(tag)) } else { name.to_string() }
@@ -221,7 +221,7 @@ fn name_parts(tag: Option<&str>) -> NameParts {
     let mut parts = tag.split(['-', '_']);
     let primary = parts.next().unwrap_or("");
     // The region: the first region subtag after the language (and script).
-    let region = parts.find(|p| wordcraft_engine::packs::is_region(p));
+    let region = parts.find(|p| letra_engine::packs::is_region(p));
     match region {
         // A region the list doesn't have: the language's name without its own region or variant.
         Some(r) => {
@@ -233,23 +233,23 @@ fn name_parts(tag: Option<&str>) -> NameParts {
                 None => NameParts::Whole(tag.to_string()),
             }
         }
-        // A bare language subtag ("pt", "pl"): the variant WordCraft proofs.
-        None => NameParts::Whole(match wordcraft_engine::proof::ProofLang::from_tag(Some(tag)) {
-            wordcraft_engine::proof::ProofLang::Pl => "Polish".into(),
-            wordcraft_engine::proof::ProofLang::Hr => "Croatian".into(),
-            wordcraft_engine::proof::ProofLang::Pt => "Portuguese (Brazil)".into(),
-            wordcraft_engine::proof::ProofLang::It => "Italian".into(),
-            wordcraft_engine::proof::ProofLang::Tr => "Turkish".into(),
-            wordcraft_engine::proof::ProofLang::Ru => "Russian".into(),
-            wordcraft_engine::proof::ProofLang::Cs => "Czech".into(),
-            wordcraft_engine::proof::ProofLang::Id => "Indonesian".into(),
-            wordcraft_engine::proof::ProofLang::Es => "Spanish (Spain)".into(),
-            wordcraft_engine::proof::ProofLang::De => "German (Germany)".into(),
-            wordcraft_engine::proof::ProofLang::En if tag.eq_ignore_ascii_case("en") => "English (United States)".into(),
+        // A bare language subtag ("pt", "pl"): the variant Letra proofs.
+        None => NameParts::Whole(match letra_engine::proof::ProofLang::from_tag(Some(tag)) {
+            letra_engine::proof::ProofLang::Pl => "Polish".into(),
+            letra_engine::proof::ProofLang::Hr => "Croatian".into(),
+            letra_engine::proof::ProofLang::Pt => "Portuguese (Brazil)".into(),
+            letra_engine::proof::ProofLang::It => "Italian".into(),
+            letra_engine::proof::ProofLang::Tr => "Turkish".into(),
+            letra_engine::proof::ProofLang::Ru => "Russian".into(),
+            letra_engine::proof::ProofLang::Cs => "Czech".into(),
+            letra_engine::proof::ProofLang::Id => "Indonesian".into(),
+            letra_engine::proof::ProofLang::Es => "Spanish (Spain)".into(),
+            letra_engine::proof::ProofLang::De => "German (Germany)".into(),
+            letra_engine::proof::ProofLang::En if tag.eq_ignore_ascii_case("en") => "English (United States)".into(),
             // A language (and script) without its region: the named tag it starts (`bg` is
             // Bulgarian, `sr-Latn` Serbian (Latin)).
             _ => named_starting(tag)
-                .or_else(|| known().find(|(t, _)| t.contains('-') && wordcraft_engine::packs::without_region(t).eq_ignore_ascii_case(tag)))
+                .or_else(|| known().find(|(t, _)| t.contains('-') && letra_engine::packs::without_region(t).eq_ignore_ascii_case(tag)))
                 .map_or_else(|| tag.to_string(), |(_, n)| (*n).to_string()),
         }),
     }
@@ -337,7 +337,7 @@ pub(crate) fn caret_language(app: &WordApp) -> String {
 }
 
 /// The formatting at the caret, resolved through the styles and the document default.
-fn caret_char(app: &WordApp) -> wordcraft_doc::resolve::ResolvedChar {
+fn caret_char(app: &WordApp) -> letra_doc::resolve::ResolvedChar {
     let s = &app.session;
     let style = s.doc.para_at(&s.sel.focus).and_then(|p| p.props.style.clone());
     s.doc.styles.resolve_char(style.as_deref(), &s.typing_props())
@@ -354,20 +354,20 @@ pub(crate) fn caret_no_proof(app: &WordApp) -> bool {
     caret_char(app).no_proof
 }
 
-/// Does WordCraft check spelling and grammar in the caret's language at all (Bulgarian: no)?
+/// Does Letra check spelling and grammar in the caret's language at all (Bulgarian: no)?
 pub(crate) fn caret_language_proofed(app: &WordApp) -> bool {
-    wordcraft_engine::proof::has_dictionary(caret_lang_tag(app).as_deref())
+    letra_engine::proof::has_dictionary(caret_lang_tag(app).as_deref())
 }
 
 /// The Hunspell dictionary the caret's language needs but doesn't have (`pl_PL`), if any (#1167).
 pub(crate) fn caret_missing_dictionary(app: &WordApp) -> Option<&'static str> {
-    wordcraft_engine::packs::missing_dictionary(caret_lang_tag(app).as_deref())
+    letra_engine::packs::missing_dictionary(caret_lang_tag(app).as_deref())
 }
 
 /// The dictionary file and reason when the caret's language has a dictionary installed that
 /// couldn't be read, so "no dictionary" would send the user to reinstall it for nothing (#2830).
 pub(crate) fn caret_unreadable_dictionary(app: &WordApp) -> Option<(std::path::PathBuf, String)> {
-    wordcraft_engine::proof::unreadable_dictionary(caret_lang_tag(app).as_deref()).map(|(_, file, reason)| (file, reason))
+    letra_engine::proof::unreadable_dictionary(caret_lang_tag(app).as_deref()).map(|(_, file, reason)| (file, reason))
 }
 
 /// Review › Language (and the status bar's language): set the selection's proofing language, or
@@ -422,7 +422,7 @@ struct TagParts {
     language: String,
     /// Four letters (`latn`).
     script: Option<String>,
-    /// [`wordcraft_engine::packs::is_region`].
+    /// [`letra_engine::packs::is_region`].
     region: Option<String>,
     /// Five to eight letters or digits, or four starting with a digit (`valencia`).
     variants: Vec<String>,
@@ -441,7 +441,7 @@ fn tag_parts(tag: &str) -> TagParts {
         }
         if out.script.is_none() && out.region.is_none() && p.len() == 4 && p.bytes().all(|b| b.is_ascii_alphabetic()) {
             out.script = Some(p.to_string());
-        } else if out.region.is_none() && wordcraft_engine::packs::is_region(p) {
+        } else if out.region.is_none() && letra_engine::packs::is_region(p) {
             out.region = Some(p.to_string());
         } else if (5..=8).contains(&p.len()) || (p.len() == 4 && p.bytes().next().is_some_and(|b| b.is_ascii_digit())) {
             out.variants.push(p.to_string());
@@ -466,7 +466,7 @@ fn listed_parts(tag: &str) -> TagParts {
 
 /// Are `a` and `b` the same language as the lists show it: the same tag (any case), or tags that
 /// agree in script, region and variant (one lacking a script or region takes the one the lists name
-/// it with) and that WordCraft proofs alike ([`same_proofing`]): `nl` is the `nl-NL` row, `pl` the
+/// it with) and that Letra proofs alike ([`same_proofing`]): `nl` is the `nl-NL` row, `pl` the
 /// `pl-PL` one, `ces` the `cs-CZ` one. Tags are compared, never the names the lists show for them.
 pub(crate) fn same_language(a: &str, b: &str) -> bool {
     if a.eq_ignore_ascii_case(b) {
@@ -478,8 +478,8 @@ pub(crate) fn same_language(a: &str, b: &str) -> bool {
     let (pa, pb) = (listed_parts(a), listed_parts(b));
     let agree = |x: &Option<String>, y: &Option<String>| x.is_none() || y.is_none() || x == y;
     // A language the lists name no region for (`xx`, `kl`) is not its regioned tag (`xx-AA`): they
-    // stay separate rows. Rules WordCraft has built in (`ces` for `cs-CZ`) match without one.
-    use wordcraft_engine::proof::ProofLang;
+    // stay separate rows. Rules Letra has built in (`ces` for `cs-CZ`) match without one.
+    use letra_engine::proof::ProofLang;
     if pa.region.is_none() != pb.region.is_none() && matches!(ProofLang::from_tag(Some(a)), ProofLang::Pack(_) | ProofLang::Other) {
         return false;
     }
@@ -499,8 +499,8 @@ fn variants_agree(a: &[String], b: &[String]) -> bool {
     let named = |v: &String| {
         let in_tag = |t: &str| t.split(['-', '_']).skip(1).any(|p| p.eq_ignore_ascii_case(v));
         known().any(|(t, _)| in_tag(t))
-            || wordcraft_engine::packs::available().iter().any(|p| in_tag(&p.locale))
-            || wordcraft_engine::packs::installed().iter().any(|p| in_tag(&p.locale))
+            || letra_engine::packs::available().iter().any(|p| in_tag(&p.locale))
+            || letra_engine::packs::installed().iter().any(|p| in_tag(&p.locale))
     };
     let extra = if a.is_empty() {
         &b
@@ -512,14 +512,14 @@ fn variants_agree(a: &[String], b: &[String]) -> bool {
     !extra.iter().any(named)
 }
 
-/// Does WordCraft proof `a` and `b` the same way: the same built-in language, or two Language
-/// pack languages read from the same pack ([`wordcraft_engine::packs::pack_for_tag`]: `nl` and
+/// Does Letra proof `a` and `b` the same way: the same built-in language, or two Language
+/// pack languages read from the same pack ([`letra_engine::packs::pack_for_tag`]: `nl` and
 /// `nl-NL` are both the `nl` pack's, though their pack locales differ); with neither pack known,
-/// the same language and script whatever the region. Languages WordCraft has no rules or pack for
+/// the same language and script whatever the region. Languages Letra has no rules or pack for
 /// are the same only when their language subtags are.
 fn same_proofing(a: &str, b: &str) -> bool {
-    use wordcraft_engine::packs;
-    use wordcraft_engine::proof::ProofLang;
+    use letra_engine::packs;
+    use letra_engine::proof::ProofLang;
     let (la, lb) = (ProofLang::from_tag(Some(a)), ProofLang::from_tag(Some(b)));
     if la == lb {
         // Languages without rules or a pack are the same only as the same language, script and

@@ -1,7 +1,7 @@
-//! Headless UI screenshots: renders the whole WordCraft window offscreen (wgpu), so it works
+//! Headless UI screenshots: renders the whole Letra window offscreen (wgpu), so it works
 //! with a locked screen or a hidden window.
 //!
-//! `cargo run -p wordcraft-ui-egui --example ui_shot -- script.jsonl`
+//! `cargo run -p letra-ui-egui --example ui_shot -- script.jsonl`
 //!
 //! The script is JSON lines: control-channel requests (`{"method": …, "params": …}`, see
 //! `docs/control-protocol.md`), `{"shot": "/abs/out.png"}` to save the window as PNG, or
@@ -16,8 +16,8 @@
 //! folder rather than the person's, or in `"storeDir"` given on the same line (with
 //! `CRAFT_LANGUAGE_PACK_INDEX` for a local pack index).
 
-use wordcraft_engine::Session;
-use wordcraft_ui_egui::{ControlRequest, Services, WordApp};
+use letra_engine::Session;
+use letra_ui_egui::{ControlRequest, Services, WordApp};
 
 static READY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
@@ -27,11 +27,8 @@ fn main() {
     let (tx, rx) = std::sync::mpsc::channel::<ControlRequest>();
     let lines: Vec<serde_json::Value> =
         script.lines().filter(|l| !l.trim().is_empty()).map(|l| serde_json::from_str(l).expect("json line")).collect();
-    let doc = if lines.first().is_some_and(|l| l.get("empty").is_some()) {
-        wordcraft_doc::Document::new()
-    } else {
-        wordcraft_engine::sample::sample_document()
-    };
+    let doc =
+        if lines.first().is_some_and(|l| l.get("empty").is_some()) { letra_doc::Document::new() } else { letra_engine::sample::sample_document() };
     match lines.iter().find_map(|l| l.get("demoPacks")) {
         Some(serde_json::Value::String(s)) if s == "store" => {
             // `"storeDir"` on the same line names the folder (to show packs put there beforehand).
@@ -40,15 +37,15 @@ fn main() {
                 .find_map(|l| l.get("storeDir").and_then(|v| v.as_str()))
                 .map(std::path::PathBuf::from)
                 .unwrap_or_else(|| std::env::temp_dir().join(format!("ui_shot-font-store-{}", std::process::id())));
-            wordcraft_engine::packs::use_font_store_in(dir, true);
+            letra_engine::packs::use_font_store_in(dir, true);
         }
         Some(_) => {
             // `"network": true` on a line has downloading already on (to show what follows a click on Add a language…).
-            let backend = wordcraft_engine::packs::FixedBackend::sample();
+            let backend = letra_engine::packs::FixedBackend::sample();
             if lines.iter().any(|l| l.get("network") == Some(&serde_json::Value::Bool(true))) {
                 backend.network.store(true, std::sync::atomic::Ordering::Relaxed);
             }
-            wordcraft_engine::packs::set_backend(Some(std::sync::Arc::new(backend)));
+            letra_engine::packs::set_backend(Some(std::sync::Arc::new(backend)));
         }
         None => {}
     }

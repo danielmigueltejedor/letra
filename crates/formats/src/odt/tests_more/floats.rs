@@ -4,8 +4,8 @@
 
 use crate::odt::tests::{NS_T, zip_of};
 use crate::odt::{export, import};
-use wordcraft_doc::Document;
-use wordcraft_doc::para::{Anchor, Float, FloatAlign, InlineObject, Wrap, WrapText};
+use letra_doc::Document;
+use letra_doc::para::{Anchor, Float, FloatAlign, InlineObject, Wrap, WrapText};
 
 const NS_D: &str = r#"xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink""#;
 
@@ -75,7 +75,7 @@ fn an_inline_frame_placed_against_the_text_is_raised_from_its_size() {
         let doc = import(&zip_of(&[("content.xml", content.as_bytes()), ("Pictures/p.png", &pic)])).unwrap();
         let p = doc.body.iter().find_map(|b| b.as_para()).unwrap();
         let (off, _) = p.objects_with_offsets().next().unwrap();
-        p.props_at(off + wordcraft_doc::para::OBJ.len_utf8()).position.map_or(0.0, |v| (v * 10.0).round() / 10.0)
+        p.props_at(off + letra_doc::para::OBJ.len_utf8()).position.map_or(0.0, |v| (v * 10.0).round() / 10.0)
     };
     // (0.891 - 0.216) / 2 × 12 − 36.
     assert_eq!(raise("middle", "text"), -32.0);
@@ -123,7 +123,7 @@ fn a_picture_alone_in_its_paragraph_keeps_its_raise_and_the_paragraphs_size() {
     let look = |doc: &Document| {
         let p = doc.body.iter().find_map(|b| b.as_para()).unwrap();
         let (off, _) = p.objects_with_offsets().next().unwrap();
-        let props = p.props_at(off + wordcraft_doc::para::OBJ.len_utf8());
+        let props = p.props_at(off + letra_doc::para::OBJ.len_utf8());
         (props.position.map(|v| (v * 10.0).round() / 10.0), props.size, p.mark.size)
     };
     let doc = crate::odt::import(&pkg).unwrap();
@@ -240,7 +240,7 @@ fn an_inline_frame_keeps_its_place_on_the_baseline() {
         let doc = crate::odt::import(&pkg).unwrap();
         let p = doc.body.iter().find_map(|b| b.as_para()).unwrap();
         let (off, _) = p.objects_with_offsets().next().unwrap();
-        let pos = p.props_at(off + wordcraft_doc::para::OBJ.len_utf8()).position.unwrap_or(0.0);
+        let pos = p.props_at(off + letra_doc::para::OBJ.len_utf8()).position.unwrap_or(0.0);
         assert_eq!((pos * 10.0).round() / 10.0, want, "{vpos}{y}");
         // Saved: a lowered one says how far its top is from the baseline.
         let saved = crate::odt::tests::content_of(&crate::odt::tests::export_model(&doc).unwrap());
@@ -252,10 +252,7 @@ fn an_inline_frame_keeps_its_place_on_the_baseline() {
         let again = crate::odt::import(&crate::odt::tests::export_model(&doc).unwrap()).unwrap();
         let p2 = again.body.iter().find_map(|b| b.as_para()).unwrap();
         let (off2, _) = p2.objects_with_offsets().next().unwrap();
-        assert_eq!(
-            p2.props_at(off2 + wordcraft_doc::para::OBJ.len_utf8()).position.map(|v| (v * 10.0).round() / 10.0),
-            (want != 0.0).then_some(want)
-        );
+        assert_eq!(p2.props_at(off2 + letra_doc::para::OBJ.len_utf8()).position.map(|v| (v * 10.0).round() / 10.0), (want != 0.0).then_some(want));
     }
 }
 
@@ -278,7 +275,7 @@ fn a_cropped_picture_keeps_its_crop() {
         .body
         .iter()
         .find_map(|b| b.as_para())
-        .and_then(|p| p.objects.iter().find_map(|o| if let wordcraft_doc::para::InlineObject::Image { crop, .. } = o { Some(*crop) } else { None }))
+        .and_then(|p| p.objects.iter().find_map(|o| if let letra_doc::para::InlineObject::Image { crop, .. } = o { Some(*crop) } else { None }))
         .unwrap();
     assert_eq!(crop.map(|c| (c * 100.0).round() / 100.0), [0.25, 0.0, 0.0, 0.25]);
     let c = crate::odt::tests::content_of(&crate::odt::tests::export_model(&doc).unwrap());
@@ -291,14 +288,14 @@ fn a_cropped_picture_keeps_its_crop() {
 #[test]
 fn contour_wrapping_and_its_outline_are_kept() {
     // `style:wrap-contour` with `outside` (Word's Tight) or `full` (Through), and the outline
-    // (`draw:contour-polygon`) in the frame's view box, as WordCraft's wrap polygon.
+    // (`draw:contour-polygon`) in the frame's view box, as Letra's wrap polygon.
     let png = {
         let img = image::RgbaImage::from_fn(10, 10, |_, _| image::Rgba([0, 0, 0, 255]));
         let mut b = Vec::new();
         img.write_to(&mut std::io::Cursor::new(&mut b), image::ImageFormat::Png).unwrap();
         b
     };
-    for (mode, want) in [("outside", wordcraft_doc::para::Wrap::Tight), ("full", wordcraft_doc::para::Wrap::Through)] {
+    for (mode, want) in [("outside", letra_doc::para::Wrap::Tight), ("full", letra_doc::para::Wrap::Through)] {
         let content = format!(
             r#"<office:document-content {NS} xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink"><office:automatic-styles><style:style style:name="fr1" style:family="graphic"><style:graphic-properties style:wrap="parallel" style:wrap-contour="true" style:wrap-contour-mode="{mode}" style:horizontal-pos="left" style:horizontal-rel="paragraph"/></style:style></office:automatic-styles><office:body><office:text><text:p><draw:frame draw:style-name="fr1" text:anchor-type="paragraph" svg:width="1in" svg:height="1in"><draw:image xlink:href="Pictures/p.png"/><draw:contour-polygon svg:width="1in" svg:height="1in" svg:viewBox="0 0 1000 1000" draw:points="500,0 1000,1000 0,1000" draw:recreate-on-edit="false"/></draw:frame>Text around it.</text:p></office:text></office:body></office:document-content>"#,
             NS = crate::odt::tests::NS_T
@@ -342,9 +339,9 @@ fn a_drawing_outside_any_paragraph_belongs_to_the_next_one() {
         r#"<office:document-content {ns} xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"><office:body><office:text><draw:frame text:anchor-type="page" text:anchor-page-number="1" svg:x="1in" svg:y="2in" svg:width="2in" svg:height="1in"><draw:text-box><text:p>Address</text:p></draw:text-box></draw:frame><text:p text:style-name="Opening">Dear reader,</text:p><text:p>Body.</text:p></office:text></office:body></office:document-content>"#
     );
     let d = import(&crate::odt::tests::package(&content, Some(&styles))).unwrap();
-    let paras: Vec<&wordcraft_doc::Paragraph> = d.body.iter().filter_map(|b| b.as_para()).collect();
+    let paras: Vec<&letra_doc::Paragraph> = d.body.iter().filter_map(|b| b.as_para()).collect();
     assert_eq!(paras.len(), 2, "no paragraph of the frame's own");
-    assert_eq!(paras[0].text.replace(wordcraft_doc::para::OBJ, ""), "Dear reader,");
+    assert_eq!(paras[0].text.replace(letra_doc::para::OBJ, ""), "Dear reader,");
     assert_eq!(paras[0].objects.len(), 1);
     // One section, starting on the first page style: a different first page without the head.
     assert!(d.last_section.title_page && d.last_section.headers.default.is_some());
@@ -356,13 +353,13 @@ fn a_drawing_outside_any_paragraph_belongs_to_the_next_one() {
 
 #[test]
 fn a_frame_keeps_its_place_in_the_stacking_order() {
-    // §19.231 `draw:z-index`: 0 at the bottom; WordCraft's z counts from 1 (0 is unknown).
+    // §19.231 `draw:z-index`: 0 at the bottom; Letra's z counts from 1 (0 is unknown).
     let d = open(r#"style:wrap="run-through""#, r#"text:anchor-type="paragraph" draw:z-index="3""#);
     assert_eq!(float(&d).z, 4);
     let saved = crate::odt::tests::export_model(&d).unwrap();
     assert!(crate::odt::tests::entry(&saved, "content.xml").contains(r#"draw:z-index="3""#));
     assert_eq!(float(&import(&saved).unwrap()).z, 4);
-    // Unknown (inserted in WordCraft): at the bottom, in document order.
+    // Unknown (inserted in Letra): at the bottom, in document order.
     let d = open(r#"style:wrap="run-through""#, r#"text:anchor-type="paragraph""#);
     assert_eq!(float(&d).z, 0);
     assert!(crate::odt::tests::entry(&crate::odt::tests::export_model(&d).unwrap(), "content.xml").contains(r#"draw:z-index="0""#));
@@ -433,7 +430,7 @@ fn a_frame_offering_several_formats_shows_the_first_it_can_read() {
     // to show, and the picture was gone once the paragraph was written from the model.
     let png = [b"\x89PNG\r\n\x1a\n".as_slice(), &[7u8; 64]].concat();
     let other = [b"\x89PNG\r\n\x1a\n".as_slice(), &[9u8; 64]].concat();
-    let svm = b"VCLMTF a metafile WordCraft can't draw".to_vec();
+    let svm = b"VCLMTF a metafile Letra can't draw".to_vec();
     let frame = |images: &[&str]| {
         let images: String = images.iter().map(|h| format!(r#"<draw:image xlink:href="{h}"/>"#)).collect();
         format!(

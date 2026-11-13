@@ -1,11 +1,11 @@
-//! An embedded spreadsheet in an ODT file (ODF 1.3 §10.4.6) opens as a picture WordCraft keeps
+//! An embedded spreadsheet in an ODT file (ODF 1.3 §10.4.6) opens as a picture Letra keeps
 //! the object behind: saved as ODT it is the spreadsheet again; saved as DOCX it is the picture
 //! alone, never ODF markup. The ODT is original and synthetic, shaped like LibreOffice's.
 
 use std::io::{Read, Write};
 
-use wordcraft_doc::para::InlineObject;
-use wordcraft_engine::io;
+use letra_doc::para::InlineObject;
+use letra_engine::io;
 
 const NS: &str = r#"xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink""#;
 
@@ -20,7 +20,7 @@ fn odt() -> Vec<u8> {
         ("mimetype", b"application/vnd.oasis.opendocument.text"),
         ("content.xml", content.as_bytes()),
         ("Object 1/content.xml", sheet.as_bytes()),
-        ("ObjectReplacements/Object 1", b"VCLMTF not a picture WordCraft draws"),
+        ("ObjectReplacements/Object 1", b"VCLMTF not a picture Letra draws"),
     ];
     for (name, data) in entries {
         z.start_file(name, o).unwrap();

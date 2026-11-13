@@ -1,10 +1,10 @@
 //! Charts written as ODF chart objects (ODF 1.3 §10.4.3 `draw:object` holding an `office:chart`
 //! sub-document, Part 3 §11), shaped like LibreOffice's: the chart's data in its own table
 //! (`local-table`, labels in the first row and column), each series pointing at its column, its
-//! colour the theme accent WordCraft draws it in.
+//! colour the theme accent Letra draws it in.
 
-use wordcraft_doc::Rgb;
-use wordcraft_doc::chart::{ChartSpec, ChartType, LegendPos};
+use letra_doc::Rgb;
+use letra_doc::chart::{ChartSpec, ChartType, LegendPos};
 
 use super::drawing::{Place, placement};
 use super::{Writer, pt, x};
@@ -64,7 +64,7 @@ pub(in crate::odt) fn chart_xml(spec: &ChartSpec, w: f32, h: f32, accents: &[Rgb
     let n = spec.series.iter().map(|s| s.values.len()).max().unwrap_or(0).max(spec.categories.len());
     // Scatter charts are points without lines.
     let points = if spec.kind == ChartType::Scatter { " chart:lines=\"false\" chart:symbol-type=\"automatic\"" } else { "" };
-    // A white wall, labelled axes in grey, a legend without a frame: as WordCraft draws them.
+    // A white wall, labelled axes in grey, a legend without a frame: as Letra draws them.
     let mut styles = format!(
         "<style:style style:name=\"plot\" style:family=\"chart\"><style:chart-properties chart:vertical=\"{vertical}\" chart:stacked=\"{stacked}\"{labels}{points}/></style:style>\
          <style:style style:name=\"wall\" style:family=\"chart\"><style:graphic-properties draw:stroke=\"none\" draw:fill=\"none\"/></style:style>\
@@ -126,7 +126,7 @@ pub(in crate::odt) fn chart_xml(spec: &ChartSpec, w: f32, h: f32, accents: &[Rgb
     let categories = if n > 0 { format!("<chart:categories table:cell-range-address=\"{}\"/>", data_range(0, n)) } else { String::new() };
     let axes = format!(
         "<chart:axis chart:dimension=\"x\" chart:name=\"primary-x\" chart:style-name=\"axis\">{categories}</chart:axis><chart:axis chart:dimension=\"y\" chart:name=\"primary-y\" chart:style-name=\"{}\">{}</chart:axis>",
-        // A pie runs clockwise from the top, as WordCraft draws it.
+        // A pie runs clockwise from the top, as Letra draws it.
         if spec.kind.is_round() { "round" } else { "axis" },
         if spec.kind.is_round() { "" } else { "<chart:grid chart:class=\"major\" chart:style-name=\"grid\"/>" }
     );
