@@ -37,6 +37,7 @@ skip = [
     "licenses/*",
     # The record of what came from upstream, and upstream's own README kept for reference.
     "docs/upstream.md",
+    "NODALIA_MIGRATION.md",
     "docs/upstream-readme.md",
     # Binary Finder layout of the disk image: rebuilt by its own script.
     "*.DS_Store",
