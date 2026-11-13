@@ -1,16 +1,14 @@
-//! The close control of a floating window (dialogs, the Read Aloud player, the file browser),
-//! as on a Word dialog on Windows (#1885): a box at the right end of the title bar, the full
-//! title-bar height and about 1.6× that wide, all of it clickable. It fills red with a white ✕
-//! while the pointer is over it and darker red while pressed. Escape closes dialogs as before.
+//! The close control of a floating window (dialogs, the Read Aloud player, the file browser):
+//! a box at the right end of the title bar, the full title-bar height and about 1.6× that wide,
+//! all of it clickable (#1885), with NDL's round close control drawn in its middle. Escape
+//! closes dialogs as before.
 
-use egui::{CornerRadius, Margin, Rect, Response, Sense, Stroke, TextStyle, Ui, UiBuilder, pos2, vec2};
+use egui::{CornerRadius, Margin, Rect, Response, Sense, Stroke, TextStyle, Ui, UiBuilder, pos2};
 
 use crate::theme::Tokens;
 
 /// The box's width as a multiple of the title bar height.
 const WIDTH: f32 = 1.6;
-/// Half the ✕'s width and height.
-const GLYPH: f32 = 5.0;
 
 /// The title bar's measurements for the current style.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -35,7 +33,9 @@ pub(crate) fn window<'a>(ctx: &egui::Context, w: egui::Window<'a>) -> egui::Wind
     let style = ctx.global_style();
     let m = style.spacing.window_margin;
     let right = geometry(ctx).width as i8;
-    w.title_frame(egui::Frame::window(&style).inner_margin(Margin { right, ..m }))
+    // The title bar is the dialog's own surface, as NDL draws it: no darker band across the top.
+    let frame = egui::Frame::window(&style).inner_margin(Margin { right, ..m });
+    w.frame(frame.inner_margin(m)).title_frame(frame.stroke(Stroke::NONE).corner_radius(CornerRadius::ZERO))
 }
 
 /// The box for a window whose outer rect is `window` (frame line included), with a title bar
@@ -51,7 +51,8 @@ pub(crate) fn close_rect(window: Rect, stroke: f32, g: Geometry) -> Rect {
 pub(crate) fn show(ctx: &egui::Context, window: &Response, t: &Tokens) -> bool {
     let style = ctx.global_style();
     let stroke = style.visuals.window_stroke.width;
-    let rect = close_rect(window.rect, stroke, geometry(ctx));
+    let g = geometry(ctx);
+    let rect = close_rect(window.rect, stroke, g);
     let id = window.layer_id.id.with("close_box");
     let ui = Ui::new(ctx.clone(), id, UiBuilder::new().layer_id(window.layer_id).max_rect(rect));
     // Pointer-only, like a caption button: Tab never lands on it.
@@ -60,16 +61,11 @@ pub(crate) fn show(ctx: &egui::Context, window: &Response, t: &Tokens) -> bool {
     r.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, label));
     let r = r.on_hover_text(label);
     let down = r.is_pointer_button_down_on() && r.contains_pointer();
-    let hot = down || r.hovered();
-    let painter = ctx.layer_painter(window.layer_id);
-    if hot {
-        let ne = style.visuals.window_corner_radius.ne.saturating_sub(stroke.round() as u8);
-        painter.rect_filled(rect, CornerRadius { ne, ..CornerRadius::ZERO }, if down { t.close_pressed } else { t.close_hover });
-    }
-    let c = pos2(painter.round_to_pixel_center(rect.center().x), painter.round_to_pixel_center(rect.center().y));
-    let s = Stroke::new(1.0, if hot { t.on_close } else { t.text });
-    painter.line_segment([c + vec2(-GLYPH, -GLYPH), c + vec2(GLYPH, GLYPH)], s);
-    painter.line_segment([c + vec2(-GLYPH, GLYPH), c + vec2(GLYPH, -GLYPH)], s);
+    // NDL's round close control, the same one the main window's title bar draws, centred where
+    // the box is: no red fill reaching into the corner, no hairline cross.
+    let size = (g.title_h - 8.0).clamp(16.0, 28.0);
+    let k = size / 28.0;
+    crate::window_controls::paint(&ui, t, crate::window_controls::Caption::Close, false, rect.center(), (r.hovered() || down, down), k);
     r.clicked() || window.should_close()
 }
 
@@ -77,6 +73,7 @@ pub(crate) fn show(ctx: &egui::Context, window: &Response, t: &Tokens) -> bool {
 mod tests {
     use super::*;
     use crate::WordApp;
+    use egui::vec2;
     use serde_json::json;
 
     fn harness(app: WordApp) -> egui_kittest::Harness<'static, WordApp> {

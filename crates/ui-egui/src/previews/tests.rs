@@ -202,12 +202,16 @@ fn equation_pictures_follow_the_theme() {
         assert!(img.pixels.iter().any(|p| p.a() == 0), "{key}: transparent paper");
         for t in [Tokens::light(), Tokens::dark()] {
             let (bg, fg) = (t.input, t.text);
-            let (lo, hi) = (bg.r().min(fg.r()), bg.r().max(fg.r()));
+            // Each channel lies between the tile's and the text's: the ink is the text colour
+            // over the tile, whatever tint the palette gives both.
+            let (bgc, fgc) = ([bg.r(), bg.g(), bg.b()], [fg.r(), fg.g(), fg.b()]);
             for p in &img.pixels {
                 let a = p.a();
                 let c = [mix(fg.r(), bg.r(), a), mix(fg.g(), bg.g(), a), mix(fg.b(), bg.b(), a)];
-                assert!(c[0] == c[1] && c[1] == c[2], "{key}: a grey, not {c:?}");
-                assert!((lo..=hi).contains(&c[0]), "{key}: between the tile and the text colour, not {c:?}");
+                for i in 0..3 {
+                    let (lo, hi) = (bgc[i].min(fgc[i]), bgc[i].max(fgc[i]));
+                    assert!((lo..=hi).contains(&c[i]), "{key}: between the tile and the text colour, not {c:?}");
+                }
             }
         }
     }

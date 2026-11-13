@@ -74,7 +74,12 @@ impl WordApp {
             chrome::title_bar(self, ui);
             ribbon::show(self, ui);
             chrome::status_bar(self, ui);
-            egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.canvas)).show(ui, |_| {});
+            let g = theme::ISLAND_GAP as i8;
+            egui::CentralPanel::default()
+                .frame(egui::Frame::NONE.fill(t.canvas).outer_margin(egui::Margin { left: g, right: g, top: 0, bottom: 0 }))
+                .show(ui, |ui| {
+                    theme::round_island_corners(ui.painter(), &t, ui.max_rect());
+                });
         } else {
             let screen = chrome::Screen::of(&self.session.view);
             // Focus and Full Screen (#1678) take the whole screen, with only their slim bar.
@@ -98,8 +103,15 @@ impl WordApp {
                 return;
             }
             let fill = if screen == chrome::Screen::Focus { chrome::FOCUS_CANVAS } else { t.canvas };
-            egui::CentralPanel::default().frame(egui::Frame::NONE.fill(fill)).show(ui, |ui| {
+            // The pages sit on their own island, except in Focus, which takes the whole screen.
+            let island = screen != chrome::Screen::Focus;
+            let g = if island { theme::ISLAND_GAP as i8 } else { 0 };
+            let frame = egui::Frame::NONE.fill(fill).outer_margin(egui::Margin { left: g, right: g, top: 0, bottom: 0 });
+            egui::CentralPanel::default().frame(frame).show(ui, |ui| {
                 canvas::show(self, ui);
+                if island {
+                    theme::round_island_corners(ui.painter(), &t, ui.max_rect());
+                }
             });
             if self.focus_ribbon && !moved(self) {
                 chrome::focus_ribbon(self, ctx);

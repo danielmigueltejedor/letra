@@ -20,6 +20,8 @@ mod default_apps;
 mod file_dialogs;
 #[cfg(any(target_os = "windows", target_os = "macos", test))]
 mod graphics;
+#[cfg(all(unix, not(target_os = "macos")))]
+mod linux_menu;
 mod logging;
 mod print;
 mod region;
@@ -548,8 +550,15 @@ fn main() -> eframe::Result {
     if let Some(window) = restored {
         options.viewport = window.apply(options.viewport);
     }
+    // Linux and the BSDs: Letra's own title bar with Nodalia's window controls, unless the
+    // preferences ask for the desktop's.
+    let ndl_controls = cfg!(all(unix, not(target_os = "macos")))
+        && saved.as_ref().is_none_or(|ui| ui.window_controls == letra_ui_egui::window_controls::WindowControls::Nodalia);
+    if ndl_controls {
+        options.viewport = options.viewport.with_decorations(false).with_transparent(false);
+    }
     #[cfg(all(unix, not(target_os = "macos")))]
-    {
+    let on_wayland = {
         let (x11, why) = uses_x11(saved.as_ref().map(|ui| ui.display_server).unwrap_or_default(), |name| std::env::var_os(name));
         log::info!("{why}");
         if x11 {
@@ -558,7 +567,8 @@ fn main() -> eframe::Result {
                 b.with_x11();
             }));
         }
-    }
+        !x11 && std::env::var_os("WAYLAND_DISPLAY").is_some_and(|d| !d.is_empty())
+    };
     // Registered before the event loop starts, so it catches the Finder event that launched us as
     // well as later ones. Lives until the event loop returns; the app creator only borrows it.
     #[cfg(target_os = "macos")]
@@ -604,6 +614,13 @@ fn main() -> eframe::Result {
             app.ui.window = restored;
             app.set_window_builder(window_builder);
             app.integrated_titlebar = cfg!(target_os = "macos");
+            app.linux_desktop = cfg!(all(unix, not(target_os = "macos")));
+            app.ndl_window_controls = ndl_controls;
+            // The desktop's top bar shows Letra's menus where it can (Nodalix on Wayland).
+            #[cfg(all(unix, not(target_os = "macos")))]
+            {
+                app.global_menu = linux_menu::install(&cc.egui_ctx, &app, on_wayland);
+            }
             #[cfg(target_os = "macos")]
             if let Some(bar) = traffic_lights::title_bar() {
                 log::info!("title bar: {bar:?}");

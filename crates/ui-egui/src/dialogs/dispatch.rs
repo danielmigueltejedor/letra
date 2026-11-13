@@ -1174,13 +1174,19 @@ fn about_dialog(ui: &mut Ui, d: &mut Dialog) -> bool {
             ui.label(egui::RichText::new(tl!("Letra")).font(semibold(22.0)));
             let build = option_env!("LETRA_BUILD_SHA").map(|s| s.get(..8).unwrap_or(s)).unwrap_or(tl!("development build"));
             ui.label(crate::i18n::fmt(tl!("Version {version} ({build})"), &[("version", env!("CARGO_PKG_VERSION")), ("build", build)]));
-            ui.label(tl!("A free, open-source word processor written from scratch in Rust.\nPart of the Crafting Apps from the Nodalia team."));
+            ui.label(tl!("A free, open-source word processor from Nodalia, written in Rust."));
             ui.add_space(6.0);
             ui.hyperlink_to(tl!("getnodalia.com/letra"), "https://getnodalia.com/letra");
-            ui.hyperlink_to(tl!("Join us on Discord: discord.gg/artcraft"), "https://github.com/getnodalia/letra/issues");
+            ui.hyperlink_to(tl!("Report a problem"), "https://github.com/getnodalia/letra/issues");
             ui.hyperlink_to(tl!("Source code: github.com/getnodalia/letra"), "https://github.com/getnodalia/letra");
             ui.add_space(6.0);
-            ui.label(egui::RichText::new(tl!("MIT OR Apache-2.0. Copyright (c) 2026 ArtCraft Team and the WordCraft contributors.")).small().weak());
+            ui.label(
+                egui::RichText::new(tl!(
+                    "MIT OR Apache-2.0. Includes work copyright (c) 2026 ArtCraft Team and the WordCraft contributors; see NOTICE."
+                ))
+                .small()
+                .weak(),
+            );
         }
     }
     // One Close button: About has nothing to cancel.

@@ -224,6 +224,7 @@ fn flag(app: &mut WordApp, ui: &mut Ui, label: &str, key: &str, value: bool) {
 fn general(app: &mut WordApp, ui: &mut Ui) {
     section(ui, "Interface");
     theme_picker(app, ui);
+    window_controls_picker(app, ui);
     interface_size_picker(app, ui);
     ui.horizontal(|ui| {
         use letra_engine::cmd::view::PaperColor;
@@ -736,6 +737,28 @@ fn theme_picker(app: &mut WordApp, ui: &mut Ui) {
                 }
             }
         });
+        combo.response.labelled_by(label.id);
+    });
+}
+
+/// Which window controls the Linux and BSD desktop app draws: NDL's round ones (the default) or
+/// the desktop's own title bar. macOS, Windows and the web keep theirs, so the row is not shown
+/// there.
+fn window_controls_picker(app: &mut WordApp, ui: &mut Ui) {
+    use crate::window_controls::WindowControls;
+    if !app.linux_desktop {
+        return;
+    }
+    ui.horizontal(|ui| {
+        let label = ui.label(tl!("Window controls:"));
+        let combo =
+            craft_ui::ComboBox::from_id_salt("window_controls").selected_text(tl!(app.ui.window_controls.label())).width(220.0).show_ui(ui, |ui| {
+                for c in WindowControls::ALL {
+                    if ui.selectable_label(app.ui.window_controls == c, tl!(c.label())).clicked() {
+                        let _ = app.run("ui.windowControls", json!({"value": c.code()}));
+                    }
+                }
+            });
         combo.response.labelled_by(label.id);
     });
 }
