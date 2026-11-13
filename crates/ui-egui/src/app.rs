@@ -103,6 +103,8 @@ impl WordApp {
             printing: Default::default(),
             print_feedback_seen: None,
             integrated_titlebar: false,
+            linux_desktop: false,
+            ndl_window_controls: false,
             mac_titlebar: chrome::MacTitleBar::default(),
             updates_rt: updates_ui::Runtime::default(),
             packs_rt: Default::default(),
@@ -412,6 +414,16 @@ impl WordApp {
 
     /// Lay out the windows: on the desktop each open document's in its own native window
     /// ([`windows`]), on the web the one window.
+    /// Linux and the BSDs: take the OS decorations off and draw Nodalia's window controls, or put
+    /// the desktop's back, as File › Options › General › Window controls says.
+    pub(crate) fn sync_window_controls(&mut self, ctx: &egui::Context) {
+        let want = self.linux_desktop && self.ui.window_controls == crate::window_controls::WindowControls::Nodalia;
+        if want != self.ndl_window_controls {
+            self.ndl_window_controls = want;
+            ctx.send_viewport_cmd(egui::ViewportCommand::Decorations(!want));
+        }
+    }
+
     pub fn ui(&mut self, ui: &mut egui::Ui) {
         if self.windows.native() {
             self.windows_ui(ui);
@@ -457,9 +469,11 @@ impl WordApp {
             backstage::forget_open_error(&ctx);
             backstage::forget_save_as_error(&ctx);
         }
+        self.sync_window_controls(&ctx);
         self.paint_window(ui, &ctx, t);
         if !moved(self) {
             self.show_overlays(ui, &ctx);
+            crate::window_controls::resize_zones(self, ui);
         }
         if !moved(self) {
             self.sync_title_and_frame(&ctx, t0);

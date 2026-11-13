@@ -223,10 +223,17 @@ pub fn show(app: &mut WordApp, ctx: &egui::Context) {
     // A file browser or Colors dialog it opened is above it and takes the keys: Escape or Enter
     // there doesn't also cancel or OK this one.
     let held = (app.file_browser_open() || app.colors.is_some()).then(|| ctx.input_mut(|i| std::mem::take(&mut i.events)));
+    // egui fills the focused window's title bar with the open-widget colour. NDL's title bar is
+    // the dialog's own surface, so lend it that colour while the window draws, and give the
+    // body (its combo boxes and menus) the real one back.
+    let open_fill = ctx.global_style().visuals.widgets.open.weak_bg_fill;
+    ctx.all_styles_mut(|s| s.visuals.widgets.open.weak_bg_fill = s.visuals.window_fill);
     let shown = place_dialog(ctx, id, window).show(ctx, |ui| {
+        ui.visuals_mut().widgets.open.weak_bg_fill = open_fill;
         ui.set_min_width(340.0);
         close = crate::rtl::root(ui, |ui| body(app, ui, &mut d));
     });
+    ctx.all_styles_mut(|s| s.visuals.widgets.open.weak_bg_fill = open_fill);
     if let Some(events) = held {
         ctx.input_mut(|i| i.events = events);
     }

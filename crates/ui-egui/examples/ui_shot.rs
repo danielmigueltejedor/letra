@@ -50,7 +50,8 @@ fn main() {
         None => {}
     }
     let mut app = WordApp::new(Session::new(doc), Services::default()).with_control(rx);
-    app.integrated_titlebar = true;
+    app.integrated_titlebar = cfg!(target_os = "macos");
+    app.linux_desktop = cfg!(all(unix, not(target_os = "macos")));
     if lines.first().is_some_and(|l| l.get("startScreen").is_some()) {
         app.start_screen();
     }

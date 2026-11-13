@@ -301,7 +301,70 @@ pub struct Tokens {
 }
 
 impl Tokens {
+    /// The light interface: Nodalia's light palette with Letra's accent.
     pub fn light() -> Self {
+        Self::nodalia(nodalia_theme::Mode::Light)
+    }
+
+    /// The dark interface: Nodalia's dark palette with Letra's accent.
+    pub fn dark() -> Self {
+        Self::nodalia(nodalia_theme::Mode::Dark)
+    }
+
+    /// Every interface colour from `nodalia-theme`; only what is drawn on or beside the page
+    /// (shadows, guides, comment authors) keeps Letra's own.
+    fn nodalia(mode: nodalia_theme::Mode) -> Self {
+        let p = palette(mode);
+        let dark = mode.is_dark();
+        let base = if dark { Self::page_dark() } else { Self::page_light() };
+        let accent = ndl(p.accent_default);
+        Tokens {
+            dark,
+            title_bar: ndl(p.surface_window),
+            ribbon: ndl(p.surface_panel),
+            tab_strip: ndl(p.surface_panel),
+            canvas: ndl(p.surface_sunken),
+            panel: ndl(p.surface_panel),
+            border: ndl(p.border_subtle),
+            border_strong: ndl(p.border_strong),
+            text: ndl(p.text_primary),
+            text_dim: ndl(p.text_secondary),
+            text_disabled: ndl(p.text_disabled),
+            icon: ndl(p.text_primary),
+            hover: ndl(p.control_bg_hover),
+            pressed: ndl(p.control_bg_pressed),
+            checked: ndl(p.accent_subtle),
+            accent,
+            // White text and icons sit on the File page's side bar, so it takes the deep accent.
+            nav: if dark { ndl(p.accent_subtle) } else { ndl(p.accent_pressed) },
+            accent_text: ndl(p.accent_text),
+            on_accent: ndl(p.text_on_accent),
+            input: ndl(p.control_field_bg),
+            input_border: ndl(p.border_default),
+            group_label: ndl(p.text_tertiary),
+            ruler: ndl(p.surface_panel),
+            ruler_margin: ndl(p.surface_sunken),
+            ruler_tick: ndl(p.text_tertiary),
+            status_bar: ndl(p.surface_panel),
+            selection: Color32::from_rgba_unmultiplied(accent.r(), accent.g(), accent.b(), if dark { 0x55 } else { 0x48 }),
+            balloon: ndl(p.surface_raised),
+            markup_area: ndl(p.surface_sunken),
+            markup_edge: ndl(p.border_subtle),
+            menu: ndl(p.surface_overlay),
+            blue: ndl(p.status_info_fg),
+            red: ndl(p.status_danger_fg),
+            green: ndl(p.status_success_fg),
+            orange: ndl(p.status_warning_fg),
+            close_hover: ndl(WINDOW_CLOSE),
+            close_pressed: ndl(WINDOW_CLOSE_PRESSED),
+            on_close: Color32::WHITE,
+            ..base
+        }
+    }
+
+    /// The document-side colours the Nodalia palette has no token for (page shadow, guides,
+    /// comment authors…), light.
+    fn page_light() -> Self {
         Tokens {
             dark: false,
             title_bar: Color32::from_rgb(0xF0, 0xF0, 0xF0),
@@ -366,7 +429,8 @@ impl Tokens {
             on_close: Color32::WHITE,
         }
     }
-    pub fn dark() -> Self {
+    /// [`Tokens::page_light`] for the dark interface.
+    fn page_dark() -> Self {
         Tokens {
             dark: true,
             title_bar: Color32::from_rgb(0x1F, 0x1F, 0x1F),
@@ -436,6 +500,68 @@ impl Tokens {
     }
     pub fn get(ctx: &egui::Context) -> Tokens {
         if ctx.global_style().visuals.dark_mode { Tokens::dark() } else { Tokens::light() }
+    }
+}
+
+/// Letra's accent in the Nodalia palette.
+pub const LETRA: nodalia_theme::Accent = nodalia_theme::Accent::Letra;
+/// An island's corner radius.
+pub const ISLAND_RADIUS: f32 = nodalia_theme::component::PANEL_RADIUS;
+/// The window-colour gap between two islands, and between an island and the window's edge.
+pub const ISLAND_GAP: f32 = nodalia_theme::component::WINDOW_GAP;
+/// A control's corner radius (buttons, fields, menus' rows).
+pub const CONTROL_RADIUS: f32 = nodalia_theme::component::CONTROL_RADIUS;
+/// `component.window.close`: coral under the pointer, in every mode.
+const WINDOW_CLOSE: nodalia_theme::Rgba = nodalia_theme::Rgba::new(0xff, 0x5c, 0x4d, 0xff);
+const WINDOW_CLOSE_PRESSED: nodalia_theme::Rgba = nodalia_theme::Rgba::new(0xe0, 0x45, 0x37, 0xff);
+
+/// Nodalia's palette with Letra's accent.
+pub fn palette(mode: nodalia_theme::Mode) -> nodalia_theme::Palette {
+    mode.palette_with(LETRA)
+}
+
+pub(crate) fn ndl(c: nodalia_theme::Rgba) -> Color32 {
+    Color32::from_rgba_unmultiplied(c.r, c.g, c.b, c.a)
+}
+
+/// Which side of a bar faces the next island, and so keeps a gap.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Gap {
+    Top,
+    Bottom,
+    Left,
+    Right,
+}
+
+/// An island: the panel colour, rounded, kept [`ISLAND_GAP`] from its neighbour on side `gap` and
+/// from the window's edges on the sides `edges` lists. Returns the frame and the room the
+/// margins take along the vertical axis (add it to a panel's exact height).
+pub fn island(t: &Tokens, inner: egui::Margin, gap: &[Gap]) -> (egui::Frame, f32) {
+    let g = ISLAND_GAP as i8;
+    let mut outer = egui::Margin::ZERO;
+    for side in gap {
+        match side {
+            Gap::Top => outer.top = g,
+            Gap::Bottom => outer.bottom = g,
+            Gap::Left => outer.left = g,
+            Gap::Right => outer.right = g,
+        }
+    }
+    let frame = egui::Frame::NONE.fill(t.panel).inner_margin(inner).outer_margin(outer).corner_radius(CornerRadius::same(ISLAND_RADIUS as u8));
+    (frame, f32::from(outer.top) + f32::from(outer.bottom))
+}
+
+/// Rounds the corners of an island whose contents paint edge to edge (the page area): a
+/// window-coloured ring outside a rounded `rect`, clipped to it, covers the square corners.
+/// Paint it after the contents.
+pub fn round_island_corners(painter: &egui::Painter, t: &Tokens, rect: Rect) {
+    if rect.is_positive() {
+        painter.with_clip_rect(rect).rect_stroke(
+            rect,
+            CornerRadius::same(ISLAND_RADIUS as u8),
+            Stroke::new(ISLAND_RADIUS, t.title_bar),
+            egui::StrokeKind::Outside,
+        );
     }
 }
 
@@ -864,13 +990,13 @@ fn visuals(t: &Tokens) -> Visuals {
     if t.dark && cfg!(all(unix, not(target_os = "macos"))) {
         v.text_options.color_transfer_function = egui::epaint::FontColorTransferFunction::Gamma(DARK_TEXT_GAMMA);
     }
-    v.panel_fill = t.ribbon;
+    v.panel_fill = t.title_bar;
     v.window_fill = t.menu;
     v.extreme_bg_color = t.input;
     v.faint_bg_color = t.panel;
-    v.window_stroke = Stroke::new(1.0, t.border_strong);
-    v.window_corner_radius = CornerRadius::same(8);
-    v.menu_corner_radius = CornerRadius::same(6);
+    v.window_stroke = Stroke::new(1.0, t.border);
+    v.window_corner_radius = CornerRadius::same(ISLAND_RADIUS as u8);
+    v.menu_corner_radius = CornerRadius::same(CONTROL_RADIUS as u8);
     v.selection.bg_fill = t.selection;
     v.selection.stroke = Stroke::new(1.0, t.accent);
     v.hyperlink_color = t.accent_text;
@@ -880,16 +1006,16 @@ fn visuals(t: &Tokens) -> Visuals {
     v.widgets.inactive.weak_bg_fill = t.input;
     v.widgets.inactive.bg_stroke = Stroke::new(1.0, t.input_border);
     v.widgets.inactive.fg_stroke = Stroke::new(1.0, t.text);
-    v.widgets.inactive.corner_radius = CornerRadius::same(4);
+    v.widgets.inactive.corner_radius = CornerRadius::same(CONTROL_RADIUS as u8 / 2 + 2);
     v.widgets.hovered.bg_fill = t.hover;
     v.widgets.hovered.weak_bg_fill = t.hover;
     v.widgets.hovered.bg_stroke = Stroke::new(1.0, t.border_strong);
     v.widgets.hovered.fg_stroke = Stroke::new(1.0, t.text);
-    v.widgets.hovered.corner_radius = CornerRadius::same(4);
+    v.widgets.hovered.corner_radius = CornerRadius::same(CONTROL_RADIUS as u8 / 2 + 2);
     v.widgets.active.bg_fill = t.pressed;
     v.widgets.active.weak_bg_fill = t.pressed;
     v.widgets.active.fg_stroke = Stroke::new(1.0, t.text);
-    v.widgets.active.corner_radius = CornerRadius::same(4);
+    v.widgets.active.corner_radius = CornerRadius::same(CONTROL_RADIUS as u8 / 2 + 2);
     v.widgets.open.bg_fill = t.pressed;
     v.widgets.open.weak_bg_fill = t.pressed;
     v.popup_shadow = egui::Shadow { offset: [0, 4], blur: 16, spread: 0, color: Color32::from_black_alpha(if t.dark { 120 } else { 40 }) };
@@ -1120,7 +1246,7 @@ mod tests {
         assert!(semi.iter().any(|n| n.starts_with("fallback ")), "the caption is painted with semibold");
     }
 
-    /// #656: dialog primary buttons, the Discord pill, the table eraser and the Navigation search
+    /// #656: dialog primary buttons, the table eraser and the Navigation search
     /// highlight take their colours from the theme, not fixed light-theme values.
     #[test]
     fn interface_colours_come_from_the_theme() {

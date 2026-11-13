@@ -582,7 +582,10 @@ fn title_and_account_buttons_work() {
     h.run_steps(2);
     assert!(h.state().dialog.is_none());
     assert_eq!(h.state().title_stem(), long_name.trim());
-    h.get_by_label("Account").click();
+    // The header's main menu opens Preferences: File › Options › General.
+    h.get_by_label("Main menu").click();
+    h.run_steps(2);
+    h.get_by_label("      Preferences").click();
     h.run_steps(2);
     assert!(h.state().ui.backstage);
     assert_eq!(h.state().ui.backstage_page, "options");

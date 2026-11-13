@@ -548,6 +548,13 @@ fn main() -> eframe::Result {
     if let Some(window) = restored {
         options.viewport = window.apply(options.viewport);
     }
+    // Linux and the BSDs: Letra's own title bar with Nodalia's window controls, unless the
+    // preferences ask for the desktop's.
+    let ndl_controls = cfg!(all(unix, not(target_os = "macos")))
+        && saved.as_ref().is_none_or(|ui| ui.window_controls == letra_ui_egui::window_controls::WindowControls::Nodalia);
+    if ndl_controls {
+        options.viewport = options.viewport.with_decorations(false).with_transparent(false);
+    }
     #[cfg(all(unix, not(target_os = "macos")))]
     {
         let (x11, why) = uses_x11(saved.as_ref().map(|ui| ui.display_server).unwrap_or_default(), |name| std::env::var_os(name));
@@ -604,6 +611,8 @@ fn main() -> eframe::Result {
             app.ui.window = restored;
             app.set_window_builder(window_builder);
             app.integrated_titlebar = cfg!(target_os = "macos");
+            app.linux_desktop = cfg!(all(unix, not(target_os = "macos")));
+            app.ndl_window_controls = ndl_controls;
             #[cfg(target_os = "macos")]
             if let Some(bar) = traffic_lights::title_bar() {
                 log::info!("title bar: {bar:?}");

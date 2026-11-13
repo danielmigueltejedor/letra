@@ -670,6 +670,18 @@ impl WordApp {
                 self.read_system_animations();
                 json!({"animations": self.ui.animations.code(), "enabled": self.animations_on(), "system": self.system_animations})
             }
+            "ui.windowControls" => {
+                // `nodalia` (the default) or `system`: which window controls the Linux and BSD
+                // desktop app draws, NDL's round ones or the desktop's own title bar. macOS and
+                // Windows always keep their native controls. No value reads it.
+                if let Some(v) = s("value") {
+                    match crate::window_controls::WindowControls::from_code(v) {
+                        Some(c) => self.ui.window_controls = c,
+                        None => return Some(Err(format!("unknown window controls {v:?}; use nodalia or system"))),
+                    }
+                }
+                json!({"windowControls": self.ui.window_controls.code(), "drawn": self.ndl_window_controls})
+            }
             "ui.statusCount" => {
                 // `words` (the default), `characters` or `charactersNoSpaces`: what the status
                 // bar's live count shows; no value reads it (#2797).
@@ -1117,6 +1129,7 @@ pub(crate) fn works_without_document(id: &str) -> bool {
             | "ui.recentClear"
             | "ui.displayServer"
             | "ui.statusCount"
+            | "ui.windowControls"
             | "ui.checkForUpdates"
     ) || id.starts_with("help.")
 }

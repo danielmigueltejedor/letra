@@ -74,6 +74,7 @@ pub mod theme;
 pub mod updates_ui;
 pub mod widgets;
 pub mod window_close;
+pub mod window_controls;
 pub mod window_geometry;
 mod window_ui;
 mod windows;
@@ -298,6 +299,9 @@ pub struct UiState {
     pub recent_fonts: Vec<String>,
     /// Interface theme: light, dark, or follow the OS appearance (#115).
     pub theme: theme::Appearance,
+    /// Linux and the BSDs: Nodalia's window controls in Letra's own title bar, or the desktop's.
+    #[serde(default)]
+    pub window_controls: window_controls::WindowControls,
     /// Interface size (#475, #822): Auto (the display scale the system reports) or an absolute
     /// size in percent. Junk saved values read as Auto; out-of-range ones are clamped to 50–300 %.
     #[serde(rename = "uiScale")]
@@ -453,6 +457,7 @@ impl Default for UiState {
             recent_colors: Vec::new(),
             recent_fonts: Vec::new(),
             theme: theme::Appearance::default(),
+            window_controls: window_controls::WindowControls::default(),
             interface_size: theme::InterfaceSize::default(),
             legacy_interface_size: None,
             animations: theme::Animations::default(),
@@ -635,6 +640,10 @@ pub struct WordApp {
     pub(crate) dialog_pick: Option<String>,
     /// macOS: the window has no title bar; leave room for the traffic lights.
     pub integrated_titlebar: bool,
+    /// The desktop app on Linux and the BSDs, where Letra can draw its own window controls.
+    pub linux_desktop: bool,
+    /// The window has no OS decorations and Letra draws Nodalia's window controls.
+    pub ndl_window_controls: bool,
     /// macOS: the title bar's height and where its content starts, around the traffic lights.
     pub mac_titlebar: chrome::MacTitleBar,
     /// Focus (#1678): the ribbon is dropped down from the Focus bar, over the page.

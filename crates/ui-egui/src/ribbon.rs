@@ -150,9 +150,19 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         tabs.insert((*at).min(tabs.len()), (name.clone(), false));
     }
     // Tab strip.
+    // The tabs and the ribbon under them are one island; with the ribbon collapsed the tabs are.
+    let (r, g) = (crate::theme::ISLAND_RADIUS as u8, crate::theme::ISLAND_GAP as i8);
+    let alone = app.ui.ribbon_collapsed;
     egui::Panel::top("tabs")
-        .exact_size(30.0)
-        .frame(egui::Frame::NONE.fill(t.tab_strip).inner_margin(egui::Margin { left: 8, right: 10, top: 0, bottom: 0 }))
+        .exact_size(34.0 + if alone { f32::from(g) } else { 0.0 })
+        .show_separator_line(false)
+        .frame(
+            egui::Frame::NONE
+                .fill(t.tab_strip)
+                .inner_margin(egui::Margin { left: 8, right: 10, top: 4, bottom: 0 })
+                .outer_margin(egui::Margin { left: g, right: g, top: 0, bottom: if alone { g } else { 0 } })
+                .corner_radius(if alone { egui::CornerRadius::same(r) } else { egui::CornerRadius { nw: r, ne: r, sw: 0, se: 0 } }),
+        )
         .show(ui, |ui| {
             crate::rtl::root(ui, |ui| {
                 ui.horizontal_centered(|ui| {
@@ -370,10 +380,16 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
     if app.ui.ribbon_collapsed {
         return;
     }
+    let (r, g) = (crate::theme::ISLAND_RADIUS as u8, crate::theme::ISLAND_GAP as i8);
     egui::Panel::top("ribbon")
-        .exact_size(CONTENT_H + LABEL_H + 10.0)
+        .exact_size(CONTENT_H + LABEL_H + 12.0 + f32::from(g))
+        .show_separator_line(false)
         .frame(
-            egui::Frame::NONE.fill(t.ribbon).inner_margin(egui::Margin { left: 8, right: 8, top: 4, bottom: 4 }).stroke(Stroke::new(1.0, t.border)),
+            egui::Frame::NONE
+                .fill(t.ribbon)
+                .inner_margin(egui::Margin { left: 8, right: 8, top: 4, bottom: 6 })
+                .outer_margin(egui::Margin { left: g, right: g, top: 0, bottom: g })
+                .corner_radius(egui::CornerRadius { nw: 0, ne: 0, sw: r, se: r }),
         )
         .show(ui, |ui| {
             // Right-click on the ribbon (outside a button): Customize Ribbon. Registered first, so

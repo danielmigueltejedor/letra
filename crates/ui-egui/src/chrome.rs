@@ -308,21 +308,26 @@ pub fn title_bar(app: &mut WordApp, ui: &mut Ui) {
     let mac = app.integrated_titlebar;
     let bar = app.mac_titlebar;
     let left = if mac { bar.content_left as i8 } else { 8 };
-    let control_h = if mac { 22.0 } else { 26.0 };
+    let control_h = if mac { 22.0 } else { 28.0 };
+    let captions = crate::window_controls::reserved(app);
     egui::Panel::top("title_bar")
-        .exact_size(if mac { bar.height } else { 38.0 })
-        .frame(egui::Frame::NONE.fill(t.title_bar).inner_margin(egui::Margin { left, right: 10, top: 0, bottom: 0 }))
+        .exact_size(if mac { bar.height } else { 44.0 })
+        .show_separator_line(false)
+        .frame(egui::Frame::NONE.fill(t.title_bar).inner_margin(egui::Margin { left, right: if captions > 0.0 { 0 } else { 10 }, top: 0, bottom: 0 }))
         .show(ui, |ui| {
             let full = ui.max_rect();
-            // Drag the window by the title bar (integrated title bar on macOS).
+            // Drag the window by the title bar (integrated title bar on macOS, and Letra's own
+            // on Linux with Nodalia's window controls).
             let drag = ui.interact(full, ui.scope_id().with("title_drag"), Sense::click_and_drag());
             if drag.drag_started() {
-                ui.ctx().send_viewport_cmd(egui::ViewportCommand::StartDrag);
+                crate::window_controls::start_os_move(ui.ctx());
             }
             // Elsewhere the system's own title bar above this one moves the window.
-            if mac {
+            if mac || app.ndl_window_controls {
                 note_title_drag(ui.ctx(), full);
             }
+            crate::window_controls::caption_buttons(app, ui, full);
+            let full = Rect::from_min_max(full.min, pos2(full.max.x - captions, full.max.y));
             if drag.double_clicked() {
                 let max = ui.ctx().input(|i| i.viewport().maximized.unwrap_or(false));
                 ui.ctx().send_viewport_cmd(egui::ViewportCommand::Maximized(!max));
@@ -335,6 +340,8 @@ pub fn title_bar(app: &mut WordApp, ui: &mut Ui) {
             crate::rtl::root(ui, |ui| {
                 ui.horizontal_centered(|ui| {
                     ui.spacing_mut().item_spacing = vec2(2.0, 0.0);
+                    app_menu(ui, app, control_h);
+                    ui.add_space(6.0);
                     // AutoSave switch: greyed out, with the reason as its tooltip, when AutoSave can't
                     // cover the document (#196, #176); clicking it then offers Save As where that helps.
                     let block = app.autosave_block();
@@ -380,16 +387,7 @@ pub fn title_bar(app: &mut WordApp, ui: &mut Ui) {
                     }
                     qat_end = if rtl { ui.min_rect().min.x } else { ui.min_rect().max.x };
                     ui.with_layout(crate::rtl::far_side(ui, egui::Align::Center), |ui| {
-                        // Account / community.
-                        let (r, resp) = ui.allocate_exact_size(vec2(control_h, control_h), Sense::click());
-                        ui.painter().circle_filled(r.center(), control_h / 2.0 - 1.0, t.accent);
-                        resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tl!("Account")));
-                        let initials: String = app.session.user_initials().chars().take(2).collect();
-                        ui.painter().text(r.center(), Align2::CENTER_CENTER, initials, semibold(10.5), t.on_accent);
-                        if resp.on_hover_text(format!("{} — set your name in File › Options", app.session.author)).clicked() {
-                            let _ = app.run("ui.backstage", json!({"value": true, "page": "options", "pane": "general"}));
-                        }
-                        ui.add_space(8.0);
+                        ui.add_space(captions + 4.0);
                         search_box(app, ui, control_h);
                         right_start = if rtl { ui.min_rect().max.x } else { ui.min_rect().min.x };
                     });
@@ -444,6 +442,59 @@ pub fn title_bar(app: &mut WordApp, ui: &mut Ui) {
                 );
             }
         });
+}
+
+/// The hamburger button's id (stable, so tests and agents can find it).
+pub(crate) fn app_menu_button_id() -> egui::Id {
+    egui::Id::unique("app_menu_button")
+}
+
+/// The hamburger button at the title bar's start and its menu: Preferences, Keyboard shortcuts,
+/// Check for updates, About, and Quit.
+fn app_menu(ui: &mut Ui, app: &mut WordApp, control_h: f32) {
+    let t = Tokens::get(ui.ctx());
+    let (r, _) = ui.allocate_exact_size(vec2(control_h, control_h), Sense::hover());
+    let resp = ui.interact(r, app_menu_button_id(), Sense::click());
+    let open = egui::Popup::is_id_open(ui.ctx(), egui::Popup::default_response_id(&resp));
+    if resp.hovered() || open {
+        ui.painter().circle_filled(r.center(), control_h / 2.0, if open { t.pressed } else { t.hover });
+    }
+    crate::icons::paint_ndl(ui.painter(), Rect::from_center_size(r.center(), vec2(20.0, 20.0)), "menu", t.icon);
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tl!("Main menu")));
+    egui::Popup::menu(&resp).show(|ui| {
+        ui.set_min_width(220.0);
+        let t = Tokens::get(ui.ctx());
+        // One row: NDL's icon, then the label.
+        let item = |ui: &mut Ui, icon: &str, label: &str| {
+            let resp = ui.add(egui::Button::new(format!("      {label}")).frame_when_inactive(false).min_size(vec2(208.0, 28.0)));
+            let at = Rect::from_center_size(pos2(resp.rect.min.x + 16.0, resp.rect.center().y), vec2(16.0, 16.0));
+            crate::icons::paint_ndl(ui.painter(), at, icon, t.icon);
+            resp.clicked()
+        };
+        let mut run: Option<(&str, serde_json::Value)> = None;
+        if item(ui, "settings", tl!("Preferences")) {
+            run = Some(("file.options", json!({})));
+        }
+        if item(ui, "key", tl!("Keyboard shortcuts")) {
+            run = Some(("ui.dialog", json!({"name": "customizeKeyboard"})));
+        }
+        if item(ui, "refresh", tl!("Check for updates…")) {
+            run = Some(("ui.checkForUpdates", json!({})));
+        }
+        if item(ui, "info", tl!("About Letra")) {
+            run = Some(("ui.dialog", json!({"name": "about"})));
+        }
+        ui.separator();
+        let quit = item(ui, "log-out", tl!("Quit"));
+        if let Some((id, params)) = run {
+            let _ = app.run(id, params);
+            ui.close();
+        }
+        if quit {
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+            ui.close();
+        }
+    });
 }
 
 /// The title bar's Search box while it is typed in (#5398): the query, whether the text of the
@@ -697,13 +748,16 @@ pub fn focus_ribbon(app: &mut WordApp, ctx: &egui::Context) {
 /// with a tooltip; without a document the bar is empty.
 pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
+    let g = crate::theme::ISLAND_GAP as i8;
     egui::Panel::bottom("status")
-        .exact_size(26.0)
+        .exact_size(28.0 + 2.0 * f32::from(g))
+        .show_separator_line(false)
         .frame(
             egui::Frame::NONE
                 .fill(t.status_bar)
                 .inner_margin(egui::Margin { left: 12, right: 12, top: 0, bottom: 0 })
-                .stroke(Stroke::new(1.0, t.border)),
+                .outer_margin(egui::Margin { left: g, right: g, top: g, bottom: g })
+                .corner_radius(egui::CornerRadius::same(crate::theme::ISLAND_RADIUS as u8)),
         )
         .show(ui, |ui| {
             // No document open (#1129): an empty status bar.
