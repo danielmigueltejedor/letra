@@ -99,7 +99,7 @@ modules:
       - install -Dm755 bin/letra /app/bin/letra
       - install -Dm755 bin/letra-cli /app/bin/letra-cli
       - install -Dm644 share/applications/dev.danielmiguelt.Letra.desktop /app/share/applications/dev.danielmiguelt.Letra.desktop
-      # Flatpak only exports icons named after the app ID, so the sandbox keeps the Craft icon name.
+      # Flatpak only exports icons named after the app ID, so the desktop entry names the icon by it.
       - sed -i "s/^Icon=.*/Icon=dev.danielmiguelt.Letra/" /app/share/applications/dev.danielmiguelt.Letra.desktop
       - install -Dm644 share/mime/packages/dev.danielmiguelt.Letra.xml /app/share/mime/packages/dev.danielmiguelt.Letra.xml
       # Already has the release's version and date substituted by package.sh.

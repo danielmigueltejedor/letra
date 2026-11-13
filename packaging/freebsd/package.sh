@@ -90,8 +90,6 @@ sed -e "s/@VERSION@/$VERSION/g" -e "s/@DATE@/$LETRA_BUILD_DATE/g" \
   "$LINUX/$APP_ID.metainfo.xml.in" >"$STAGE/share/metainfo/$APP_ID.metainfo.xml"
 cp -R "$ROOT/assets/app-icon/hicolor" "$STAGE/share/icons/"
 
-# The .desktop names the icon dev.danielmiguelt.Letra (the Nodalia name); install it under that name too.
-for f in "$STAGE"/share/icons/hicolor/*/apps/"$APP_ID".*; do cp "$f" "${f%/*}/dev.danielmiguelt.Letra.${f##*.}"; done
 copy_docs "$STAGE/share/doc/letra"
 
 # ---- .tar.gz -------------------------------------------------------------------------------------
