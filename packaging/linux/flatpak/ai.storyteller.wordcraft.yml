@@ -127,7 +127,7 @@ modules:
       # The interface translations and Language data at the commit in craft-i18n.rev (a test keeps
       # the two equal).
       - type: git
-        url: https://github.com/storytold/craft-i18n
+        url: https://github.com/getnodalia/foundation
         commit: 1e515422afdda2f317af430c1f9d68a5f83935b4
         dest: craft-i18n
       - cargo-sources.json
