@@ -585,7 +585,7 @@ fn title_and_account_buttons_work() {
     // The header's main menu opens Preferences: File › Options › General.
     h.get_by_label("Main menu").click();
     h.run_steps(2);
-    h.get_by_label("      Preferences").click();
+    h.get_by_role_and_label(egui::accesskit::Role::MenuItem, "Preferences").click();
     h.run_steps(2);
     assert!(h.state().ui.backstage);
     assert_eq!(h.state().ui.backstage_page, "options");
