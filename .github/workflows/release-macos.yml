@@ -1,7 +1,7 @@
 name: Release macOS
 
-# Builds Letra's universal (Apple Silicon + Intel) macOS DMG and the headless CLI zip, starts the
-# app's CLI from the mounted DMG, and only then attaches the files to a GitHub release.
+# Builds Letra's universal (Apple Silicon + Intel) macOS DMG and the headless CLI zip, checks the
+# mounted app and runs the CLI from its ZIP before attaching the files to a GitHub release.
 #
 # The app is signed ad hoc (no Apple Developer ID): macOS asks for confirmation the first time it
 # is opened (right-click > Open). Set MACOS_SIGN_IDENTITY and the APPLE_* secrets to sign and
@@ -156,8 +156,7 @@ jobs:
           if-no-files-found: error
 
   smoke:
-    # The DMG as a user gets it: mount it and start the CLI inside the app, once per architecture
-    # the runners offer (arm64 and, via Rosetta, x86_64).
+    # Inspect the app in the DMG and run the CLI from its ZIP on arm64 and x86_64 (via Rosetta).
     needs: build
     runs-on: macos-15
     steps:
@@ -165,7 +164,7 @@ jobs:
         with:
           name: letra-macos
           path: dist
-      - name: Start the app's CLI from the DMG
+      - name: Check the DMG and run the CLI from its ZIP
         env:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
@@ -178,10 +177,15 @@ jobs:
           sdk=$(otool -l /Volumes/Letra/Letra.app/Contents/MacOS/Letra | awk '$1 == "sdk" {print $2; exit}')
           echo "linked against SDK $sdk"
           test "${sdk%%.*}" -ge 26
-          /Volumes/Letra/Letra.app/Contents/MacOS/letra-cli --version | tee version.txt
-          arch -x86_64 /Volumes/Letra/Letra.app/Contents/MacOS/letra-cli --version
-          grep -q "$VERSION" version.txt
           hdiutil detach /Volumes/Letra
+
+          ditto -x -k "letra-cli-$VERSION-macos-universal.zip" cli
+          cli="cli/letra-cli-$VERSION-macos-universal/letra-cli"
+          version="$("$cli" --version)"
+          intel_version="$(arch -x86_64 "$cli" --version)"
+          printf '%s\n' "$version" "$intel_version"
+          grep -Fq -- "$VERSION" <<< "$version"
+          grep -Fq -- "$VERSION" <<< "$intel_version"
 
   attach:
     # Nothing reaches a release unless the start-up check above passed.
