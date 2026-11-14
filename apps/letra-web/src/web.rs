@@ -151,6 +151,12 @@ fn stored_prefs() -> Option<String> {
 }
 
 impl eframe::App for WebShell {
+    /// The window colour behind everything, so no frame (the first, or one during a resize) shows
+    /// eframe's default near-black clear colour through an unpainted gap.
+    fn clear_color(&self, visuals: &egui::Visuals) -> [f32; 4] {
+        visuals.panel_fill.to_normalized_gamma_f32()
+    }
+
     /// Runs one browser frame: forwards queued host messages to the status bar, advances the app,
     /// then writes changed preferences to browser storage immediately, because a reload or closed
     /// tab never runs the exit path.
