@@ -16,3 +16,7 @@
 - [ ] New behaviour has a test that fails without it.
 - [ ] No check was weakened or skipped.
 - [ ] Docs and AGENTS.md updated where behaviour changed.
+
+## Compatibility and release impact
+
+<!-- Note affected platforms, migrations or distribution changes when applicable. -->
