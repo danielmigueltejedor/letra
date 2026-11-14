@@ -1205,11 +1205,7 @@ fn about_dialog(ui: &mut Ui, d: &mut Dialog) -> bool {
             *tab = 1;
         }
         ui.add_space(14.0);
-        ui.label(
-            egui::RichText::new(tl!("MIT OR Apache-2.0. Includes open-source work by other authors; see NOTICE."))
-                .small()
-                .color(t.text_dim),
-        );
+        ui.label(egui::RichText::new(tl!("MIT OR Apache-2.0. Includes open-source work by other authors; see NOTICE.")).small().color(t.text_dim));
     });
     // One Close button: About has nothing to cancel.
     super::chrome::close_button(ui)

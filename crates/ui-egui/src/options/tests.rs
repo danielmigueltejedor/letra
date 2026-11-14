@@ -76,7 +76,8 @@ fn preferences_is_one_page_with_every_pane() {
             h.state_mut().run("file.options", json!({"pane": "advanced"})).unwrap();
             h.run_steps(6);
             let label = crate::i18n::tr(lang, super::pane_label("advanced"));
-            let heading = h.query_all_by_role(egui::accesskit::Role::Heading).find(|n| n.accesskit_node().label().as_deref() == Some(label)).unwrap().rect();
+            let heading =
+                h.query_all_by_role(egui::accesskit::Role::Heading).find(|n| n.accesskit_node().label().as_deref() == Some(label)).unwrap().rect();
             let screen = h.ctx.content_rect();
             assert!(screen.contains(heading.center()), "{language} {percent}%: Advanced scrolled into view: {heading:?}");
         }
