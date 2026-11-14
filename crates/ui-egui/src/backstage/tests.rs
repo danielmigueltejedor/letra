@@ -75,17 +75,6 @@ fn opening_a_missing_recent_file_keeps_file_open_with_the_error() {
     assert!(app.ui.backstage, "File stays open");
 }
 
-/// #1873: the macOS back chevron sits beside the traffic lights windowed, at the plain
-/// control inset in full screen.
-#[test]
-fn back_chevron_keeps_clear_of_traffic_lights_only_windowed() {
-    let windowed = super::back_chevron_c(0.0, 14.0, false, 70.0);
-    assert_eq!((windowed.x, windowed.y), (73.0, 14.0));
-    let full = super::back_chevron_c(0.0, 14.0, true, 70.0);
-    assert_eq!((full.x, full.y), (26.0, 14.0));
-    assert!(full.x < windowed.x);
-}
-
 #[cfg(not(target_arch = "wasm32"))]
 fn recovery_fixture() -> (WordApp, std::path::PathBuf) {
     let root = std::env::temp_dir().join(format!(
@@ -226,7 +215,7 @@ fn recovery_does_not_replace_an_explicit_new_document() {
         app.ui.backstage_page = "home".into();
         let (mut h, poll) = pending_recovery_harness(app, &root);
         let previous = h.state().session.document_id();
-        h.get_by_label("New").click();
+        h.get_by_role_and_label(egui::accesskit::Role::Button, "New").click();
         h.run_steps(4);
         h.get_by_label(template).click();
         h.run_steps(4);
@@ -638,28 +627,24 @@ fn back_arrow_returns_to_the_page_with_accessibility_on() {
     assert!(h.state().canvas.widget_id.is_some(), "the page has been drawn");
     h.state_mut().run("ui.backstage", json!({"value": true})).unwrap();
     h.run_steps(4);
-    // The arrow heads the File page's side bar; it has no label to find it by.
-    let arrow = egui::pos2(26.0, 32.0);
-    h.event(egui::Event::PointerMoved(arrow));
-    for pressed in [true, false] {
-        h.event(egui::Event::PointerButton { pos: arrow, button: egui::PointerButton::Primary, pressed, modifiers: egui::Modifiers::NONE });
-    }
+    // The Back row heads the File view's menu.
+    h.get_by_role_and_label(egui::accesskit::Role::Button, "Back").click();
     h.run_steps(4);
-    assert!(!h.state().ui.backstage, "the arrow closes the File page");
+    assert!(!h.state().ui.backstage, "Back closes the File page");
     assert!(h.state().canvas.focused, "and the page has the keyboard");
 }
 
-/// #3041: clicking the plain sidebar background next to the back arrow must not also close
-/// the File page — only the chevron itself does, same scoping as the macOS chevron (#2972).
+/// #3041: clicking the menu's plain background must not close the File page; only the Back
+/// row does.
 #[test]
-fn clicking_beside_the_back_arrow_does_not_close_the_file_page() {
+fn clicking_the_menu_background_does_not_close_the_file_page() {
     let a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), Services::default());
     let mut h = a11y_harness(a);
     h.state_mut().run("ui.backstage", json!({"value": true})).unwrap();
     h.run_steps(4);
-    // Well clear of the chevron (centred at x=26) but still inside the old 200px-wide row.
-    click_at(&mut h, egui::pos2(100.0, 32.0));
-    assert!(h.state().ui.backstage, "clicking beside the arrow leaves the File page open");
+    // Below Close and above Preferences: the island with no row.
+    click_at(&mut h, egui::pos2(100.0, 640.0));
+    assert!(h.state().ui.backstage, "clicking the menu's background leaves the File page open");
 }
 
 /// A harness over the whole app; kittest always runs AccessKit, so a frame that names as
@@ -686,33 +671,24 @@ fn click_at(h: &mut egui_kittest::Harness<'static, WordApp>, pos: egui::Pos2) {
     h.run_steps(4);
 }
 
-/// The macOS back chevron beside the traffic lights, in a window.
-fn mac_chevron(a: &WordApp) -> egui::Pos2 {
-    super::back_chevron_c(0.0, a.mac_titlebar.height / 2.0, false, a.mac_titlebar.content_left)
-}
-
-/// #2972: on macOS the File page's back button is the chevron beside the traffic lights (the
-/// "sidebar collapse toggle" of the report; there is no other toggle there). Blank document,
-/// File, then the chevron ended 0.8.0 with AccessKit's "Focused ID … is not in the node
-/// list". The same spot clicked in the editor (the title bar) must not either.
+/// #2972: Blank document, File, then Back on macOS ended 0.8.0 with AccessKit's "Focused ID …
+/// is not in the node list" (Back was a chevron beside the traffic lights then; it is the
+/// menu's first row now, under the title bar).
 #[test]
-fn mac_back_chevron_returns_to_the_page_with_accessibility_on() {
+fn mac_back_returns_to_the_page_with_accessibility_on() {
     let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), Services::default());
     a.integrated_titlebar = true;
     a.mac_titlebar = crate::chrome::MacTitleBar { height: 28.0, content_left: 70.0 };
-    let chevron = mac_chevron(&a);
     let mut h = a11y_harness(a);
     assert!(h.state().canvas.widget_id.is_some(), "the page has been drawn");
     for _ in 0..2 {
         h.state_mut().run("ui.backstage", json!({"value": true})).unwrap();
         h.run_steps(4);
         assert!(h.state().ui.backstage);
-        click_at(&mut h, chevron);
-        assert!(!h.state().ui.backstage, "the chevron closes the File page");
+        h.get_by_role_and_label(egui::accesskit::Role::Button, "Back").click();
+        h.run_steps(4);
+        assert!(!h.state().ui.backstage, "Back closes the File page");
         assert!(h.state().canvas.focused, "and the page has the keyboard");
-        // The same spot in the editor's title bar.
-        click_at(&mut h, chevron);
-        assert!(!h.state().ui.backstage);
     }
 }
 
@@ -747,7 +723,7 @@ fn blank_document_from_the_file_page_with_accessibility_on() {
     }
 }
 
-/// #2908: File › Options, then the back arrow (Windows/Linux layout and the macOS chevron),
+/// #2908: File › Preferences, then Back (with and without the macOS title bar),
 /// with a document open and from the Start screen, without AccessKit ending the program.
 #[test]
 fn options_back_arrow_with_accessibility_on() {
@@ -758,19 +734,19 @@ fn options_back_arrow_with_accessibility_on() {
             a.ui.start_screen = true;
             assert!(a.start_screen());
         }
-        let back = if mac { mac_chevron(&a) } else { egui::pos2(26.0, 32.0) };
         let mut h = a11y_harness(a);
         if !start {
             h.state_mut().run("ui.backstage", json!({"value": true})).unwrap();
             h.run_steps(4);
         }
-        h.get_by_role_and_label(egui::accesskit::Role::Button, "Options").click();
+        h.get_by_role_and_label(egui::accesskit::Role::Button, "Preferences").click();
         h.run_steps(4);
         assert_eq!(h.state().ui.backstage_page, "options", "mac {mac} start {start}");
-        // Into a pane, so the Options page has a focused widget of its own.
-        h.get_by_label("Display").click();
+        // A setting, so the Preferences page has a focused widget of its own.
+        h.get_by_label("Show the mini toolbar when text is selected").click();
         h.run_steps(4);
-        click_at(&mut h, back);
+        h.get_by_role_and_label(egui::accesskit::Role::Button, "Back").click();
+        h.run_steps(4);
         assert!(!h.state().ui.backstage, "mac {mac} start {start}: the arrow closes the File page");
         if start {
             assert!(!h.state().has_document(), "mac {mac}: from the Start screen, an empty window");
@@ -1147,12 +1123,13 @@ fn the_file_page_scrolls_with_the_wheel_over_its_right_side() {
     assert!(after < before - 1.0, "expected doc0.docx to scroll up: before={before}, after={after}");
 }
 
-/// #5282: the scroll area reaches the window's right edge, so its bar sits there and the wheel
-/// works there too.
+/// #5282: the scroll area reaches the content island's right edge, so its bar sits there,
+/// one island gap in from the window's edge, and the wheel works over the bar too.
 #[test]
-fn the_file_page_scrolls_with_the_wheel_at_the_window_edge() {
+fn the_file_page_scrolls_with_the_wheel_at_the_island_edge() {
     // The harness keeps an 8 point margin, so the window edge is at x=1432.
-    let (before, after, bar) = file_page_wheel_at(1428.0);
+    let edge = 1432.0 - crate::theme::ISLAND_GAP;
+    let (before, after, bar) = file_page_wheel_at(edge - 3.0);
     assert!(after < before - 1.0, "expected doc0.docx to scroll up at the edge: before={before}, after={after}");
-    assert!((bar.right() - 1432.0).abs() < 1.0, "expected the scrollbar at the window edge: {bar:?}");
+    assert!((bar.right() - edge).abs() < 1.5, "expected the scrollbar at the island's edge: {bar:?}");
 }

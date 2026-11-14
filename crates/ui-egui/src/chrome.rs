@@ -462,13 +462,21 @@ fn app_menu(ui: &mut Ui, app: &mut WordApp, control_h: f32) {
     crate::icons::paint_ndl(ui.painter(), Rect::from_center_size(r.center(), vec2(20.0, 20.0)), "menu", t.icon);
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tl!("Main menu")));
     egui::Popup::menu(&resp).show(|ui| {
-        ui.set_min_width(220.0);
+        // A fixed width: rows that ask for the available width would otherwise grow the popup.
+        ui.set_width(240.0);
         let t = Tokens::get(ui.ctx());
-        // One row: NDL's icon, then the label.
+        // One row, as NDL's menus: the icon 12 pt in, the label 36 pt in, a rounded hover.
         let item = |ui: &mut Ui, icon: &str, label: &str| {
-            let resp = ui.add(egui::Button::new(format!("      {label}")).frame_when_inactive(false).min_size(vec2(208.0, 28.0)));
-            let at = Rect::from_center_size(pos2(resp.rect.min.x + 16.0, resp.rect.center().y), vec2(16.0, 16.0));
-            crate::icons::paint_ndl(ui.painter(), at, icon, t.icon);
+            let (r, resp) = ui.allocate_exact_size(vec2(240.0, 30.0), Sense::click());
+            if resp.hovered() || resp.has_focus() {
+                ui.painter().rect_filled(r, egui::CornerRadius::same(crate::theme::CONTROL_RADIUS as u8), t.hover);
+            }
+            let rtl = crate::rtl::on();
+            let icon_x = crate::rtl::lead_x(rtl, r, 20.0);
+            crate::icons::paint_ndl(ui.painter(), Rect::from_center_size(pos2(icon_x, r.center().y), vec2(16.0, 16.0)), icon, t.icon);
+            let text_x = crate::rtl::lead_x(rtl, r, 36.0);
+            ui.painter().text(pos2(text_x, r.center().y), crate::rtl::lead_center(rtl), label, egui::FontId::proportional(13.5), t.text);
+            resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::MenuItem, true, label));
             resp.clicked()
         };
         let mut run: Option<(&str, serde_json::Value)> = None;

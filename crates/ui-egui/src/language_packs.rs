@@ -1323,9 +1323,8 @@ mod tests {
         backend.network.store(network, Ordering::Relaxed);
         packs::set_backend(Some(backend.clone() as std::sync::Arc<dyn Backend>));
         let mut a = WordApp::new(letra_engine::Session::new(letra_doc::Document::new()), crate::Services::default());
-        a.ui.backstage = true;
-        a.ui.backstage_page = "options".into();
-        a.ui.options_pane = pane.into();
+        // As the app opens it: Preferences, scrolled to the pane.
+        let _ = a.run("file.options", json!({"pane": pane}));
         (a, ctx, backend)
     }
 
@@ -1398,14 +1397,10 @@ mod tests {
         // Listed by name: Dutch, English, Polish, Thai.
         let view: Vec<String> = super::your_view(&mut a, &packs::available(), &packs::installed()).into_iter().map(|(n, ..)| n).collect();
         assert_eq!(view, ["Dutch", "English (United States)", "Polish", "Thai"], "by the name shown");
-        // The Proofing tab no longer has the Dictionaries section; the folder and the dictionary
-        // each language found (#1063) are on this tab.
+        // The folder and the dictionary each language found (#1063) are in this pane.
         assert!(all.iter().any(|l| l == "Dictionaries folder:") && all.iter().any(|l| l == "Add a language…"));
         assert!(all.iter().any(|l| l == "Dictionary files"), "{all:?}");
-        a.ui.options_pane = "proofing".into();
-        let tree = settled(&mut a, &ctx);
-        let all = labels(&tree);
-        assert!(!all.iter().any(|l| l.starts_with("Dictionaries") || l.starts_with("Dictionary files")), "{all:?}");
+        // Proofing's own Custom dictionary is on the same page.
         assert!(all.iter().any(|l| l == "Custom dictionary"));
     }
 

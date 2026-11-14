@@ -1156,41 +1156,78 @@ fn paste_special_dialog(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool 
     ok || cancel
 }
 
+/// About, as every Nodalia app draws it: the icon, the name and version, one line on what the app
+/// is, its links, and the credit to the authors whose work it includes (their notices are in
+/// NOTICE). The licences of the language data are one click further.
 fn about_dialog(ui: &mut Ui, d: &mut Dialog) -> bool {
     let Dialog::About { tab } = d else {
         return false;
     };
-    ui.set_width(820.0);
-    let names = [tl!("About").to_string(), tl!("Contributors").to_string(), tl!("Models").to_string(), tl!("Language data").to_string()];
-    if let Some(i) = crate::widgets::dialog_tabs(ui, &names, *tab as usize) {
-        *tab = i as u8;
-    }
-    ui.add_space(6.0);
-    match *tab {
-        1 => crate::credits::contributors_ui(ui),
-        2 => crate::credits::models_ui(ui),
-        3 => crate::language_packs::about_tab(ui),
-        _ => {
-            ui.label(egui::RichText::new(tl!("Letra")).font(semibold(22.0)));
-            let build = option_env!("LETRA_BUILD_SHA").map(|s| s.get(..8).unwrap_or(s)).unwrap_or(tl!("development build"));
-            ui.label(crate::i18n::fmt(tl!("Version {version} ({build})"), &[("version", env!("CARGO_PKG_VERSION")), ("build", build)]));
-            ui.label(tl!("A free, open-source word processor from Nodalia, written in Rust."));
-            ui.add_space(6.0);
-            ui.hyperlink_to(tl!("getnodalia.com/letra"), "https://getnodalia.com/letra");
-            ui.hyperlink_to(tl!("Report a problem"), "https://github.com/getnodalia/letra/issues");
-            ui.hyperlink_to(tl!("Source code: github.com/getnodalia/letra"), "https://github.com/getnodalia/letra");
-            ui.add_space(6.0);
-            ui.label(
-                egui::RichText::new(tl!(
-                    "MIT OR Apache-2.0. Includes work copyright (c) 2026 ArtCraft Team and the WordCraft contributors; see NOTICE."
-                ))
-                .small()
-                .weak(),
-            );
+    let t = crate::theme::Tokens::get(ui.ctx());
+    if *tab == 1 {
+        ui.set_width(560.0);
+        if ui.add(egui::Button::new(tl!("‹ About Letra")).frame_when_inactive(false)).clicked() {
+            *tab = 0;
         }
+        ui.add_space(4.0);
+        crate::language_packs::about_tab(ui);
+        return super::chrome::close_button(ui);
     }
+    ui.set_width(360.0);
+    ui.vertical_centered(|ui| {
+        ui.add_space(8.0);
+        if let Some(icon) = about_icon(ui.ctx()) {
+            ui.add(egui::Image::new(&icon).fit_to_exact_size(vec2(96.0, 96.0)));
+        }
+        ui.add_space(10.0);
+        ui.label(egui::RichText::new(tl!("Letra")).font(semibold(26.0)).color(t.text));
+        let build = option_env!("LETRA_BUILD_SHA").map(|s| s.get(..8).unwrap_or(s)).unwrap_or(tl!("development build"));
+        ui.label(
+            egui::RichText::new(crate::i18n::fmt(tl!("Version {version} ({build})"), &[("version", env!("CARGO_PKG_VERSION")), ("build", build)]))
+                .color(t.text_dim),
+        );
+        ui.add_space(10.0);
+        ui.label(tl!("A free word processor, written in Rust."));
+        ui.label(egui::RichText::new(tl!("Part of Nodalia")).font(semibold(13.0)).color(t.accent_text));
+        ui.add_space(14.0);
+        for (label, url) in [
+            (tl!("Website"), "https://getnodalia.com/letra"),
+            (tl!("Report a problem"), "https://github.com/getnodalia/letra/issues"),
+            (tl!("Source code"), "https://github.com/getnodalia/letra"),
+        ] {
+            let b = ui.add(egui::Button::new(label).min_size(vec2(220.0, 30.0)));
+            if b.clicked() {
+                ui.ctx().open_url(egui::OpenUrl::new_tab(url));
+            }
+            ui.add_space(4.0);
+        }
+        if ui.add(egui::Button::new(tl!("Licences")).min_size(vec2(220.0, 30.0))).clicked() {
+            *tab = 1;
+        }
+        ui.add_space(14.0);
+        ui.label(
+            egui::RichText::new(tl!("MIT OR Apache-2.0. Includes open-source work by other authors; see NOTICE."))
+                .small()
+                .color(t.text_dim),
+        );
+    });
     // One Close button: About has nothing to cancel.
     super::chrome::close_button(ui)
+}
+
+/// The app icon About shows, decoded once.
+fn about_icon(ctx: &egui::Context) -> Option<egui::TextureHandle> {
+    let id = egui::Id::unique("letra.about_icon");
+    if let Some(tex) = ctx.data(|d| d.get_temp::<egui::TextureHandle>(id)) {
+        return Some(tex);
+    }
+    let png: &[u8] = include_bytes!("../../../../assets/app-icon/hicolor/256x256/apps/dev.danielmiguelt.Letra.png");
+    let img = image::load_from_memory(png).ok()?.to_rgba8();
+    let size = [img.width() as usize, img.height() as usize];
+    let ci = egui::ColorImage::from_rgba_unmultiplied(size, img.as_raw());
+    let tex = ctx.load_texture("letra-about-icon", ci, egui::TextureOptions::LINEAR);
+    ctx.data_mut(|d| d.insert_temp(id, tex.clone()));
+    Some(tex)
 }
 
 fn discard_recovery_dialog(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {

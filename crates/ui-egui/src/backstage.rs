@@ -1,13 +1,15 @@
-//! File tab (Backstage): Home/New, Open, Info, Save As, Print, Export, Close, Options, About.
+//! File tab (Backstage): Home/New, Open, Info, Save As, Print, Export, Close, Preferences, About.
 
 use egui::{Rect, Sense, Stroke, Ui, pos2, vec2};
 use serde_json::json;
 
-use crate::theme::{Tokens, medium, regular, semibold};
+use nodalia_theme::office;
+
+use crate::theme::{self, Gap, Tokens, island, medium, regular, semibold};
 use crate::{WordApp, icons};
 
 /// The side menu: page id, label and icon (#1714).
-const PAGES: [(&str, &str, &str); 11] = [
+const PAGES: [(&str, &str, &str); 10] = [
     ("home", "Home", "homeFolder"),
     ("new", "New", "blankPage"),
     ("open", "Open", "open"),
@@ -18,7 +20,6 @@ const PAGES: [(&str, &str, &str); 11] = [
     ("print", "Print", "print"),
     ("export", "Export", "export"),
     ("close", "Close", "close"),
-    ("options", "Options", "options"),
 ];
 
 /// The Backstage pages' keytips, as Word's (#4960): Alt, F, then a letter. V is Word's older
@@ -47,145 +48,76 @@ fn keytip_letter(page: &str) -> Option<&'static str> {
     KEYTIPS.iter().find(|(p, _)| *p == page).map(|(_, l)| *l)
 }
 
-/// The Backstage back chevron's centre on macOS (#1873): beside the traffic lights in a
-/// window (the title bar's content edge), at the plain control inset in full screen, where the
-/// lights aren't docked top-left and the reserved offset would leave dead space.
-fn back_chevron_c(band_min_x: f32, center_y: f32, fullscreen: bool, content_left: f32) -> egui::Pos2 {
-    let x = if fullscreen { 26.0 } else { content_left + 3.0 };
-    pos2(band_min_x + x, center_y)
-}
+/// The menu's bottom group: Preferences and About, held at the foot of the island as in every
+/// Nodalia office app.
+const BOTTOM: [(&str, &str, &str); 2] = [("options", "Preferences", "options"), ("about", "About", "help")];
 
-/// The bottom of the backstage menu: About.
-fn bottom_links(_app: &WordApp) -> Vec<(&'static str, &'static str)> {
-    vec![("About", "about")]
-}
+/// Where the menu draws a separator: after Open (making a document) and before the pages that
+/// act on the open one.
+const SEPARATOR_AFTER: &str = "open";
 
-/// Draws the Backstage side menu and the active page. Without a document only the Home, New, Open
-/// and Options pages work, and it handles Back, Escape, Save, Save As and Close routing.
+/// Draws the Backstage side menu and the active page, as two islands under the title bar (the
+/// File view the Nodalia office apps share, `nodalia_theme::office`). Without a document only the
+/// Home, New, Open and Preferences pages work, and it handles Back, Escape, Save, Save As and
+/// Close routing.
 pub fn show(app: &mut WordApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
-    // No document open (#1129): only the pages that open or create one, and Options.
+    // No document open (#1129): only the pages that open or create one, and Preferences.
     let has_document = app.has_document();
     if !has_document && !works_without_document(&app.ui.backstage_page) {
         app.ui.backstage_page = "home".into();
     }
-    let mac = app.integrated_titlebar;
+    let rtl = crate::rtl::on();
+    let edge = if rtl { Gap::Right } else { Gap::Left };
+    let (nav_frame, _) = island(&t, egui::Margin { left: 8, right: 8, top: 10, bottom: 10 }, &[edge, Gap::Bottom]);
     crate::rtl::start_panel("backstage_nav")
-        .exact_size(200.0)
-        // Fixed width, as in Word: without this egui shows a resize handle that does nothing (#502).
+        .exact_size(office::NAV_WIDTH + 16.0 + theme::ISLAND_GAP)
+        // Fixed width: without this egui shows a resize handle that does nothing (#502).
         .resizable(false)
-        .frame(egui::Frame::NONE.fill(t.nav).inner_margin(egui::Margin { left: 0, right: 0, top: if mac { 0 } else { 12 }, bottom: 12 }))
+        .show_separator_line(false)
+        .frame(nav_frame)
         .show(ui, |ui| {
-            // Right to left the navigation is on the right, away from the macOS traffic lights.
-            let rtl = crate::rtl::on();
-            let back = if mac {
-                // macOS (#222): the Backstage covers the title bar, so its top band is the title
-                // bar: the back button sits beside the traffic lights, centred with them and as far
-                // from them as the title bar's own controls, and the rest of the band drags the window.
-                let (band, drag) = ui.allocate_exact_size(vec2(200.0, app.mac_titlebar.height), Sense::click_and_drag());
-                if drag.drag_started() {
-                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::StartDrag);
-                }
-                crate::chrome::note_title_drag(ui.ctx(), band);
-                // The chevron's stroke starts at the content edge.
-                let c = if rtl {
-                    pos2(band.max.x - 26.0, band.center().y)
-                } else {
-                    back_chevron_c(band.min.x, band.center().y, app.session.view.full_screen, app.mac_titlebar.content_left)
-                };
-                let resp = ui.interact(Rect::from_center_size(c, vec2(22.0, band.height())), ui.scope_id().with("backstage_back"), Sense::click());
-                icons::paint(
-                    ui.painter(),
-                    Rect::from_center_size(c, vec2(18.0, 18.0)),
-                    if rtl { "chevronRight" } else { "chevronLeft" },
-                    egui::Color32::WHITE,
-                    egui::Color32::WHITE,
-                );
-                resp
-            } else {
-                // The hit area is scoped to the chevron, not the whole 200px-wide row (#3041):
-                // the row reads as plain sidebar background next to it, so clicking there must
-                // not also close the File page, same as the macOS chevron fix (#2972) below.
-                let (r, _) = ui.allocate_exact_size(vec2(200.0, 40.0), Sense::hover());
-                let c = pos2(crate::rtl::lead_x(rtl, r, 26.0), r.center().y);
-                let resp = ui.interact(Rect::from_center_size(c, vec2(22.0, r.height())), ui.scope_id().with("backstage_back"), Sense::click());
-                icons::paint(
-                    ui.painter(),
-                    Rect::from_center_size(c, vec2(18.0, 18.0)),
-                    if rtl { "chevronRight" } else { "chevronLeft" },
-                    egui::Color32::WHITE,
-                    egui::Color32::WHITE,
-                );
-                resp
-            };
+            ui.spacing_mut().item_spacing.y = 0.0;
+            let back = nav_row(ui, if rtl { "arrow-right" } else { "arrow-left" }, tl!("Back"), Row { selected: false, enabled: true, keytip: None });
             // Escape in the built-in file browser closes only the browser.
             if back.clicked() || (!app.file_dialog_open() && ui.input(|i| i.key_pressed(egui::Key::Escape))) {
                 app.ui.backstage = false;
                 app.canvas.want_focus = true;
             }
-            ui.add_space(if mac { 12.0 } else { 6.0 });
+            ui.add_space(10.0);
             for (id, label, icon) in PAGES {
-                // No document open (#1129): Info, Save, Save As, Print and Export are greyed out.
-                let on = has_document || works_without_document(id);
-                let (r, resp) = ui.add_enabled_ui(on, |ui| ui.allocate_exact_size(vec2(200.0, 38.0), Sense::click())).inner;
-                resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, on, tl!(label)));
-                let active = app.ui.backstage_page == id;
-                if active {
-                    ui.painter().rect_filled(r, 0.0, egui::Color32::from_white_alpha(46));
-                } else if on && resp.hovered() {
-                    ui.painter().rect_filled(r, 0.0, egui::Color32::from_white_alpha(26));
-                }
-                let ink = if on { egui::Color32::WHITE } else { egui::Color32::from_white_alpha(110) };
-                icons::paint(
-                    ui.painter(),
-                    Rect::from_center_size(pos2(crate::rtl::lead_x(rtl, r, 31.0), r.center().y), vec2(18.0, 18.0)),
-                    icon,
-                    ink,
-                    ink,
-                );
-                ui.painter().text(
-                    pos2(crate::rtl::lead_x(rtl, r, 52.0), r.center().y),
-                    crate::rtl::lead_center(rtl),
-                    tl!(label),
-                    if active { semibold(14.0) } else { medium(14.0) },
-                    ink,
-                );
-                if on
-                    && app.ui.keytips == crate::keytips::Phase::Backstage
-                    && let Some(letter) = keytip_letter(id)
-                {
-                    crate::keytips::badge(ui, Rect::from_min_size(pos2(r.min.x + 16.0, r.min.y), vec2(20.0, 16.0)), letter);
-                }
-                if resp.clicked() {
-                    go_to_page(app, id);
+                page_row(app, ui, has_document, id, label, icon);
+                if id == SEPARATOR_AFTER {
+                    separator(ui, &t);
                 }
             }
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Min), |ui| {
-                for (label, id) in bottom_links(app) {
-                    let (r, resp) = ui.allocate_exact_size(vec2(200.0, 32.0), Sense::click());
-                    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), tl!(label)));
-                    if resp.hovered() {
-                        ui.painter().rect_filled(r, 0.0, egui::Color32::from_white_alpha(26));
-                    }
-                    let at = pos2(crate::rtl::lead_x(rtl, r, 22.0), r.center().y);
-                    ui.painter().text(at, crate::rtl::lead_center(rtl), tl!(label), regular(13.0), egui::Color32::WHITE);
-                    if resp.clicked() && id == "about" {
-                        app.dialog = crate::dialogs::Dialog::open("about", app);
+                for (id, label, icon) in BOTTOM.into_iter().rev() {
+                    if id == "about" {
+                        let row = nav_row(ui, icon, tl!(label), Row { selected: false, enabled: true, keytip: None });
+                        if row.clicked() {
+                            app.dialog = crate::dialogs::Dialog::open("about", app);
+                        }
+                    } else {
+                        page_row(app, ui, has_document, id, label, icon);
                     }
                 }
             });
         });
-    egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.ribbon).inner_margin(egui::Margin::symmetric(0, 30))).show(ui, |ui| {
-        // The side padding sits inside the pages, so the scroll area reaches the window's edge.
-        let pad = egui::Frame::NONE.inner_margin(egui::Margin::symmetric(40, 0));
+    // The menu keeps no gap on its inner side, so the page keeps one on both.
+    let (page_frame, _) = island(&t, egui::Margin::ZERO, &[Gap::Left, Gap::Right, Gap::Bottom]);
+    egui::CentralPanel::default().frame(page_frame).show(ui, |ui| {
+        // The padding sits inside the pages, so the scroll area reaches the island's edge.
+        let pad = egui::Frame::NONE.inner_margin(egui::Margin { left: 44, right: 32, top: 26, bottom: 32 });
         // The Print page fills the pane and scrolls its settings and its preview itself (#1156).
         if app.ui.backstage_page == "print" {
             pad.show(ui, |ui| crate::rtl::root(ui, |ui| export_page(app, ui)));
             return;
         }
-        // Full width, so the bar sits at the window's edge and the wheel works over the whole page (#5282).
-        egui::ScrollArea::vertical().auto_shrink([false, true]).show(ui, |ui| {
+        // Full width, so the bar sits at the island's edge and the wheel works over the whole page (#5282).
+        egui::ScrollArea::vertical().id_salt("backstage_page").auto_shrink([false, true]).show(ui, |ui| {
             pad.show(ui, |ui| {
+                ui.set_max_width(ui.available_width().min(office::CONTENT_WIDTH));
                 crate::rtl::root(ui, |ui| match app.ui.backstage_page.as_str() {
                     "home" => home_page(app, ui),
                     "new" => new_page(app, ui),
@@ -201,6 +133,64 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         });
     });
 }
+
+/// How a menu row is drawn.
+#[derive(Clone, Copy)]
+struct Row {
+    selected: bool,
+    enabled: bool,
+    keytip: Option<&'static str>,
+}
+
+/// One page's row: greyed out without a document unless the page works without one (#1129).
+fn page_row(app: &mut WordApp, ui: &mut Ui, has_document: bool, id: &'static str, label: &str, icon: &str) {
+    let enabled = has_document || works_without_document(id);
+    let keytip = if enabled && app.ui.keytips == crate::keytips::Phase::Backstage { keytip_letter(id) } else { None };
+    let row = Row { selected: app.ui.backstage_page == id, enabled, keytip };
+    if nav_row(ui, icon, tl!(label), row).clicked() {
+        go_to_page(app, id);
+    }
+}
+
+/// A menu row in the Nodalia office style: the selected page in the accent's soft tint with
+/// accent ink, a soft fill under the pointer, the icon and label from the leading edge.
+fn nav_row(ui: &mut Ui, icon: &str, label: &str, row: Row) -> egui::Response {
+    let t = Tokens::get(ui.ctx());
+    let rtl = crate::rtl::on();
+    let (r, resp) = ui.add_enabled_ui(row.enabled, |ui| ui.allocate_exact_size(vec2(office::NAV_WIDTH, office::NAV_ROW), Sense::click())).inner;
+    resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, row.enabled, row.selected, label));
+    let ink = if !row.enabled {
+        t.text_disabled
+    } else if row.selected {
+        ui.painter().rect_filled(r, ROW_RADIUS, t.checked);
+        t.accent_text
+    } else {
+        if resp.hovered() {
+            ui.painter().rect_filled(r, ROW_RADIUS, t.hover);
+        }
+        t.text
+    };
+    let glyph = Rect::from_center_size(pos2(crate::rtl::lead_x(rtl, r, 22.0), r.center().y), vec2(18.0, 18.0));
+    if !icons::paint_ndl(ui.painter(), glyph, icon, ink) {
+        icons::paint(ui.painter(), glyph, icon, ink, ink);
+    }
+    let font = if row.selected { semibold(14.0) } else { regular(14.0) };
+    ui.painter().text(pos2(crate::rtl::lead_x(rtl, r, 42.0), r.center().y), crate::rtl::lead_center(rtl), label, font, ink);
+    if let Some(letter) = row.keytip {
+        crate::keytips::badge(ui, Rect::from_min_size(pos2(r.min.x + 8.0, r.min.y), vec2(20.0, 16.0)), letter);
+    }
+    resp
+}
+
+/// A thin rule between groups of menu rows.
+fn separator(ui: &mut Ui, t: &Tokens) {
+    let (r, _) = ui.allocate_exact_size(vec2(office::NAV_WIDTH, 17.0), Sense::hover());
+    let y = r.center().y;
+    ui.painter().line_segment([pos2(r.left() + 12.0, y), pos2(r.right() - 12.0, y)], Stroke::new(1.0, t.border));
+}
+
+/// A menu row's corner radius (as `nodalia_theme::office`).
+const ROW_RADIUS: f32 = 10.0;
 
 /// Recovery is a separate copy. Leaving this page never discards it.
 fn recovery_page(app: &mut WordApp, ui: &mut Ui) {
@@ -277,6 +267,12 @@ pub(crate) fn go_to_page(app: &mut WordApp, id: &str) {
                 app.ui.backstage_page = "saveAs".into();
             }
         }
+        // Preferences opens at its top, on General.
+        "options" => {
+            app.ui.options_pane = "general".into();
+            app.options_scroll = true;
+            app.ui.backstage_page = "options".into();
+        }
         "saveAs" => {
             app.ui.backstage_page = "saveAs".into();
         }
@@ -294,9 +290,16 @@ fn works_without_document(page: &str) -> bool {
     matches!(page, "home" | "new" | "open" | "options")
 }
 
+/// A page's title, as `nodalia_theme::office::page` draws it.
 fn heading(ui: &mut Ui, s: &str) {
-    ui.label(egui::RichText::new(tl!(s)).font(semibold(26.0)));
-    ui.add_space(16.0);
+    ui.label(egui::RichText::new(tl!(s)).font(regular(28.0)));
+    ui.add_space(18.0);
+}
+
+/// A section's heading on a page, as `nodalia_theme::office::section` draws it.
+pub(crate) fn section_heading(ui: &mut Ui, s: &str) {
+    ui.label(egui::RichText::new(tl!(s)).font(semibold(15.0)));
+    ui.add_space(8.0);
 }
 
 /// Draws a template thumbnail and caption as one accessible button, lazily renders and caches a
@@ -309,16 +312,12 @@ fn template_tile(ui: &mut Ui, app: &mut WordApp, label: &str, template: &str) {
         // the template too, as in Word.
         let caption = crate::i18n::tc("template", label);
         let galley = ui.painter().layout_no_wrap(caption.to_string(), regular(12.5), ui.visuals().text_color());
-        let (tile, resp) = ui.allocate_exact_size(vec2(galley.size().x.max(150.0), 194.0 + galley.size().y), Sense::click());
+        let thumb = office::THUMB;
+        let (tile, resp) = ui.allocate_exact_size(vec2(galley.size().x.max(thumb.x), thumb.y + 6.0 + galley.size().y), Sense::click());
         resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), caption));
-        let r = Rect::from_min_size(tile.min, vec2(150.0, 194.0));
-        ui.painter().rect(
-            r,
-            2.0,
-            egui::Color32::WHITE,
-            Stroke::new(if resp.hovered() { 2.0 } else { 1.0 }, if resp.hovered() { t.accent } else { t.border_strong }),
-            egui::StrokeKind::Inside,
-        );
+        // The top of the page, in the landscape thumbnail every Nodalia office app's Home shows.
+        let r = Rect::from_min_size(tile.min, thumb);
+        ui.painter().rect_filled(r, 6.0, egui::Color32::WHITE);
         let ppp = ui.ctx().pixels_per_point();
         let key = format!("tpl:{template}:{ppp}");
         let region = app.session.region();
@@ -340,9 +339,14 @@ fn template_tile(ui: &mut Ui, app: &mut WordApp, label: &str, template: &str) {
             Some(h)
         });
         if let Some(h) = tex {
-            ui.painter().image(h.id(), r.shrink(1.0), Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), egui::Color32::WHITE);
+            let [w, ht] = h.size();
+            let v = if ht == 0 { 1.0 } else { (thumb.y / thumb.x * w as f32 / ht as f32).min(1.0) };
+            let inner = r.shrink(1.0);
+            ui.painter().with_clip_rect(inner).image(h.id(), inner, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, v)), egui::Color32::WHITE);
         }
-        ui.painter().galley(pos2(r.min.x, r.max.y), galley, ui.visuals().text_color());
+        let edge = if resp.hovered() { Stroke::new(2.0, t.accent) } else { Stroke::new(1.0, t.border) };
+        ui.painter().rect_stroke(r, 6.0, edge, egui::StrokeKind::Inside);
+        ui.painter().galley(pos2(r.min.x, r.max.y + 6.0), galley, ui.visuals().text_color());
         if resp.clicked() {
             let _ = app.run("file.new", json!({"template": template}));
             app.ui.backstage = false;
@@ -370,20 +374,12 @@ fn matching_templates(query: &str) -> Vec<(&'static str, &'static str)> {
         .collect()
 }
 
-/// Home: a greeting, Blank plus a short row of templates with a link to New, then Recent.
+/// Home: a short row of templates with a link to New, then Recent (the layout every Nodalia
+/// office app's Home shares).
 fn home_page(app: &mut WordApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
-    let hour = letra_engine::cmd::local_now().3.0;
-    heading(
-        ui,
-        if hour < 12 {
-            "Good morning"
-        } else if hour < 18 {
-            "Good afternoon"
-        } else {
-            "Good evening"
-        },
-    );
+    heading(ui, "Home");
+    section_heading(ui, "New");
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing = vec2(18.0, 0.0);
         for (label, template) in TEMPLATES.into_iter().take(HOME_TEMPLATES) {
@@ -391,11 +387,11 @@ fn home_page(app: &mut WordApp, ui: &mut Ui) {
         }
     });
     ui.add_space(8.0);
-    let more = ui.add(egui::Label::new(egui::RichText::new(tl!("More templates →")).font(medium(13.5)).color(t.accent)).sense(Sense::click()));
+    let more = ui.add(egui::Label::new(egui::RichText::new(tl!("More templates →")).font(medium(13.5)).color(t.accent_text)).sense(Sense::click()));
     if more.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
         app.ui.backstage_page = "new".into();
     }
-    ui.add_space(24.0);
+    ui.add_space(18.0);
     open_list(app, ui);
 }
 
@@ -609,8 +605,7 @@ const REMOVE_W: f32 = 28.0;
 /// stores an open failure in this page's temporary state.
 fn open_list(app: &mut WordApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
-    ui.label(egui::RichText::new(tl!("Recent")).font(semibold(16.0)));
-    ui.add_space(6.0);
+    section_heading(ui, "Recent");
     let error = ui.ctx().data(|d| d.get_temp::<String>(open_error_id())).unwrap_or_default();
     if !error.is_empty() {
         ui.label(egui::RichText::new(error).color(ui.visuals().error_fg_color));
@@ -626,28 +621,27 @@ fn open_list(app: &mut WordApp, ui: &mut Ui) {
         // #2716: each row carries its own Remove, as Word's context menu does. The × is a button
         // of its own at the trailing end, so it never opens the document; clicking the rest of the
         // row opens it as before.
-        let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width().min(700.0) - REMOVE_W, 40.0), Sense::click());
+        let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width().min(office::CONTENT_WIDTH) - REMOVE_W, 44.0), Sense::click());
         // The row shows a name and a path that may not fit: the path in full is its tooltip.
         let resp = resp.on_hover_text(crate::i18n::isolate_path(p));
         // Two documents with the same file name are told apart by their path, as on screen.
         let spoken = if names.iter().filter(|n| *n == name).count() > 1 { format!("{name}, {p}") } else { name.clone() };
         resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), &spoken));
         if resp.hovered() {
-            ui.painter().rect_filled(r, 4.0, t.hover);
+            ui.painter().rect_filled(r, theme::CONTROL_RADIUS, t.hover);
         }
         // Names and paths are set apart (a right-to-left line would scramble their marks and
         // folders) and the row starts at the side reading starts from.
         let rtl = crate::rtl::on();
-        icons::paint(
+        icons::paint_ndl(
             ui.painter(),
-            Rect::from_center_size(pos2(crate::rtl::lead_x(rtl, r, 18.0), r.center().y), vec2(22.0, 22.0)),
-            "printLayout",
-            t.icon,
-            t.accent,
+            Rect::from_center_size(pos2(crate::rtl::lead_x(rtl, r, 20.0), r.center().y), vec2(20.0, 20.0)),
+            "file-text",
+            t.accent_text,
         );
         let side = crate::rtl::lead_center(rtl);
-        ui.painter().text(pos2(crate::rtl::lead_x(rtl, r, 40.0), r.min.y + 13.0), side, crate::i18n::isolate(name), medium(13.0), t.text);
-        ui.painter().text(pos2(crate::rtl::lead_x(rtl, r, 40.0), r.min.y + 29.0), side, crate::i18n::isolate_path(p), regular(11.0), t.text_dim);
+        ui.painter().text(pos2(crate::rtl::lead_x(rtl, r, 42.0), r.center().y - 8.0), side, crate::i18n::isolate(name), regular(13.5), t.text);
+        ui.painter().text(pos2(crate::rtl::lead_x(rtl, r, 42.0), r.center().y + 9.0), side, crate::i18n::isolate_path(p), regular(11.5), t.text_dim);
         let xr = Rect::from_min_max(pos2(r.max.x + 2.0, r.min.y + 4.0), pos2(r.max.x + REMOVE_W, r.max.y - 4.0));
         // Right-to-left: the × sits on the left, past the row's trailing edge.
         let xr = if rtl { xr.translate(vec2(-(r.width() + REMOVE_W + 2.0), 0.0)) } else { xr };

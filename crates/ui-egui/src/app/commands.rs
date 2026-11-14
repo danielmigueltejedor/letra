@@ -467,6 +467,7 @@ impl WordApp {
                     self.ui.backstage_page = "options".into();
                     if let Some(pane) = req.get("pane").and_then(Value::as_str) {
                         self.ui.options_pane = pane.into();
+                        self.options_scroll = true;
                     }
                 }
                 "pasteSpecial" => self.dialog = Some(dialogs::Dialog::paste_special(self, req)),
@@ -532,6 +533,7 @@ impl WordApp {
                 }
                 if let Some(pane) = s("pane") {
                     self.ui.options_pane = pane.into();
+                    self.options_scroll = true;
                 }
                 json!({"backstage": self.ui.backstage})
             }

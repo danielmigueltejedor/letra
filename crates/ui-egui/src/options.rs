@@ -1,6 +1,6 @@
-//! File › Options (#485): a list of panes on the left (General, Display, Proofing, Save,
-//! Language, Accessibility, Advanced, Agents), the chosen pane's settings on the right. Only
-//! settings Letra carries out are shown. Each pane is one function below, so a new setting
+//! File › Preferences (#485): one scrolling page of panes (General, Display, Proofing, Save,
+//! Language, Accessibility, Advanced, Agents), as in every Nodalia office app. Only settings
+//! Letra carries out are shown. Each pane is one function below, so a new setting
 //! goes into its pane's function. Settings agents can change too go through `file.options`; the
 //! rest live in [`crate::UiState`] (saved in `ui.json`).
 
@@ -134,64 +134,52 @@ fn pane_label(id: &str) -> &'static str {
     }
 }
 
-/// The Options page.
+/// The Preferences page: every pane in one scrolling page, General first, as in every Nodalia
+/// office app. Choosing a pane (`file.options` with `pane`, or `app.ui.options_pane`) scrolls to
+/// its heading.
 pub fn page(app: &mut WordApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
-    ui.label(RichText::new(tl!("Options")).font(semibold(26.0)));
-    ui.add_space(16.0);
-    let current = if PANES.contains(&app.ui.options_pane.as_str()) { app.ui.options_pane.clone() } else { "general".to_string() };
-    let rtl = crate::rtl::on();
-    let body = |ui: &mut Ui| {
+    ui.label(RichText::new(tl!("Preferences")).font(crate::theme::regular(28.0)));
+    ui.add_space(18.0);
+    let wanted = if PANES.contains(&app.ui.options_pane.as_str()) { app.ui.options_pane.clone() } else { "general".to_string() };
+    // Scroll once per request, so the page then scrolls freely.
+    let pending = std::mem::take(&mut app.options_scroll);
+    for (n, id) in PANES.into_iter().enumerate() {
+        if n > 0 {
+            ui.add_space(14.0);
+            let (line, _) = ui.allocate_exact_size(vec2(ui.available_width(), 1.0), egui::Sense::hover());
+            ui.painter().rect_filled(line, 0.0, t.border);
+            ui.add_space(14.0);
+        }
+        let heading = ui.label(RichText::new(tl!(pane_label(id))).font(semibold(19.0)));
+        heading.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Heading, true, tl!(pane_label(id))));
+        // General is the top of the page, so asking for it keeps the page's title in view.
+        if pending && id == wanted && n > 0 {
+            // At once, as a jump to a section: an animation would still be on its way when the
+            // first click lands.
+            ui.scroll_to_rect_animation(heading.rect, Some(egui::Align::TOP), egui::style::ScrollAnimation::none());
+        }
+        ui.add_space(4.0);
         crate::rtl::vertical(ui, |ui| {
-            ui.set_width(170.0);
-            for id in PANES {
-                let label = tl!(pane_label(id));
-                let active = current == id;
-                let (r, resp) = ui.allocate_exact_size(vec2(170.0, 30.0), egui::Sense::click());
-                resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, active, label));
-                if active {
-                    ui.painter().rect_filled(r, 4.0, t.checked);
-                } else if resp.hovered() {
-                    ui.painter().rect_filled(r, 4.0, t.hover);
-                }
-                let font = if active { semibold(14.0) } else { crate::theme::regular(14.0) };
-                // Long translations stay inside the row; WidgetInfo above keeps the full name.
-                ui.painter().with_clip_rect(r).text(
-                    egui::pos2(crate::rtl::lead_x(rtl, r, 12.0), r.center().y),
-                    crate::rtl::lead_center(rtl),
-                    label,
-                    font,
-                    t.text,
-                );
-                if resp.clicked() {
-                    app.ui.options_pane = id.to_string();
-                }
-            }
+            // A bounded column, so a pane's own scroll areas (the custom dictionary) have a width.
+            ui.set_max_width(ui.available_width());
+            pane(app, ui, id)
         });
-        ui.add_space(12.0);
-        let (line, _) = ui.allocate_exact_size(vec2(1.0, 420.0), egui::Sense::hover());
-        ui.painter().rect_filled(line, 0.0, t.border);
-        ui.add_space(20.0);
-        crate::rtl::vertical(ui, |ui| {
-            ui.set_max_width(640.0);
-            match current.as_str() {
-                "display" => display(app, ui),
-                "proofing" => proofing(app, ui),
-                "save" => save(app, ui),
-                "language" => language(app, ui),
-                "accessibility" => accessibility(app, ui),
-                "advanced" => advanced(app, ui),
-                "agents" => agents(ui),
-                _ => general(app, ui),
-            }
-        });
-    };
-    // Right to left the pane list is on the right and the settings fill in from it.
-    if rtl {
-        ui.with_layout(crate::rtl::row_layout(ui, egui::Align::Min), body)
-    } else {
-        crate::rtl::horizontal_top(ui, body)
-    };
+    }
+}
+
+/// Draws one pane's settings.
+fn pane(app: &mut WordApp, ui: &mut Ui, id: &str) {
+    match id {
+        "display" => display(app, ui),
+        "proofing" => proofing(app, ui),
+        "save" => save(app, ui),
+        "language" => language(app, ui),
+        "accessibility" => accessibility(app, ui),
+        "advanced" => advanced(app, ui),
+        "agents" => agents(ui),
+        _ => general(app, ui),
+    }
 }
 
 fn section(ui: &mut Ui, title: &str) {
@@ -223,9 +211,18 @@ fn flag(app: &mut WordApp, ui: &mut Ui, label: &str, key: &str, value: bool) {
 /// default apps; the Start screen; and personalization such as user name and initials.
 fn general(app: &mut WordApp, ui: &mut Ui) {
     section(ui, "Interface");
-    theme_picker(app, ui);
-    window_controls_picker(app, ui);
-    interface_size_picker(app, ui);
+    // The rows every Nodalia office app's Preferences opens with, their controls lined up.
+    crate::rtl::grid(ui, egui::Grid::new("options_general").num_columns(2).spacing(vec2(24.0, 8.0)), |ui| {
+        theme_picker(app, ui);
+        window_controls_picker(app, ui);
+        language_picker(app, ui);
+        interface_size_picker(app, ui);
+    });
+    note(ui, "Automatic follows your system's language. Menus and commands change; your documents don't.");
+    note(
+        ui,
+        "Makes the ribbon, menus and dialogs larger or smaller. Auto follows your system's display scaling; 100% is one screen pixel per point. Document zoom is separate.",
+    );
     ui.horizontal(|ui| {
         use letra_engine::cmd::view::PaperColor;
         let label = ui.label(tl!("Screen paper color:"));
@@ -527,10 +524,8 @@ fn save(app: &mut WordApp, ui: &mut Ui) {
 }
 
 fn language(app: &mut WordApp, ui: &mut Ui) {
-    section(ui, "Interface language");
-    language_picker(app, ui);
-    // #414 (detect the document's language) goes here.
-    ui.add_space(8.0);
+    // The interface language is under General, with the other rows every Nodalia office app opens
+    // its Preferences with. #414 (detect the document's language) goes here.
     section(ui, "Proofing language");
     let lang = crate::ribbon::caret_language(app);
     let text = if crate::ribbon::caret_no_proof(app) {
@@ -728,17 +723,16 @@ fn agents(ui: &mut Ui) {
 /// Interface theme: Light, Dark, or follow the system's appearance (#115).
 fn theme_picker(app: &mut WordApp, ui: &mut Ui) {
     use crate::theme::Appearance;
-    ui.horizontal(|ui| {
-        let label = ui.label(tl!("Interface theme:"));
-        let combo = craft_ui::ComboBox::from_id_salt("interface_theme").selected_text(tl!(app.ui.theme.label())).width(220.0).show_ui(ui, |ui| {
-            for a in Appearance::ALL {
-                if ui.selectable_label(app.ui.theme == a, tl!(a.label())).clicked() {
-                    let _ = app.run("ui.theme", json!({"value": a.code()}));
-                }
+    let label = ui.label(tl!("Interface theme:"));
+    let combo = craft_ui::ComboBox::from_id_salt("interface_theme").selected_text(tl!(app.ui.theme.label())).width(220.0).show_ui(ui, |ui| {
+        for a in Appearance::ALL {
+            if ui.selectable_label(app.ui.theme == a, tl!(a.label())).clicked() {
+                let _ = app.run("ui.theme", json!({"value": a.code()}));
             }
-        });
-        combo.response.labelled_by(label.id);
+        }
     });
+    combo.response.labelled_by(label.id);
+    ui.end_row();
 }
 
 /// Which window controls the Linux and BSD desktop app draws: NDL's round ones (the default) or
@@ -749,18 +743,17 @@ fn window_controls_picker(app: &mut WordApp, ui: &mut Ui) {
     if !app.linux_desktop {
         return;
     }
-    ui.horizontal(|ui| {
-        let label = ui.label(tl!("Window controls:"));
-        let combo =
-            craft_ui::ComboBox::from_id_salt("window_controls").selected_text(tl!(app.ui.window_controls.label())).width(220.0).show_ui(ui, |ui| {
-                for c in WindowControls::ALL {
-                    if ui.selectable_label(app.ui.window_controls == c, tl!(c.label())).clicked() {
-                        let _ = app.run("ui.windowControls", json!({"value": c.code()}));
-                    }
+    let label = ui.label(tl!("Window controls:"));
+    let combo =
+        craft_ui::ComboBox::from_id_salt("window_controls").selected_text(tl!(app.ui.window_controls.label())).width(220.0).show_ui(ui, |ui| {
+            for c in WindowControls::ALL {
+                if ui.selectable_label(app.ui.window_controls == c, tl!(c.label())).clicked() {
+                    let _ = app.run("ui.windowControls", json!({"value": c.code()}));
                 }
-            });
-        combo.response.labelled_by(label.id);
-    });
+            }
+        });
+    combo.response.labelled_by(label.id);
+    ui.end_row();
 }
 
 /// What the status bar's live count shows (#2797): words (as Word's status bar counts), characters
@@ -793,27 +786,19 @@ fn interface_size_picker(app: &mut WordApp, ui: &mut Ui) {
     let auto = crate::i18n::fmt(tl!("Auto ({percent}%)"), &[("percent", &InterfaceSize::AUTO.drawn_percent(native).to_string())])
         .replace("\u{2069}%", "%\u{2069}");
     let selected = size.percent().map_or_else(|| auto.clone(), |pct| format!("{pct}%"));
-    ui.horizontal(|ui| {
-        let label = ui.label(tl!("Interface size:"));
-        let combo = craft_ui::ComboBox::from_id_salt("interface_size").selected_text(selected).width(220.0).show_ui(ui, |ui| {
-            if ui.selectable_label(size.is_auto(), auto).clicked() {
-                let _ = app.run("ui.interfaceSize", json!({"value": "auto"}));
+    let label = ui.label(tl!("Interface size:"));
+    let combo = craft_ui::ComboBox::from_id_salt("interface_size").selected_text(selected).width(220.0).show_ui(ui, |ui| {
+        if ui.selectable_label(size.is_auto(), auto).clicked() {
+            let _ = app.run("ui.interfaceSize", json!({"value": "auto"}));
+        }
+        for pct in InterfaceSize::PRESETS {
+            if ui.selectable_label(size.percent() == Some(pct), format!("{pct}%")).clicked() {
+                let _ = app.run("ui.interfaceSize", json!({"percent": pct}));
             }
-            for pct in InterfaceSize::PRESETS {
-                if ui.selectable_label(size.percent() == Some(pct), format!("{pct}%")).clicked() {
-                    let _ = app.run("ui.interfaceSize", json!({"percent": pct}));
-                }
-            }
-        });
-        combo.response.labelled_by(label.id);
+        }
     });
-    ui.label(
-        RichText::new(tl!(
-            "Makes the ribbon, menus and dialogs larger or smaller. Auto follows your system's display scaling; 100% is one screen pixel per point. Document zoom is separate."
-        ))
-        .small()
-        .weak(),
-    );
+    combo.response.labelled_by(label.id);
+    ui.end_row();
 }
 
 /// Animation effects: on, off, or follow the system's setting (the default). Under "Use system
@@ -871,21 +856,19 @@ fn language_picker(app: &mut WordApp, ui: &mut Ui) {
     let system = crate::i18n::system_lang();
     let auto_label = crate::i18n::fmt(tl!("Automatic ({language})"), &[("language", system.name())]);
     let current = if app.ui.language == AUTO { auto_label.clone() } else { Lang::from_pref(&app.ui.language).name().to_string() };
-    ui.horizontal(|ui| {
-        let label = ui.label(tl!("Interface language:"));
-        let combo = craft_ui::ComboBox::from_id_salt("interface_language").selected_text(current).width(220.0).show_ui(ui, |ui| {
-            if ui.selectable_label(app.ui.language == AUTO, auto_label.as_str()).clicked() {
-                let _ = app.run("ui.language", json!({"value": AUTO}));
+    let label = ui.label(tl!("Interface language:"));
+    let combo = craft_ui::ComboBox::from_id_salt("interface_language").selected_text(current).width(220.0).show_ui(ui, |ui| {
+        if ui.selectable_label(app.ui.language == AUTO, auto_label.as_str()).clicked() {
+            let _ = app.run("ui.language", json!({"value": AUTO}));
+        }
+        for lang in Lang::for_picker() {
+            if ui.selectable_label(app.ui.language == lang.code(), lang.name()).clicked() {
+                let _ = app.run("ui.language", json!({"value": lang.code()}));
             }
-            for lang in Lang::for_picker() {
-                if ui.selectable_label(app.ui.language == lang.code(), lang.name()).clicked() {
-                    let _ = app.run("ui.language", json!({"value": lang.code()}));
-                }
-            }
-        });
-        combo.response.labelled_by(label.id);
+        }
     });
-    ui.label(RichText::new(tl!("Automatic follows your system's language. Menus and commands change; your documents don't.")).small().weak());
+    combo.response.labelled_by(label.id);
+    ui.end_row();
 }
 
 /// Deserialize `input` over `T`'s defaults one setting at a time: a value of the wrong type is

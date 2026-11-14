@@ -68,6 +68,11 @@ impl WordApp {
         let window = self.windows.shown();
         let moved = |app: &WordApp| app.windows.shown() != window;
         if self.ui.backstage {
+            // The File view sits under the title bar, as in the other Nodalia office apps.
+            chrome::title_bar(self, ui);
+            if moved(self) {
+                return;
+            }
             backstage::show(self, ui);
         } else if !self.has_document() {
             // No document open (#1129): the ribbon greyed out but for Help, and no page.

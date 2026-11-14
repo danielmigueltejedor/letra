@@ -35,7 +35,10 @@ pub(crate) fn window<'a>(ctx: &egui::Context, w: egui::Window<'a>) -> egui::Wind
     let right = geometry(ctx).width as i8;
     // The title bar is the dialog's own surface, as NDL draws it: no darker band across the top.
     let frame = egui::Frame::window(&style).inner_margin(Margin { right, ..m });
-    w.frame(frame.inner_margin(m)).title_frame(frame.stroke(Stroke::NONE).corner_radius(CornerRadius::ZERO))
+    // It keeps the window's rounded top corners: a square title frame would paint over them.
+    let r = style.visuals.window_corner_radius;
+    let top = CornerRadius { nw: r.nw, ne: r.ne, sw: 0, se: 0 };
+    w.frame(frame.inner_margin(m)).title_frame(frame.stroke(Stroke::NONE).corner_radius(top))
 }
 
 /// The box for a window whose outer rect is `window` (frame line included), with a title bar
