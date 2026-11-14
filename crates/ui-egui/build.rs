@@ -74,12 +74,12 @@ fn craft_i18n() -> String {
     o
 }
 
-/// The app catalog with the upstream product name replaced by Letra, in both the English and the
-/// translated column, so entries that name the app match Letra's own text. Written to `out`; the
-/// original path when that can't be done.
 /// The upstream app's name, as the shared catalog still writes it.
 const UPSTREAM_NAME: &str = "WordCraft"; // rebrand: keep
 
+/// The app catalog with the upstream product name replaced by Letra, in both the English and the
+/// translated column, so entries that name the app match Letra's own text. Written to `out`; the
+/// original path when that can't be done.
 fn renamed(app: &std::path::Path, out: &std::path::Path) -> std::path::PathBuf {
     let Ok(text) = std::fs::read_to_string(app) else { return app.to_path_buf() };
     match std::fs::write(out, text.replace(UPSTREAM_NAME, "Letra")) {
