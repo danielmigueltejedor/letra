@@ -50,6 +50,12 @@ struct App(
 );
 
 impl eframe::App for App {
+    /// The window colour behind everything, so no frame (the first, or one during a resize) shows
+    /// eframe's default near-black clear colour through an unpainted gap.
+    fn clear_color(&self, visuals: &egui::Visuals) -> [f32; 4] {
+        visuals.panel_fill.to_normalized_gamma_f32()
+    }
+
     /// Advances one desktop frame: polls Finder events on macOS, runs the app and its file dialogs,
     /// fits or rescues the window and maximizes it after opening, then gates a close or quit request
     /// on unsaved changes and active printing.
