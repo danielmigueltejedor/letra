@@ -3018,7 +3018,7 @@ checksum = "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb"
 
 [[package]]
 name = "letra"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "arboard",
  "chrono",
@@ -3055,7 +3055,7 @@ dependencies = [
 
 [[package]]
 name = "letra-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "image",
  "letra-doc",
@@ -3071,11 +3071,11 @@ dependencies = [
 
 [[package]]
 name = "letra-control-key"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "letra-doc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "base64 0.23.1",
  "letra-geom",
@@ -3089,7 +3089,7 @@ dependencies = [
 
 [[package]]
 name = "letra-docbin"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cfb",
  "chrono",
@@ -3106,7 +3106,7 @@ dependencies = [
 
 [[package]]
 name = "letra-docx"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "aes",
  "base64 0.23.1",
@@ -3131,7 +3131,7 @@ dependencies = [
 
 [[package]]
 name = "letra-engine"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cfb",
  "chrono",
@@ -3164,7 +3164,7 @@ dependencies = [
 
 [[package]]
 name = "letra-fonts"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "brotli-decompressor 6.3.1",
  "harfrust 0.13.3",
@@ -3178,7 +3178,7 @@ dependencies = [
 
 [[package]]
 name = "letra-formats"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "aes",
  "base64 0.23.1",
@@ -3205,7 +3205,7 @@ dependencies = [
 
 [[package]]
 name = "letra-geom"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "image",
  "serde",
@@ -3213,7 +3213,7 @@ dependencies = [
 
 [[package]]
 name = "letra-layout"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "craft-proof",
  "image",
@@ -3233,7 +3233,7 @@ dependencies = [
 
 [[package]]
 name = "letra-mcp"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "letra-control-key",
  "letra-doc",
@@ -3245,7 +3245,7 @@ dependencies = [
 
 [[package]]
 name = "letra-metafile"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "kurbo",
  "thiserror 2.0.21",
@@ -3253,7 +3253,7 @@ dependencies = [
 
 [[package]]
 name = "letra-pdf"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "craft-pdf",
@@ -3274,7 +3274,7 @@ dependencies = [
 
 [[package]]
 name = "letra-render"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "image",
  "letra-doc",
@@ -3288,7 +3288,7 @@ dependencies = [
 
 [[package]]
 name = "letra-ui-egui"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "accesskit_consumer",
  "cfb",
@@ -3322,7 +3322,7 @@ dependencies = [
 
 [[package]]
 name = "letra-web"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "craft-web-api",
  "craft-web-host",
@@ -3343,7 +3343,7 @@ dependencies = [
 
 [[package]]
 name = "letra-zotero"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "letra-doc",
  "letra-docx",
@@ -7200,7 +7200,7 @@ checksum = "9440ea3e5aeabb0ac63af70daf835274065238cdd0cec83418f417eae38bacee"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde_json",
 ]
