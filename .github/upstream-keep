@@ -16,3 +16,5 @@ scripts/rebrand.py
 scripts/check-release-notes.sh
 docs/release-notes/**
 packaging/macos/dmg/**
+.github/CODEOWNERS
+CONTRIBUTING.md
