@@ -694,6 +694,8 @@ pub struct WordApp {
     /// language picker or Language packs list: load an installed Arabic font when no embedded face
     /// covers it (dev builds without craft-fonts).
     pub(crate) want_system_arabic: bool,
+    /// The Preferences page scrolls to `ui.options_pane` on its next frame (a pane was asked for).
+    pub(crate) options_scroll: bool,
     /// The document (id, revision) whose comment text [`WordApp::ensure_comment_fonts`] last
     /// looked at.
     comment_fonts_for: Option<(u64, u64)>,

@@ -250,7 +250,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "parking_lot",
  "percent-encoding",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
  "wl-clipboard-rs",
  "x11rb",
 ]
@@ -1699,7 +1699,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3018,7 +3018,7 @@ checksum = "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb"
 
 [[package]]
 name = "letra"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "arboard",
  "chrono",
@@ -3055,7 +3055,7 @@ dependencies = [
 
 [[package]]
 name = "letra-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "image",
  "letra-doc",
@@ -3071,11 +3071,11 @@ dependencies = [
 
 [[package]]
 name = "letra-control-key"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "letra-doc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "base64 0.23.1",
  "letra-geom",
@@ -3089,7 +3089,7 @@ dependencies = [
 
 [[package]]
 name = "letra-docbin"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cfb",
  "chrono",
@@ -3106,7 +3106,7 @@ dependencies = [
 
 [[package]]
 name = "letra-docx"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "aes",
  "base64 0.23.1",
@@ -3131,7 +3131,7 @@ dependencies = [
 
 [[package]]
 name = "letra-engine"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cfb",
  "chrono",
@@ -3164,7 +3164,7 @@ dependencies = [
 
 [[package]]
 name = "letra-fonts"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "brotli-decompressor 6.3.1",
  "harfrust 0.13.3",
@@ -3178,7 +3178,7 @@ dependencies = [
 
 [[package]]
 name = "letra-formats"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "aes",
  "base64 0.23.1",
@@ -3205,7 +3205,7 @@ dependencies = [
 
 [[package]]
 name = "letra-geom"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "image",
  "serde",
@@ -3213,7 +3213,7 @@ dependencies = [
 
 [[package]]
 name = "letra-layout"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "craft-proof",
  "image",
@@ -3233,7 +3233,7 @@ dependencies = [
 
 [[package]]
 name = "letra-mcp"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "letra-control-key",
  "letra-doc",
@@ -3245,7 +3245,7 @@ dependencies = [
 
 [[package]]
 name = "letra-metafile"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "kurbo",
  "thiserror 2.0.21",
@@ -3253,7 +3253,7 @@ dependencies = [
 
 [[package]]
 name = "letra-pdf"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "craft-pdf",
@@ -3274,7 +3274,7 @@ dependencies = [
 
 [[package]]
 name = "letra-render"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "image",
  "letra-doc",
@@ -3288,7 +3288,7 @@ dependencies = [
 
 [[package]]
 name = "letra-ui-egui"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "accesskit_consumer",
  "cfb",
@@ -3322,7 +3322,7 @@ dependencies = [
 
 [[package]]
 name = "letra-web"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "craft-web-api",
  "craft-web-host",
@@ -3343,7 +3343,7 @@ dependencies = [
 
 [[package]]
 name = "letra-zotero"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "letra-doc",
  "letra-docx",
@@ -3591,7 +3591,7 @@ dependencies = [
 [[package]]
 name = "nodalia-theme"
 version = "0.1.0-alpha.1"
-source = "git+https://github.com/danielmigueltejedor/nodalia-design?rev=3b6e6a9fb2da8b8ad3c1f31ebf27c1257c69542c#3b6e6a9fb2da8b8ad3c1f31ebf27c1257c69542c"
+source = "git+https://github.com/danielmigueltejedor/nodalia-design?rev=3c6bbd28c68496b3084fdae29005f4ac48720fe5#3c6bbd28c68496b3084fdae29005f4ac48720fe5"
 dependencies = [
  "egui",
 ]
@@ -3599,7 +3599,7 @@ dependencies = [
 [[package]]
 name = "nodalia-update"
 version = "0.1.0-alpha.1"
-source = "git+https://github.com/danielmigueltejedor/nodalia-design?rev=3b6e6a9fb2da8b8ad3c1f31ebf27c1257c69542c#3b6e6a9fb2da8b8ad3c1f31ebf27c1257c69542c"
+source = "git+https://github.com/danielmigueltejedor/nodalia-design?rev=3c6bbd28c68496b3084fdae29005f4ac48720fe5#3c6bbd28c68496b3084fdae29005f4ac48720fe5"
 dependencies = [
  "egui",
  "serde_json",
@@ -4042,7 +4042,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4514,7 +4514,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4865,7 +4865,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4924,7 +4924,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5713,7 +5713,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.5",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6714,7 +6714,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7200,7 +7200,7 @@ checksum = "9440ea3e5aeabb0ac63af70daf835274065238cdd0cec83418f417eae38bacee"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde_json",
 ]

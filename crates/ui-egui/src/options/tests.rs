@@ -51,94 +51,35 @@ fn user_name_field_disables_when_protection_starts() {
     assert!(h.get(user_name()).accesskit_node().is_disabled());
 }
 
-/// #1266: check the actual painted text and renderer clip, including the bold selected
-/// label. AccessKit must still expose the full name and the row must keep its fixed size.
+/// Preferences is one page, as in every Nodalia office app: every pane's heading is on it, in
+/// order, in any language and interface size, and asking for a pane scrolls its heading into view.
 #[test]
-fn options_nav_labels_stay_inside_their_rows() {
+fn preferences_is_one_page_with_every_pane() {
     if !crate::i18n::catalogs_embedded() {
         return;
     }
     for language in ["en", "ru"] {
-        for percent in [100, 125, 150] {
+        for percent in [100, 150] {
             let mut h = nav_harness(language, percent);
-            // An interface size is absolute (#822): `percent` points per 100 screen pixels,
-            // whatever the display's own scale (2.0 here).
-            assert_eq!(h.ctx.pixels_per_point(), f32::from(percent) / 100.0);
-            for selected in ["general", "accessibility"] {
-                h.state_mut().run("file.options", json!({"pane": selected})).unwrap();
-                h.run_steps(4);
-                for id in letra_engine::cmd::options::PANES {
-                    let label = crate::i18n::tr(crate::i18n::Lang::from_pref(language), super::pane_label(id));
-                    let node =
-                        h.query_all_by_label(label).find(|n| n.accesskit_node().toggled().is_some()).expect("pane has its full accessible name");
-                    assert_eq!(
-                        node.accesskit_node().toggled(),
-                        Some(if id == selected { egui::accesskit::Toggled::True } else { egui::accesskit::Toggled::False })
-                    );
-                    let row = node.rect();
-                    assert_eq!(row.size(), egui::vec2(170.0, 30.0));
-                    let (clip, text) = h
-                        .output()
-                        .shapes
-                        .iter()
-                        .find_map(|s| match &s.shape {
-                            egui::Shape::Text(text) if text.galley.text() == label && row.contains(text.pos) => Some((s.clip_rect, text)),
-                            _ => None,
-                        })
-                        .expect("navigation label is painted");
-                    let bounds = text.visual_bounding_rect();
-                    assert!(row.contains_rect(bounds.intersect(clip)), "{language} {percent}% {selected}: {label} paints outside {row:?}");
-                    if language == "en" && ["general", "display", "save"].contains(&id) {
-                        assert!(clip.contains_rect(bounds), "short labels must remain fully visible");
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// Clipping only the painter must leave the entire row clickable, its hover/selection
-/// backgrounds intact, and the selected pane's settings visible at every interface size.
-#[test]
-fn options_nav_rows_keep_hover_and_selection() {
-    if !crate::i18n::catalogs_embedded() {
-        return;
-    }
-    for language in ["en", "ru"] {
-        for percent in [100, 125, 150] {
-            let mut h = nav_harness(language, percent);
-            for (id, setting) in [("display", "Spaces"), ("save", "Save documents"), ("accessibility", "Visual effects"), ("general", "Interface")] {
-                let lang = crate::i18n::Lang::from_pref(language);
-                let row = h
-                    .query_all_by_label(crate::i18n::tr(lang, super::pane_label(id)))
-                    .find(|n| n.accesskit_node().toggled().is_some())
-                    .expect("pane has its full accessible name")
+            let lang = crate::i18n::Lang::from_pref(language);
+            let mut last = f32::NEG_INFINITY;
+            for id in letra_engine::cmd::options::PANES {
+                let label = crate::i18n::tr(lang, super::pane_label(id));
+                let heading = h
+                    .query_all_by_role(egui::accesskit::Role::Heading)
+                    .find(|n| n.accesskit_node().label().as_deref() == Some(label))
+                    .unwrap_or_else(|| panic!("{language} {percent}%: {id} has its heading"))
                     .rect();
-                // Both ends of the row, including its empty left inset, stay clickable.
-                for x in [row.left() + 2.0, row.right() - 2.0] {
-                    h.state_mut().run("file.options", json!({"pane": "agents"})).unwrap();
-                    h.hover_at(egui::pos2(x, row.center().y));
-                    h.run_steps(4);
-                    let t = crate::theme::Tokens::get(&h.ctx);
-                    let background = |h: &egui_kittest::Harness<'_, WordApp>, color| {
-                        h.output().shapes.iter().any(|s| matches!(&s.shape, egui::Shape::Rect(r) if r.rect == row && r.fill == color))
-                    };
-                    assert!(background(&h, t.hover), "{language} {percent}%: hover covers the row");
-                    for pressed in [true, false] {
-                        h.input_mut().events.push(egui::Event::PointerButton {
-                            pos: egui::pos2(x, row.center().y),
-                            button: egui::PointerButton::Primary,
-                            pressed,
-                            modifiers: Default::default(),
-                        });
-                        h.run_steps(1);
-                    }
-                    h.run_steps(4);
-                    assert_eq!(h.state().ui.options_pane, id);
-                    assert!(background(&h, t.checked), "{language} {percent}%: selection covers the row");
-                    assert!(h.query_by_label(crate::i18n::tr(lang, setting)).is_some(), "{id} settings are shown");
-                }
+                assert!(heading.top() > last, "{language} {percent}%: {id} comes after the pane before it");
+                last = heading.top();
             }
+            h.state_mut().run("file.options", json!({"pane": "advanced"})).unwrap();
+            h.run_steps(6);
+            let label = crate::i18n::tr(lang, super::pane_label("advanced"));
+            let heading =
+                h.query_all_by_role(egui::accesskit::Role::Heading).find(|n| n.accesskit_node().label().as_deref() == Some(label)).unwrap().rect();
+            let screen = h.ctx.content_rect();
+            assert!(screen.contains(heading.center()), "{language} {percent}%: Advanced scrolled into view: {heading:?}");
         }
     }
 }
@@ -231,8 +172,8 @@ fn a_unit_chosen_before_regions_survives_the_rename() {
     assert_eq!(saved["editing"]["measurementUnits"], "millimeters");
 }
 
-/// `file.options` opens the page at a pane; the pane list switches panes, and their
-/// checkboxes change the settings (#485).
+/// `file.options` opens Preferences at a pane, and the panes' checkboxes change the settings
+/// (#485).
 #[test]
 fn options_panes_open_and_change_settings() {
     let mut a = app();
@@ -250,17 +191,15 @@ fn options_panes_open_and_change_settings() {
     h.get_by_label("Spaces").click();
     h.run_steps(2);
     assert!(h.state().session.prefs.marks.spaces, "Display › Spaces");
-    // #2797: what the status bar's count shows, chosen here as in its right-click menu. The
-    // Display pane's other combo box is Numerals, drawn above this one.
-    h.get_all_by_role(egui::accesskit::Role::ComboBox).last().expect("the status bar count picker").click();
+    // #2797: what the status bar's count shows, chosen here as in its right-click menu.
+    h.get_by_role_and_label(egui::accesskit::Role::ComboBox, "Status bar count:").click();
     h.run_steps(4);
     h.get_by_label("Characters (with spaces)").click();
     h.run_steps(2);
     assert_eq!(h.state().ui.status_count, StatusCount::Characters, "Display › Status bar count");
     assert_eq!(h.state_mut().run("ui.statusCount", json!({})).unwrap()["statusCount"], "characters", "the command answers the same");
-    h.get_by_label("Proofing").click();
+    h.state_mut().run("file.options", json!({"pane": "proofing"})).unwrap();
     h.run_steps(4);
-    assert_eq!(h.state().ui.options_pane, "proofing");
     h.get_by_label("Ignore words in capitals").click();
     h.run_steps(2);
     assert!(!h.state().session.prefs.ignore_uppercase);
@@ -272,14 +211,13 @@ fn options_panes_open_and_change_settings() {
     h.state_mut().dialog = None;
     h.run_steps(2);
     // #1063: the dictionaries folder and the dictionary each language found moved to Language
-    // (CP4.3); Proofing has no Dictionaries section.
-    assert!(h.query_by_label("Dictionaries folder:").is_none() && h.query_by_label_contains("Polish: ").is_none());
-    h.get_by_label("Language").click();
+    // (CP4.3), on the same page.
+    h.state_mut().run("file.options", json!({"pane": "language"})).unwrap();
     h.run_steps(4);
     assert!(h.query_by_label("Dictionaries folder:").is_some());
     assert!(h.query_by_label("Dictionary files").is_some());
     assert!(h.query_by_label_contains("Polish: ").is_some(), "the Polish dictionary's line");
-    h.get_by_label("Advanced").click();
+    h.state_mut().run("file.options", json!({"pane": "advanced"})).unwrap();
     h.run_steps(4);
     h.get_by_label("Typing replaces selected text").click();
     h.run_steps(2);

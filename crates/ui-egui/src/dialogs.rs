@@ -783,9 +783,9 @@ impl Dialog {
             "pasteSpecial" => Dialog::paste_special(app, &json!({})),
             "renameDocument" => Dialog::RenameDocument { name: app.title_stem(), message: String::new(), focus: true },
             "about" => Dialog::About { tab: 0 },
-            "contributors" => Dialog::About { tab: 1 },
-            "models" => Dialog::About { tab: 2 },
-            "languageData" => Dialog::About { tab: 3 },
+            // The old Contributors and Models tabs are gone; their names still open About.
+            "contributors" | "models" => Dialog::About { tab: 0 },
+            "languageData" => Dialog::About { tab: 1 },
             // The current list to edit, or a new one to type.
             "recipientList" | "newRecipientList" => {
                 let m = &app.session.merge;

@@ -125,6 +125,7 @@ impl WordApp {
             fonts_system_arabic: false,
             want_system_cjk: false,
             want_system_arabic: false,
+            options_scroll: true,
             recover_fonts_for: None,
             recent_fonts_for: Vec::new(),
             fonts_frames: 0,
@@ -455,6 +456,9 @@ impl WordApp {
             return;
         }
         let t = theme::Tokens::get(&ctx);
+        // The window colour behind every island: the gaps between them are margins no panel
+        // paints, and would show the renderer's clear colour (near black) instead.
+        ui.painter().rect_filled(ui.max_rect(), 0.0, t.title_bar);
         self.escape_free = self.dialog.is_none()
             && !self.ui.backstage
             && self.ui.keytips == keytips::Phase::Off

@@ -63,13 +63,32 @@ fn craft_i18n() -> String {
     };
     let mut o = String::from("/// (locale, shared catalog, Letra's catalog), one entry per locale; `\"\"` for a missing file.\n");
     o.push_str("pub static CRAFT_I18N: &craft_i18n::Embedded = &[\n");
+    let out_dir = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap_or_default());
     for (code, shared, app) in entries {
         // `{:?}` escapes the path (Windows backslashes) as a Rust string literal.
         let shared = shared.map_or_else(|| "\"\"".to_string(), |p| format!("include_str!({p:?})"));
+        let app = renamed(&app, &out_dir.join(format!("catalog-{code}.tsv")));
         let _ = writeln!(o, "    ({code:?}, {shared}, include_str!({app:?})),");
     }
     o.push_str("];\n");
     o
+}
+
+/// The upstream app's name, as the shared catalog still writes it.
+const UPSTREAM_NAME: &str = "WordCraft"; // rebrand: keep
+
+/// The app catalog with the upstream product name replaced by Letra, in both the English and the
+/// translated column, so entries that name the app match Letra's own text. Written to `out`; the
+/// original path when that can't be done.
+fn renamed(app: &std::path::Path, out: &std::path::Path) -> std::path::PathBuf {
+    let Ok(text) = std::fs::read_to_string(app) else { return app.to_path_buf() };
+    match std::fs::write(out, text.replace(UPSTREAM_NAME, "Letra")) {
+        Ok(()) => out.to_path_buf(),
+        Err(e) => {
+            println!("cargo::warning=writing {}: {e}", out.display());
+            app.to_path_buf()
+        }
+    }
 }
 
 /// A locale's code, its `common.tsv` if any, and its app catalog.

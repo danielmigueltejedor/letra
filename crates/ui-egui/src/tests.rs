@@ -585,7 +585,7 @@ fn title_and_account_buttons_work() {
     // The header's main menu opens Preferences: File › Options › General.
     h.get_by_label("Main menu").click();
     h.run_steps(2);
-    h.get_by_label("      Preferences").click();
+    h.get_by_role_and_label(egui::accesskit::Role::MenuItem, "Preferences").click();
     h.run_steps(2);
     assert!(h.state().ui.backstage);
     assert_eq!(h.state().ui.backstage_page, "options");
@@ -3934,7 +3934,8 @@ fn the_print_preview_fills_the_pane_zooms_and_scrolls_both_ways() {
     h.run_steps(4);
     let page = |h: &egui_kittest::Harness<'_, WordApp>| h.get(By::new().role(Role::Image)).rect();
     let fit = page(&h);
-    assert!(fit.height() > 650.0, "the page fills the pane's height: {fit:?}");
+    // The pane is the content island under the title bar, less its padding and the zoom bar.
+    assert!(fit.height() > 600.0, "the page fills the pane's height: {fit:?}");
     assert!(h.query(By::new().role(Role::Label).label("Sheet 1 of 1")).is_some(), "the sheet indicator stays");
 
     for _ in 0..5 {
